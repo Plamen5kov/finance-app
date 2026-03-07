@@ -71,7 +71,7 @@ export default function ExpenseBudgetPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs text-gray-500 mb-1">Avg Monthly Income</p>
           <p className="text-2xl font-bold text-green-600">
@@ -99,18 +99,18 @@ export default function ExpenseBudgetPage() {
       </div>
 
       {/* Stacked bar chart: expenses by category per month */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
             <h2 className="font-semibold text-gray-900">Expenses by Category</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Stacked monthly spending breakdown</p>
+            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">Stacked monthly spending breakdown</p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-shrink-0">
             {RANGES.map((r) => (
               <button
                 key={r.label}
                 onClick={() => setRange(r.months)}
-                className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   range === r.months
                     ? 'bg-brand text-white'
                     : 'text-gray-500 hover:bg-gray-100'
@@ -126,8 +126,8 @@ export default function ExpenseBudgetPage() {
         ) : barData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">No expense data</p>
         ) : (
-          <ResponsiveContainer width="100%" height={340}>
-            <BarChart data={barData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={280} className="sm:!h-[340px]">
+            <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
               <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -142,13 +142,13 @@ export default function ExpenseBudgetPage() {
       </div>
 
       {/* Income vs Expenses trend */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
         <h2 className="font-semibold text-gray-900 mb-4">Income vs Expenses</h2>
         {isLoading ? (
           <div className="h-64 bg-gray-100 rounded animate-pulse" />
         ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={barData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={240} className="sm:!h-[280px]">
+            <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
               <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -180,7 +180,7 @@ export default function ExpenseBudgetPage() {
                   cy="50%"
                   outerRadius={80}
                   label={({ name, percent }) => percent >= 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
-                  labelLine={({ percent }: { percent: number }) => percent >= 0.05}
+                  labelLine={false}
                 >
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />

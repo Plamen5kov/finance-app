@@ -165,11 +165,11 @@ export default function NetWorthReportPage() {
         <Link href="/reports" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Net Worth Over Time</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Net Worth Over Time</h1>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs text-gray-500 mb-1">Net Worth</p>
           <p className={`text-2xl font-bold ${latestNetWorth >= 0 ? 'text-brand' : 'text-red-500'}`}>
@@ -203,16 +203,16 @@ export default function NetWorthReportPage() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
         <div className="flex flex-col gap-3 mb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="font-semibold text-gray-900">Portfolio Value by Asset</h2>
               {hasProjection && (
-                <p className="text-xs text-gray-400 mt-0.5">Dashed line shows projected net worth assuming current assets stay flat</p>
+                <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">Dashed line shows projected net worth assuming current assets stay flat</p>
               )}
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0">
               {RANGES.map((r) => (
                 <button
                   key={r.label}
@@ -281,8 +281,8 @@ export default function NetWorthReportPage() {
         ) : mergedData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">No snapshot history</p>
         ) : (
-          <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={340}>
-            <LineChart data={mergedData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={280} className="sm:!h-[340px]">
+            <LineChart data={mergedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
                 dataKey="month"

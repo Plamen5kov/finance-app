@@ -39,8 +39,8 @@ export function AssetsClient() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Assets</h1>
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Assets</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
@@ -51,12 +51,12 @@ export function AssetsClient() {
       </div>
 
       {/* Total Assets banner */}
-      <div className="bg-gradient-to-r from-brand to-brand-light rounded-xl p-6 text-white mb-8">
+      <div className="bg-gradient-to-r from-brand to-brand-light rounded-xl p-4 sm:p-6 text-white mb-8">
         <div className="flex items-center gap-2 mb-1 text-white/80 text-sm">
           <TrendingUp size={16} />
           <span>Total Assets</span>
         </div>
-        <p className="text-4xl font-bold">
+        <p className="text-2xl sm:text-4xl font-bold">
           {isLoading ? '—' : formatCurrency(totalAssets)}
         </p>
       </div>

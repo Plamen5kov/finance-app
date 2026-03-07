@@ -61,14 +61,14 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
           <button
             onClick={() => onEdit(goal)}
-            className="p-1.5 text-gray-300 hover:text-brand transition-colors"
+            className="p-2 text-gray-300 hover:text-brand active:text-brand transition-colors"
             aria-label="Edit goal"
           >
-            <Pencil size={15} />
+            <Pencil size={16} />
           </button>
           <button
             onClick={() => onDelete(goal.id)}
-            className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+            className="p-2 text-gray-300 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Delete goal"
           >
             <Trash2 size={15} />

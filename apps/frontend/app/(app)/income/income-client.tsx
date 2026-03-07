@@ -77,8 +77,8 @@ export function IncomeClient() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Income</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Income</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowCategoryForm(true)}
@@ -97,11 +97,11 @@ export function IncomeClient() {
       </div>
 
       {/* Month navigation */}
-      <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => setMonthOffset((o) => o - 1)} className="p-2 rounded-lg hover:bg-gray-100">
+      <div className="flex items-center gap-2 sm:gap-4 mb-6">
+        <button onClick={() => setMonthOffset((o) => o - 1)} className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200">
           <ChevronLeft size={18} />
         </button>
-        <h2 className="text-lg font-semibold text-gray-700 min-w-[180px] text-center">{monthLabel}</h2>
+        <h2 className="text-base sm:text-lg font-semibold text-gray-700 min-w-[140px] sm:min-w-[180px] text-center">{monthLabel}</h2>
         <button
           onClick={() => setMonthOffset((o) => o + 1)}
           disabled={monthOffset >= 0}
@@ -132,8 +132,8 @@ export function IncomeClient() {
       )}
 
       {!isLoading && incomeEntries.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
+          <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
               <tr>
                 <th className="px-4 py-3 text-left">Description</th>

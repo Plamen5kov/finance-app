@@ -71,7 +71,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
 
-      <div className={`grid gap-3 ${goal ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <div className={`grid gap-3 ${goal ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount *</label>
           <input
@@ -107,7 +107,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Recurring</label>
           <select

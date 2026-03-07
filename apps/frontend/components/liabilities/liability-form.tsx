@@ -127,7 +127,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
     await onSubmit({
       type: values.type,
       name: values.name,
-      value: values.value,
+      value: 0, // calculated by backend from metadata
       currency: values.currency,
       metadata,
     });
@@ -159,16 +159,25 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
 
-      {/* Hidden fields — balance is calculated, currency defaults to EUR */}
-      <input type="hidden" {...register('value')} />
-      <input type="hidden" {...register('currency')} />
+      {/* Currency */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+        <select
+          {...register('currency')}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Leasing specific fields */}
       {showLeasingFields && (
         <div className="border-t border-gray-100 pt-4 space-y-4">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lease Details</p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Asset Value</label>
               <input
@@ -191,7 +200,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Balloon Payment</label>
               <input
@@ -214,7 +223,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Payment</label>
               <input
@@ -253,7 +262,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
         <div className="border-t border-gray-100 pt-4 space-y-4">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Loan Details</p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Original Amount</label>
               <input
@@ -276,7 +285,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Initial Interest Rate (%)</label>
               <input

@@ -107,17 +107,17 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
         <div className="flex gap-1">
           <button
             onClick={() => onEdit(liability)}
-            className="p-1.5 text-gray-300 hover:text-brand transition-colors"
+            className="p-2 text-gray-300 hover:text-brand active:text-brand transition-colors"
             aria-label="Edit liability"
           >
-            <Pencil size={14} />
+            <Pencil size={16} />
           </button>
           <button
             onClick={() => onDelete(liability.id)}
-            className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+            className="p-2 text-gray-300 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Delete liability"
           >
-            <Trash2 size={15} />
+            <Trash2 size={16} />
           </button>
         </div>
       </div>

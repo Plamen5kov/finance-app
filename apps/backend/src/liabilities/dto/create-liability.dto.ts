@@ -10,9 +10,10 @@ export class CreateLiabilityDto {
   @MaxLength(100)
   name!: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  value!: number;
+  value?: number;
 
   @IsOptional()
   @IsString()

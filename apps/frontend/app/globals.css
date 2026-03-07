@@ -12,3 +12,10 @@
     @apply bg-white text-gray-900 antialiased;
   }
 }
+
+/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
+@media screen and (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}

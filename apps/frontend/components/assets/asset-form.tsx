@@ -67,7 +67,7 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Current Value *</label>
           <input
@@ -92,7 +92,7 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
           <input

@@ -44,8 +44,8 @@ export function GoalsClient() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Goals</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Goals</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
@@ -56,7 +56,7 @@ export function GoalsClient() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
         {FILTER_OPTIONS.map((opt) => (
           <button
             key={String(opt.value)}
