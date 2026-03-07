@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { loginAction } from '@/lib/auth/actions';
 
 const loginSchema = z.object({
@@ -14,6 +15,9 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get('invite') ?? undefined;
+
   const {
     register,
     handleSubmit,
@@ -23,7 +27,7 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      await loginAction(data.email, data.password);
+      await loginAction(data.email, data.password, inviteToken);
     } catch (err) {
       setError('root', { message: err instanceof Error ? err.message : 'Login failed' });
     }
@@ -33,6 +37,12 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {errors.root && (
         <div className="bg-red-50 text-red-700 text-sm p-3 rounded">{errors.root.message}</div>
+      )}
+
+      {inviteToken && (
+        <div className="bg-blue-50 text-blue-700 text-sm p-3 rounded">
+          Sign in to accept the household invitation.
+        </div>
       )}
 
       <div>
@@ -66,7 +76,10 @@ export function LoginForm() {
 
       <p className="text-sm text-center text-gray-600">
         No account?{' '}
-        <Link href="/register" className="text-brand hover:underline">
+        <Link
+          href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}
+          className="text-brand hover:underline"
+        >
           Register
         </Link>
       </p>

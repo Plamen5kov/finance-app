@@ -13,6 +13,7 @@ import { NetWorthModule } from './net-worth/net-worth.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { GoalsModule } from './goals/goals.module';
 import { ImportModule } from './import/import.module';
+import { HouseholdModule } from './household/household.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ImportModule } from './import/import.module';
     ExpensesModule,
     GoalsModule,
     ImportModule,
+    HouseholdModule,
   ],
 })
 export class AppModule {}

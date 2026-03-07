@@ -19,6 +19,7 @@ model Household {
   updatedAt DateTime @updatedAt
 
   members              HouseholdMember[]
+  invites              HouseholdInvite[]
   assets               Asset[]
   liabilities          Liability[]
   expenses             Expense[]
@@ -29,6 +30,21 @@ model Household {
   actualAllocations    ActualAllocation[]
   documents            Document[]
   taxInfo              TaxInfo[]
+}
+
+model HouseholdInvite {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdById String
+  token       String    @unique @default(cuid())
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedById    String?
+  createdAt   DateTime  @default(now())
+
+  @@index([token])
+  @@index([householdId])
 }
 
 model HouseholdMember {

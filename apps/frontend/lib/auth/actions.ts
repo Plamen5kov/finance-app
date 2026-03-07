@@ -17,7 +17,21 @@ async function storeAccessToken(token: string) {
   });
 }
 
-export async function loginAction(email: string, password: string) {
+async function acceptInviteIfPresent(inviteToken: string | undefined, accessToken: string) {
+  if (!inviteToken) return null;
+  const res = await fetch(`${API_URL}/api/v1/household/invites/${inviteToken}/accept`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!res.ok) return null; // silently skip if invite is invalid
+  const { data } = await res.json();
+  return data as { accessToken: string; refreshToken: string };
+}
+
+export async function loginAction(email: string, password: string, inviteToken?: string) {
   const res = await fetch(`${API_URL}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -31,11 +45,15 @@ export async function loginAction(email: string, password: string) {
 
   const { data } = await res.json();
   await createSession(data.user.id, data.user.email, data.user.name);
-  await storeAccessToken(data.accessToken);
+
+  // If there's an invite token, accept it and use the new tokens
+  const newTokens = await acceptInviteIfPresent(inviteToken, data.accessToken);
+  await storeAccessToken(newTokens?.accessToken ?? data.accessToken);
+
   redirect('/dashboard');
 }
 
-export async function registerAction(name: string, email: string, password: string) {
+export async function registerAction(name: string, email: string, password: string, inviteToken?: string) {
   const res = await fetch(`${API_URL}/api/v1/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -49,7 +67,11 @@ export async function registerAction(name: string, email: string, password: stri
 
   const { data } = await res.json();
   await createSession(data.user.id, data.user.email, data.user.name);
-  await storeAccessToken(data.accessToken);
+
+  // If there's an invite token, accept it and use the new tokens
+  const newTokens = await acceptInviteIfPresent(inviteToken, data.accessToken);
+  await storeAccessToken(newTokens?.accessToken ?? data.accessToken);
+
   redirect('/dashboard');
 }
 
