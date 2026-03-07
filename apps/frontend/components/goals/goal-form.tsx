@@ -3,11 +3,12 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CreateGoalInput } from '@/hooks/use-goals';
+import { CreateGoalInput, Goal } from '@/hooks/use-goals';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   targetAmount: z.coerce.number().positive('Must be positive'),
+  currentAmount: z.coerce.number().min(0).optional(),
   targetDate: z.string().optional(),
   recurringPeriod: z.enum(['monthly', 'annual', '']).optional(),
   priority: z.coerce.number().min(1).max(3).optional(),
@@ -21,19 +22,35 @@ interface GoalFormProps {
   onSubmit: (data: CreateGoalInput) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
+  goal?: Goal;
 }
 
-export function GoalForm({ onSubmit, onCancel, isLoading }: GoalFormProps) {
+export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: goal
+      ? {
+          name: goal.name,
+          targetAmount: goal.targetAmount,
+          currentAmount: goal.currentAmount,
+          targetDate: goal.targetDate?.slice(0, 10) ?? '',
+          recurringPeriod: goal.recurringPeriod ?? '',
+          priority: goal.priority,
+          description: goal.description ?? '',
+          category: goal.category ?? '',
+        }
+      : undefined,
+  });
 
   async function submit(values: FormValues) {
     await onSubmit({
       name: values.name,
       targetAmount: values.targetAmount,
+      currentAmount: values.currentAmount,
       targetDate: values.targetDate || undefined,
       recurringPeriod: (values.recurringPeriod as 'monthly' | 'annual') || null,
       priority: values.priority,
@@ -54,7 +71,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading }: GoalFormProps) {
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${goal ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount *</label>
           <input
@@ -66,6 +83,19 @@ export function GoalForm({ onSubmit, onCancel, isLoading }: GoalFormProps) {
           />
           {errors.targetAmount && <p className="text-red-500 text-xs mt-1">{errors.targetAmount.message}</p>}
         </div>
+
+        {goal && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Current Amount</label>
+            <input
+              {...register('currentAmount')}
+              type="number"
+              step="0.01"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              placeholder="0"
+            />
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
@@ -135,7 +165,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading }: GoalFormProps) {
           disabled={isLoading}
           className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
         >
-          {isLoading ? 'Saving…' : 'Create Goal'}
+          {isLoading ? 'Saving…' : goal ? 'Save Changes' : 'Create Goal'}
         </button>
       </div>
     </form>

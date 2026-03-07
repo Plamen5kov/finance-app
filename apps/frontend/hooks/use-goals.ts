@@ -20,6 +20,7 @@ export interface Goal {
 export interface CreateGoalInput {
   name: string;
   targetAmount: number;
+  currentAmount?: number;
   targetDate?: string;
   recurringPeriod?: 'monthly' | 'annual' | null;
   priority?: number;

@@ -2,16 +2,21 @@
 
 import { Goal } from '@/hooks/use-goals';
 import { formatCurrency, formatDate, monthsUntil } from '@/lib/utils';
-import { Trash2, Calendar, TrendingUp } from 'lucide-react';
+import { Trash2, Calendar, TrendingUp, Pencil } from 'lucide-react';
 
 interface GoalCardProps {
   goal: Goal;
   onDelete: (id: string) => void;
+  onEdit: (goal: Goal) => void;
 }
 
+const PRIORITY_COLORS: Record<number, { badge: string; bar: string }> = {
+  1: { badge: 'bg-red-500 text-white', bar: 'bg-red-500' },
+  2: { badge: 'bg-yellow-500 text-white', bar: 'bg-yellow-500' },
+  3: { badge: 'bg-green-500 text-white', bar: 'bg-green-500' },
+};
+
 const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-brand text-white',
-  at_risk: 'bg-yellow-500 text-white',
   completed: 'bg-blue-600 text-white',
   archived: 'bg-gray-400 text-white',
 };
@@ -21,19 +26,26 @@ const PERIOD_LABELS: Record<string, string> = {
   annual: 'Annual',
 };
 
-export function GoalCard({ goal, onDelete }: GoalCardProps) {
+export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
   const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
   const clampedProgress = Math.min(progress, 100);
   const remaining = goal.targetAmount - goal.currentAmount;
   const months = goal.targetDate ? monthsUntil(goal.targetDate) : null;
+  const isCompleted = goal.status === 'completed' || goal.currentAmount >= goal.targetAmount;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3">
+    <div className={`rounded-xl shadow-sm border p-5 flex flex-col gap-3 ${
+      isCompleted ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'
+    }`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-semibold text-gray-900 truncate">{goal.name}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[goal.status] ?? 'bg-gray-200'}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              (goal.status === 'active' || goal.status === 'at_risk')
+                ? (PRIORITY_COLORS[goal.priority]?.badge ?? 'bg-gray-200')
+                : (STATUS_COLORS[goal.status] ?? 'bg-gray-200')
+            }`}>
               {goal.status.replace('_', ' ')}
             </span>
             {goal.recurringPeriod && (
@@ -46,13 +58,22 @@ export function GoalCard({ goal, onDelete }: GoalCardProps) {
             <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">{goal.description}</p>
           )}
         </div>
-        <button
-          onClick={() => onDelete(goal.id)}
-          className="ml-2 p-1.5 text-gray-300 hover:text-red-500 transition-colors flex-shrink-0"
-          aria-label="Delete goal"
-        >
-          <Trash2 size={15} />
-        </button>
+        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+          <button
+            onClick={() => onEdit(goal)}
+            className="p-1.5 text-gray-300 hover:text-brand transition-colors"
+            aria-label="Edit goal"
+          >
+            <Pencil size={15} />
+          </button>
+          <button
+            onClick={() => onDelete(goal.id)}
+            className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"
+            aria-label="Delete goal"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -63,7 +84,7 @@ export function GoalCard({ goal, onDelete }: GoalCardProps) {
         </div>
         <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
           <div
-            className="h-full rounded-full bg-brand transition-all"
+            className={`h-full rounded-full transition-all ${PRIORITY_COLORS[goal.priority]?.bar ?? 'bg-brand'}`}
             style={{ width: `${clampedProgress}%` }}
           />
         </div>
@@ -88,7 +109,9 @@ export function GoalCard({ goal, onDelete }: GoalCardProps) {
             {goal.category}
           </span>
         )}
-        <span className="ml-auto">Priority {goal.priority}</span>
+        <span className="ml-auto font-medium text-gray-500">
+          P{goal.priority} {goal.priority === 1 ? 'High' : goal.priority === 2 ? 'Med' : 'Low'}
+        </span>
       </div>
     </div>
   );

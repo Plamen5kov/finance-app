@@ -26,6 +26,11 @@ export class UpdateGoalDto {
   priority?: number;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  currentAmount?: number;
+
+  @IsOptional()
   @IsString()
   @MaxLength(500)
   description?: string;

@@ -67,6 +67,7 @@ export class GoalsService {
         }),
         ...(dto.recurringPeriod !== undefined && { recurringPeriod: dto.recurringPeriod }),
         ...(dto.priority !== undefined && { priority: dto.priority }),
+        ...(dto.currentAmount !== undefined && { currentAmount: dto.currentAmount }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.category !== undefined && { category: dto.category }),
       },

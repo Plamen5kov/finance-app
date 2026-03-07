@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useGoals, useCreateGoal, useDeleteGoal, CreateGoalInput } from '@/hooks/use-goals';
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, CreateGoalInput, Goal } from '@/hooks/use-goals';
 import { GoalCard } from '@/components/goals/goal-card';
 import { GoalForm } from '@/components/goals/goal-form';
 import { Modal } from '@/components/ui/modal';
@@ -11,20 +11,27 @@ const FILTER_OPTIONS = [
   { label: 'All', value: undefined },
   { label: 'Monthly', value: 'monthly' },
   { label: 'Annual', value: 'annual' },
-  { label: 'One-time', value: 'none' },
+  { label: 'One-time', value: 'null' },
 ];
 
 export function GoalsClient() {
   const [showForm, setShowForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [filter, setFilter] = useState<string | undefined>(undefined);
 
   const { data: goals, isLoading } = useGoals(filter !== undefined ? { recurringPeriod: filter } : undefined);
   const createGoal = useCreateGoal();
+  const updateGoal = useUpdateGoal(editingGoal?.id ?? '');
   const deleteGoal = useDeleteGoal();
 
   async function handleCreate(input: CreateGoalInput) {
     await createGoal.mutateAsync(input);
     setShowForm(false);
+  }
+
+  async function handleUpdate(input: CreateGoalInput) {
+    await updateGoal.mutateAsync(input);
+    setEditingGoal(null);
   }
 
   async function handleDelete(id: string) {
@@ -83,7 +90,7 @@ export function GoalsClient() {
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Active</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeGoals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} />
+              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} onEdit={setEditingGoal} />
             ))}
           </div>
         </section>
@@ -94,7 +101,7 @@ export function GoalsClient() {
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Completed</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 opacity-70">
             {completedGoals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} />
+              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} onEdit={setEditingGoal} />
             ))}
           </div>
         </section>
@@ -106,6 +113,17 @@ export function GoalsClient() {
             onSubmit={handleCreate}
             onCancel={() => setShowForm(false)}
             isLoading={createGoal.isPending}
+          />
+        </Modal>
+      )}
+
+      {editingGoal && (
+        <Modal title="Edit Goal" onClose={() => setEditingGoal(null)}>
+          <GoalForm
+            goal={editingGoal}
+            onSubmit={handleUpdate}
+            onCancel={() => setEditingGoal(null)}
+            isLoading={updateGoal.isPending}
           />
         </Modal>
       )}
