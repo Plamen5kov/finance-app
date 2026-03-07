@@ -7,10 +7,11 @@ import {
   MaxLength,
   IsObject,
 } from 'class-validator';
+import { ALL_FINANCIAL_TYPES } from '@finances/shared';
 
 export class CreateAssetDto {
   @IsString()
-  @IsIn(['mortgage', 'etf', 'crypto', 'gold'])
+  @IsIn([...ALL_FINANCIAL_TYPES])
   type!: string;
 
   @IsString()

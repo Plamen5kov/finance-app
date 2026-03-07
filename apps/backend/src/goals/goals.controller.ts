@@ -27,6 +27,11 @@ export class GoalsController {
     return this.goalsService.findAll(user.userId, recurringPeriod);
   }
 
+  @Get('history')
+  getHistory(@CurrentUser() user: JwtPayload) {
+    return this.goalsService.getHistory(user.userId);
+  }
+
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.goalsService.findOne(user.userId, id);

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useAssets, useNetWorth, useCreateAsset, useDeleteAsset, CreateAssetInput } from '@/hooks/use-assets';
+import { useAssets, useCreateAsset, useDeleteAsset, CreateAssetInput } from '@/hooks/use-assets';
+import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
 import { AssetForm } from '@/components/assets/asset-form';
 import { Modal } from '@/components/ui/modal';
@@ -12,9 +13,10 @@ export function AssetsClient() {
   const [showForm, setShowForm] = useState(false);
 
   const { data: assets, isLoading } = useAssets();
-  const { data: netWorth } = useNetWorth();
   const createAsset = useCreateAsset();
   const deleteAsset = useDeleteAsset();
+
+  const totalAssets = (assets ?? []).reduce((s, a) => s + a.value, 0);
 
   async function handleCreate(input: CreateAssetInput) {
     await createAsset.mutateAsync(input);
@@ -26,14 +28,12 @@ export function AssetsClient() {
     await deleteAsset.mutateAsync(id);
   }
 
-  // Group by type
-  const byType = (assets ?? []).reduce<Record<string, typeof assets>>((acc, asset) => {
-    if (!asset) return acc;
-    const group = acc[asset.type] ?? [];
-    return { ...acc, [asset.type]: [...group, asset] };
+  const assetsByType = (assets ?? []).reduce<Record<string, typeof assets>>((acc, a) => {
+    const group = acc[a.type] ?? [];
+    return { ...acc, [a.type]: [...group, a] };
   }, {});
 
-  const typeOrder = ['etf', 'crypto', 'gold', 'mortgage'];
+  const hasAssets = (assets?.length ?? 0) > 0;
 
   return (
     <div>
@@ -44,21 +44,18 @@ export function AssetsClient() {
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
         >
           <Plus size={16} />
-          Add Asset
+          Add
         </button>
       </div>
 
-      {/* Net Worth banner */}
+      {/* Total Assets banner */}
       <div className="bg-gradient-to-r from-brand to-brand-light rounded-xl p-6 text-white mb-8">
         <div className="flex items-center gap-2 mb-1 text-white/80 text-sm">
           <TrendingUp size={16} />
-          <span>Total Net Worth</span>
+          <span>Total Assets</span>
         </div>
         <p className="text-4xl font-bold">
-          {netWorth ? formatCurrency(netWorth.total) : '—'}
-        </p>
-        <p className="text-white/70 text-sm mt-1">
-          {assets?.length ?? 0} asset{assets?.length !== 1 ? 's' : ''}
+          {isLoading ? '—' : formatCurrency(totalAssets)}
         </p>
       </div>
 
@@ -70,33 +67,41 @@ export function AssetsClient() {
         </div>
       )}
 
-      {!isLoading && (assets?.length ?? 0) === 0 && (
+      {!isLoading && !hasAssets && (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-medium">No assets yet</p>
-          <p className="text-sm mt-1">Add your first asset to track your net worth</p>
+          <p className="text-lg font-medium">Nothing tracked yet</p>
+          <p className="text-sm mt-1">Add your first asset to track your portfolio</p>
         </div>
       )}
 
-      {!isLoading && typeOrder.map((type) => {
-        const group = byType[type];
-        if (!group?.length) return null;
-        const subtotal = group.reduce((s, a) => s + a.value, 0);
-        return (
-          <section key={type} className="mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </h2>
-              <span className="text-sm font-semibold text-gray-700">{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {group.map((asset) => (
-                <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      {!isLoading && hasAssets && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-gray-700">Assets</h2>
+            <span className="text-sm font-semibold text-brand">{formatCurrency(totalAssets)}</span>
+          </div>
+          {ASSET_TYPES.map((type) => {
+            const group = assetsByType[type];
+            if (!group?.length) return null;
+            const subtotal = group.reduce((s, a) => s + a.value, 0);
+            return (
+              <section key={type} className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </h3>
+                  <span className="text-sm font-semibold text-gray-700">{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {group.map((asset) => (
+                    <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
       {showForm && (
         <Modal title="Add Asset" onClose={() => setShowForm(false)}>

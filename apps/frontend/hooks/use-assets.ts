@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api-client';
 
 export interface Asset {
   id: string;
-  type: 'mortgage' | 'etf' | 'crypto' | 'gold';
+  type: 'etf' | 'crypto' | 'gold' | 'apartment';
   name: string;
   value: number;
   quantity?: number;
@@ -51,7 +51,10 @@ export function useCreateAsset() {
       const { data } = await apiClient.post<Asset>('/assets', input);
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth'] });
+    },
   });
 }
 
@@ -62,7 +65,10 @@ export function useUpdateAsset(id: string) {
       const { data } = await apiClient.patch<Asset>(`/assets/${id}`, input);
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth'] });
+    },
   });
 }
 
@@ -72,6 +78,9 @@ export function useDeleteAsset() {
     mutationFn: async (id: string) => {
       await apiClient.delete(`/assets/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assets'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth'] });
+    },
   });
 }

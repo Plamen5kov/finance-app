@@ -21,6 +21,14 @@ export class GoalsService {
     });
   }
 
+  async getHistory(userId: string) {
+    return this.prisma.goal.findMany({
+      where: { userId },
+      include: { snapshots: { orderBy: { month: 'asc' } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async findOne(userId: string, id: string) {
     const goal = await this.prisma.goal.findUnique({
       where: { id },

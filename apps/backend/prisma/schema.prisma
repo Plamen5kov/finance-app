@@ -21,6 +21,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   assets            Asset[]
+  liabilities       Liability[]
   expenses          Expense[]
   goals             Goal[]
   documents         Document[]
@@ -37,7 +38,7 @@ model Asset {
   userId    String
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  type      String  // 'mortgage' | 'etf' | 'crypto' | 'gold'
+  type      String  // 'etf' | 'crypto' | 'gold' | 'apartment'
   name      String
   value     Float   // Current value in EUR
   quantity  Float?  // For ETF, crypto, gold
@@ -65,6 +66,41 @@ model AssetSnapshot {
   capturedAt DateTime @default(now())
 
   @@index([assetId])
+  @@index([capturedAt])
+}
+
+// ============== Liability Models ==============
+
+model Liability {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      String  // 'mortgage' | 'loan'
+  name      String
+  value     Float   // Outstanding balance (what is owed)
+  currency  String  @default("EUR")
+
+  metadata  Json?   // interest rate, monthly payment, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  snapshots LiabilitySnapshot[]
+
+  @@index([userId])
+  @@index([type])
+}
+
+model LiabilitySnapshot {
+  id          String    @id @default(cuid())
+  liabilityId String
+  liability   Liability @relation(fields: [liabilityId], references: [id], onDelete: Cascade)
+
+  value      Float    // Outstanding balance at snapshot time
+  capturedAt DateTime @default(now())
+
+  @@index([liabilityId])
   @@index([capturedAt])
 }
 

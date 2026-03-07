@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
+import { isLiability } from '@finances/shared';
 
 @Injectable()
 export class AssetsService {
@@ -37,11 +38,35 @@ export class AssetsService {
     await this.prisma.asset.delete({ where: { id } });
   }
 
+  async getHistory(userId: string) {
+    return this.prisma.asset.findMany({
+      where: { userId },
+      include: { snapshots: { orderBy: { capturedAt: 'asc' } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async getNetWorth(userId: string) {
     const assets = await this.prisma.asset.findMany({ where: { userId } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const total = assets.reduce((sum: number, a: any) => sum + (a.value as number), 0);
+    const total = assets.reduce((sum, a) => {
+      return isLiability(a.type) ? sum - a.value : sum + a.value;
+    }, 0);
     return { total, assets };
+  }
+
+  async getAllocation(userId: string) {
+    const assets = await this.prisma.asset.findMany({ where: { userId } });
+    const byType: Record<string, number> = {};
+    let total = 0;
+    for (const asset of assets) {
+      byType[asset.type] = (byType[asset.type] ?? 0) + asset.value;
+      total += asset.value;
+    }
+    return Object.entries(byType).map(([type, value]) => ({
+      type,
+      value,
+      pct: total > 0 ? Math.round((value / total) * 100) : 0,
+    }));
   }
 
   private async assertOwner(userId: string, assetId: string) {

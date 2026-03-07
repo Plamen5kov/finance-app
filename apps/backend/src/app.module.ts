@@ -8,6 +8,8 @@ import { PrismaModule } from './common/prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AssetsModule } from './assets/assets.module';
+import { LiabilitiesModule } from './liabilities/liabilities.module';
+import { NetWorthModule } from './net-worth/net-worth.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { GoalsModule } from './goals/goals.module';
 
@@ -34,6 +36,8 @@ import { GoalsModule } from './goals/goals.module';
     AuthModule,
     UsersModule,
     AssetsModule,
+    LiabilitiesModule,
+    NetWorthModule,
     ExpensesModule,
     GoalsModule,
   ],

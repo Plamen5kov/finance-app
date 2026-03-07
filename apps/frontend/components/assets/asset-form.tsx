@@ -4,8 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreateAssetInput } from '@/hooks/use-assets';
-
-const ASSET_TYPES = ['mortgage', 'etf', 'crypto', 'gold'] as const;
+import { ASSET_TYPES, CURRENCIES } from '@finances/shared';
 
 const schema = z.object({
   type: z.enum(ASSET_TYPES),
@@ -29,7 +28,7 @@ interface AssetFormProps {
 export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submitLabel = 'Add Asset' }: AssetFormProps) {
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { currency: 'BGN', type: 'etf', ...defaultValues },
+    defaultValues: { currency: 'EUR', type: 'etf', ...defaultValues },
   });
 
   async function submit(values: FormValues) {
@@ -82,11 +81,14 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-          <input
+          <select
             {...register('currency')}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-            placeholder="BGN"
-          />
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
         </div>
       </div>
 

@@ -1,23 +1,24 @@
 /**
- * Seed script: imports historical CSV data into the database.
+ * Seed script: imports historical CSV data from mind.csv.
  *
- * Column mapping for historical-finances.csv:
- *   [0]  month       – Excel date serial
- *   [1]  income      – monthly income (BGN)
- *   [2]  expenses    – fixed monthly expenses (BGN)
- *   [3]  NN          – accumulated NN savings
- *   [4]  crypto      – crypto portfolio value (BGN, volatile)
- *   [5]  etf         – ETF portfolio value (BGN, growing)
- *   [6]  mortgStart  – mortgage opening balance for the month
- *   [7]  mortgPay    – mortgage payment amount
- *   [8]  principal   – principal paid
- *   [9]  interest    – interest paid
- *   [10] mortgEnd    – mortgage ending balance
- *   [11] ipr         – interest/principal ratio
- *   [12] gold        – gold (злато) value (BGN)
- *   [13] emergency   – emergency fund (BGN)
- *   [14] baby        – baby fund (BGN)
- *   [15] total       – total investments (BGN)
+ * Column mapping for mind.csv (no shifts – all columns aligned):
+ *   [0]  (empty row number)
+ *   [1]  month       – date string MM/DD/YYYY
+ *   [2]  income      – monthly income (€ format)
+ *   [3]  expenses    – fixed monthly expenses (€ format)
+ *   [4]  NN          – accumulated NN savings
+ *   [5]  crypto      – crypto portfolio value
+ *   [6]  ETF         – ETF portfolio value
+ *   [7]  mortgage    – mortgage opening balance
+ *   [8]  payment     – monthly mortgage payment
+ *   [9]  principal   – principal paid
+ *   [10] interest    – interest paid
+ *   [11] ending bal  – mortgage ending balance
+ *   [12] ipr         – interest/principal ratio
+ *   [13] gold        – gold (злато) value
+ *   [14] emergency   – emergency fund
+ *   [15] baby        – baby fund
+ *   [16] total       – total investments
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -29,7 +30,7 @@ import * as readline from 'readline';
 const prisma = new PrismaClient();
 
 const SAMPLE_DATA_DIR = path.join(__dirname, '../../../sample-data');
-const FINANCES_CSV = path.join(SAMPLE_DATA_DIR, 'existing-data/historical-finances.csv');
+const FINANCES_CSV = path.join(SAMPLE_DATA_DIR, 'existing-data', 'mind.csv');
 const REVOLUT_CSV = path.join(SAMPLE_DATA_DIR, 'revolut-statements/statment.csv');
 
 const SEED_USER = {
@@ -40,17 +41,14 @@ const SEED_USER = {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function excelToDate(serial: string): Date | null {
-  try {
-    let s = parseInt(serial, 10);
-    if (isNaN(s) || s < 1) return null;
-    if (s > 60) s -= 1; // Excel 1900 leap-year bug
-    const epoch = new Date(1900, 0, 1);
-    epoch.setDate(epoch.getDate() + s - 1);
-    return epoch;
-  } catch {
-    return null;
-  }
+function parseDate(s: string): Date | null {
+  if (!s || !s.trim()) return null;
+  const parts = s.trim().split('/');
+  if (parts.length !== 3) return null;
+  const [mm, dd, yyyy] = parts.map(Number);
+  if (!mm || !dd || !yyyy) return null;
+  const d = new Date(Date.UTC(yyyy, mm - 1, dd)); // UTC midnight — avoids timezone month-shifts
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function parseFloat2(v: string): number {
@@ -59,12 +57,30 @@ function parseFloat2(v: string): number {
   return isNaN(n) ? 0 : n;
 }
 
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      inQuotes = !inQuotes;
+    } else if (c === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
 async function readCSV(filePath: string): Promise<string[][]> {
   const rows: string[][] = [];
   const rl = readline.createInterface({ input: fs.createReadStream(filePath) });
   for await (const line of rl) {
-    // Simple CSV split (values in this file don't contain commas inside quotes)
-    rows.push(line.split(','));
+    rows.push(parseCSVLine(line));
   }
   return rows;
 }
@@ -83,109 +99,115 @@ async function main() {
   });
   console.log(`✅ User: ${user.email} (id: ${user.id})`);
 
-  // 2. Clear existing seed data
+  // 2. Clear re-seedable data; preserve assets/liabilities and their metadata
   await prisma.assetSnapshot.deleteMany({ where: { asset: { userId: user.id } } });
+  await prisma.liabilitySnapshot.deleteMany({ where: { liability: { userId: user.id } } });
   await prisma.goalSnapshot.deleteMany({ where: { goal: { userId: user.id } } });
+  await prisma.goal.deleteMany({ where: { userId: user.id } });
   await prisma.expense.deleteMany({ where: { userId: user.id } });
   await prisma.expenseCategory.deleteMany({ where: { userId: user.id } });
-  await prisma.asset.deleteMany({ where: { userId: user.id } });
-  await prisma.goal.deleteMany({ where: { userId: user.id } });
-  console.log('🧹 Cleared existing data\n');
+  console.log('🧹 Cleared snapshots/goals/expenses (assets/liabilities and their metadata preserved)\n');
 
-  // 3. Parse historical finances CSV
+  // 3. Parse mind.csv (clean column layout, no shifts)
+  // Columns: [0]=empty, [1]=date(MM/DD/YYYY), [2]=income, [3]=expenses,
+  //          [4]=NN, [5]=crypto, [6]=ETF, [7]=mortg open, [8]=payment,
+  //          [9]=principal, [10]=interest, [11]=mortg end, [12]=ipr,
+  //          [13]=gold, [14]=emergency fund, [15]=baby fund, [16]=total
   const finRows = await readCSV(FINANCES_CSV);
-  // Skip header row, filter to rows with actual data
   const dataRows = finRows.slice(1).filter((r) => {
-    const d = excelToDate(r[0]);
-    return d !== null && r[1]?.trim();
+    const d = parseDate(r[1]);
+    return d !== null && r[2]?.trim();
   });
 
-  // Most recent complete row (March 2026)
+  // Most recent row with investment data
   const latestRow = [...dataRows]
     .reverse()
-    .find((r) => parseFloat2(r[4]) > 0 || parseFloat2(r[5]) > 0 || parseFloat2(r[12]) > 0);
+    .find((r) => parseFloat2(r[5]) > 0 || parseFloat2(r[6]) > 0 || parseFloat2(r[13]) > 0);
 
   if (!latestRow) throw new Error('No complete data row found');
 
-  const latestDate = excelToDate(latestRow[0])!;
+  const latestDate = parseDate(latestRow[1])!;
   console.log(`📅 Latest data row: ${latestDate.toISOString().split('T')[0]}`);
-  console.log(`   crypto=${parseFloat2(latestRow[4]).toFixed(0)} BGN`);
-  console.log(`   ETF=${parseFloat2(latestRow[5]).toFixed(0)} BGN`);
-  console.log(`   mortgage balance=${parseFloat2(latestRow[10]).toFixed(0)} BGN`);
-  console.log(`   gold=${parseFloat2(latestRow[12]).toFixed(0)} BGN`);
-  console.log(`   emergency fund=${parseFloat2(latestRow[13]).toFixed(0)} BGN`);
-  console.log(`   baby fund=${parseFloat2(latestRow[14]).toFixed(0)} BGN\n`);
+  console.log(`   crypto=${parseFloat2(latestRow[5]).toFixed(0)} BGN`);
+  console.log(`   ETF=${parseFloat2(latestRow[6]).toFixed(0)} BGN`);
+  console.log(`   mortgage balance=${parseFloat2(latestRow[11]).toFixed(0)} BGN`);
+  console.log(`   gold=${parseFloat2(latestRow[13]).toFixed(0)} BGN`);
+  console.log(`   emergency fund=${parseFloat2(latestRow[14]).toFixed(0)} BGN`);
+  console.log(`   baby fund=${parseFloat2(latestRow[15]).toFixed(0)} BGN\n`);
 
-  // 4. Create assets from latest row
-  const cryptoAsset = await prisma.asset.create({
-    data: {
-      userId: user.id,
-      type: 'crypto',
-      name: 'Crypto Portfolio',
-      value: parseFloat2(latestRow[4]),
-      currency: 'BGN',
-    },
-  });
+  // 4. Find-or-create assets (preserve existing metadata/configuration)
+  const upsertAsset = (type: string, name: string, value: number) =>
+    prisma.asset.findFirst({ where: { userId: user.id, type, name } }).then((existing) =>
+      existing
+        ? prisma.asset.update({ where: { id: existing.id }, data: { value } })
+        : prisma.asset.create({ data: { userId: user.id, type, name, value, currency: 'BGN' } }),
+    );
 
-  const etfAsset = await prisma.asset.create({
-    data: {
-      userId: user.id,
-      type: 'etf',
-      name: 'ETF Portfolio',
-      value: parseFloat2(latestRow[5]),
-      currency: 'BGN',
-    },
-  });
+  const cryptoAsset = await upsertAsset('crypto', 'Crypto Portfolio', parseFloat2(latestRow[5]));
+  const etfAsset = await upsertAsset('etf', 'ETF Portfolio', parseFloat2(latestRow[6]));
+  const goldAsset = await upsertAsset('gold', 'Gold (злато)', parseFloat2(latestRow[13]));
 
-  const goldAsset = await prisma.asset.create({
-    data: {
-      userId: user.id,
-      type: 'gold',
-      name: 'Gold (злато)',
-      value: parseFloat2(latestRow[12]),
-      currency: 'BGN',
-    },
-  });
-
-  const mortgageEndBalance = parseFloat2(latestRow[10]);
-  const mortgageAsset = await prisma.asset.create({
-    data: {
-      userId: user.id,
-      type: 'mortgage',
-      name: 'Home Mortgage',
-      value: mortgageEndBalance,
-      currency: 'BGN',
-      metadata: {
-        monthlyPayment: parseFloat2(latestRow[7]),
-        interestRate: 2.58,
-        note: 'Remaining balance',
+  // Find-or-create mortgage (preserve user-configured metadata like rate history)
+  let mortgageLiability = await prisma.liability.findFirst({ where: { userId: user.id, type: 'mortgage', name: 'Home Mortgage' } });
+  if (mortgageLiability) {
+    mortgageLiability = await prisma.liability.update({
+      where: { id: mortgageLiability.id },
+      data: { value: parseFloat2(latestRow[11]) },
+    });
+  } else {
+    mortgageLiability = await prisma.liability.create({
+      data: {
+        userId: user.id,
+        type: 'mortgage',
+        name: 'Home Mortgage',
+        value: parseFloat2(latestRow[11]),
+        currency: 'BGN',
+        metadata: { monthlyPayment: parseFloat2(latestRow[8]), interestRate: 2.58, note: 'Remaining balance' },
       },
-    },
-  });
+    });
+  }
 
-  console.log(`✅ Created 4 assets (crypto, ETF, gold, mortgage)`);
+  console.log(`✅ Upserted 3 assets (crypto, ETF, gold) + 1 liability (mortgage)`);
 
-  // 5. Create asset snapshots from historical rows (monthly)
+  // 5. Create asset & liability snapshots from all historical rows up to latest date
   const historicalRows = dataRows.filter((r) => {
-    const d = excelToDate(r[0])!;
-    return d <= latestDate;
+    const d = parseDate(r[1]);
+    return d !== null && d <= latestDate;
   });
+
+  // Collect existing snapshot months to avoid duplicates on re-runs
+  const toMonthSet = (existing: Array<{ capturedAt: Date }>) =>
+    new Set(existing.map((s) => s.capturedAt.toISOString().slice(0, 7)));
+
+  const [existingCrypto, existingEtf, existingGold, existingMortgage] = await Promise.all([
+    prisma.assetSnapshot.findMany({ where: { assetId: cryptoAsset.id }, select: { capturedAt: true } }),
+    prisma.assetSnapshot.findMany({ where: { assetId: etfAsset.id }, select: { capturedAt: true } }),
+    prisma.assetSnapshot.findMany({ where: { assetId: goldAsset.id }, select: { capturedAt: true } }),
+    prisma.liabilitySnapshot.findMany({ where: { liabilityId: mortgageLiability.id }, select: { capturedAt: true } }),
+  ]);
+  const cryptoMonths = toMonthSet(existingCrypto);
+  const etfMonths = toMonthSet(existingEtf);
+  const goldMonths = toMonthSet(existingGold);
+  const mortgageMonths = toMonthSet(existingMortgage);
 
   const snapshots: Array<{ assetId: string; value: number; capturedAt: Date }> = [];
+  const liabilitySnapshots: Array<{ liabilityId: string; value: number; capturedAt: Date }> = [];
   for (const row of historicalRows) {
-    const capturedAt = excelToDate(row[0])!;
-    if (parseFloat2(row[4]) > 0)
-      snapshots.push({ assetId: cryptoAsset.id, value: parseFloat2(row[4]), capturedAt });
-    if (parseFloat2(row[5]) > 0)
-      snapshots.push({ assetId: etfAsset.id, value: parseFloat2(row[5]), capturedAt });
-    if (parseFloat2(row[12]) > 0)
-      snapshots.push({ assetId: goldAsset.id, value: parseFloat2(row[12]), capturedAt });
-    if (parseFloat2(row[10]) > 0)
-      snapshots.push({ assetId: mortgageAsset.id, value: parseFloat2(row[10]), capturedAt });
+    const capturedAt = parseDate(row[1])!;
+    const monthKey = capturedAt.toISOString().slice(0, 7);
+    if (parseFloat2(row[5]) > 0 && !cryptoMonths.has(monthKey))
+      snapshots.push({ assetId: cryptoAsset.id, value: parseFloat2(row[5]), capturedAt });
+    if (parseFloat2(row[6]) > 0 && !etfMonths.has(monthKey))
+      snapshots.push({ assetId: etfAsset.id, value: parseFloat2(row[6]), capturedAt });
+    if (parseFloat2(row[13]) > 0 && !goldMonths.has(monthKey))
+      snapshots.push({ assetId: goldAsset.id, value: parseFloat2(row[13]), capturedAt });
+    if (parseFloat2(row[11]) > 0 && !mortgageMonths.has(monthKey))
+      liabilitySnapshots.push({ liabilityId: mortgageLiability.id, value: parseFloat2(row[11]), capturedAt });
   }
 
   await prisma.assetSnapshot.createMany({ data: snapshots });
-  console.log(`✅ Created ${snapshots.length} asset history snapshots\n`);
+  await prisma.liabilitySnapshot.createMany({ data: liabilitySnapshots });
+  console.log(`✅ Added ${snapshots.length} new asset snapshots, ${liabilitySnapshots.length} new liability snapshots\n`);
 
   // 6. Create goals
   const emergencyGoal = await prisma.goal.create({
@@ -193,7 +215,7 @@ async function main() {
       userId: user.id,
       name: 'Emergency Fund',
       targetAmount: 15000,
-      currentAmount: parseFloat2(latestRow[13]),
+      currentAmount: parseFloat2(latestRow[14]),
       targetDate: new Date('2026-12-31'),
       priority: 1,
       status: 'active',
@@ -207,7 +229,7 @@ async function main() {
       userId: user.id,
       name: 'Baby Fund',
       targetAmount: 20000,
-      currentAmount: parseFloat2(latestRow[14]),
+      currentAmount: parseFloat2(latestRow[15]),
       targetDate: new Date('2026-09-01'),
       priority: 1,
       status: 'active',
@@ -218,7 +240,8 @@ async function main() {
 
   console.log(`✅ Created 2 goals (emergency fund, baby fund)`);
 
-  // Add goal snapshots for historical tracking
+  // Add goal snapshots. Real data for both funds starts Sep 2023 (r[14]=emg, r[15]=baby).
+  // For months before Sep 2023, interpolate emergency fund from 0 → first real value.
   const goalSnaps: Array<{
     goalId: string;
     month: Date;
@@ -226,12 +249,52 @@ async function main() {
     balanceAsOf: number;
     onTrack: boolean;
   }> = [];
+
+  // Collect real values from CSV (r[14]=emg, r[15]=baby – no column shifts)
+  const realEmgByKey: Map<string, number> = new Map();
+  const realBabyByKey: Map<string, number> = new Map();
   for (const row of historicalRows) {
-    const d = excelToDate(row[0])!;
-    const month = new Date(d.getFullYear(), d.getMonth(), 1); // YYYY-MM-01
-    const emgVal = parseFloat2(row[13]);
-    const babyVal = parseFloat2(row[14]);
-    if (emgVal > 0)
+    const d = parseDate(row[1])!;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (parseFloat2(row[14]) > 0) realEmgByKey.set(key, parseFloat2(row[14]));
+    if (parseFloat2(row[15]) > 0) realBabyByKey.set(key, parseFloat2(row[15]));
+  }
+
+  // Find first real emg value for interpolation anchor
+  const sortedEmgEntries = [...realEmgByKey.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const firstRealEmgKey = sortedEmgEntries[0]?.[0];
+  const firstRealEmgVal = sortedEmgEntries[0]?.[1] ?? 0;
+
+  const preRealRows = historicalRows.filter((row) => {
+    const d = parseDate(row[1])!;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    return !firstRealEmgKey || key < firstRealEmgKey;
+  });
+
+  for (let i = 0; i < historicalRows.length; i++) {
+    const row = historicalRows[i];
+    const d = parseDate(row[1])!;
+    const month = new Date(d.getFullYear(), d.getMonth(), 1);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+    const realEmgVal = realEmgByKey.get(key);
+    const realBabyVal = realBabyByKey.get(key);
+
+    // Emergency fund: real CSV data if available, else linear interpolation 0 → first real value
+    // Only interpolate for rows that are genuinely before the first real data point.
+    let emgVal: number | null = null;
+    if (realEmgVal !== undefined) {
+      emgVal = realEmgVal;
+    } else {
+      const preIdx = preRealRows.indexOf(row);
+      if (preIdx !== -1) {
+        const total = preRealRows.length;
+        emgVal = total > 1 ? Math.round((preIdx / (total - 1)) * firstRealEmgVal * 100) / 100 : 0;
+      }
+      // preIdx === -1 means the row is after the first real date but has no value — skip it
+    }
+
+    if (emgVal !== null) {
       goalSnaps.push({
         goalId: emergencyGoal.id,
         month,
@@ -239,19 +302,59 @@ async function main() {
         balanceAsOf: emgVal,
         onTrack: emgVal >= emergencyGoal.targetAmount * 0.5,
       });
-    if (babyVal > 0)
+    }
+
+    if (realBabyVal !== undefined && realBabyVal > 0)
       goalSnaps.push({
         goalId: babyGoal.id,
         month,
         targetAmount: babyGoal.targetAmount,
-        balanceAsOf: babyVal,
+        balanceAsOf: realBabyVal,
         onTrack: true,
       });
   }
   await prisma.goalSnapshot.createMany({ data: goalSnaps });
   console.log(`✅ Created ${goalSnaps.length} goal snapshots\n`);
 
-  // 7. Parse Revolut statement → expenses
+  // 7. Import monthly income/expense history from mind.csv (2015+)
+  const salaryCat = await prisma.expenseCategory.create({
+    data: { userId: user.id, name: 'Salary / Income', color: '#10B981', type: 'income' },
+  });
+  const fixedCat = await prisma.expenseCategory.create({
+    data: { userId: user.id, name: 'Fixed Expenses', color: '#6366F1', type: 'expense' },
+  });
+
+  const historicalExpenses: Array<{
+    userId: string; amount: number; description: string; merchant: string;
+    date: Date; categoryId: string; source: string;
+  }> = [];
+
+  for (const row of dataRows) {
+    const d = parseDate(row[1]);
+    if (!d) continue;
+    const income = parseFloat2(row[2]);
+    const fixed = parseFloat2(row[3]);
+    const expDate = new Date(d.getFullYear(), d.getMonth(), 1);
+
+    if (income > 0) {
+      historicalExpenses.push({
+        userId: user.id, amount: income,
+        description: `Monthly salary ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        merchant: 'Employer', date: expDate, categoryId: salaryCat.id, source: 'imported',
+      });
+    }
+    if (fixed > 0) {
+      historicalExpenses.push({
+        userId: user.id, amount: fixed,
+        description: `Fixed expenses ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        merchant: 'Various', date: expDate, categoryId: fixedCat.id, source: 'imported',
+      });
+    }
+  }
+  await prisma.expense.createMany({ data: historicalExpenses });
+  console.log(`✅ Imported ${historicalExpenses.length} historical income/expense records (2015+)\n`);
+
+  // 8. Parse Revolut statement → expenses
   const revRows = await readCSV(REVOLUT_CSV);
   const revHeader = revRows[0];
   // Columns: Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance

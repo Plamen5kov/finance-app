@@ -30,6 +30,16 @@ export class AssetsController {
     return this.assetsService.getNetWorth(user.userId);
   }
 
+  @Get('history')
+  getHistory(@CurrentUser() user: JwtPayload) {
+    return this.assetsService.getHistory(user.userId);
+  }
+
+  @Get('allocation')
+  getAllocation(@CurrentUser() user: JwtPayload) {
+    return this.assetsService.getAllocation(user.userId);
+  }
+
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.assetsService.findOne(user.userId, id);

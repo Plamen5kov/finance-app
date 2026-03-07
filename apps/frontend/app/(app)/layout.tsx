@@ -4,6 +4,7 @@ import { SidebarFooter } from '@/components/layout/sidebar-footer';
 const NAV_LINKS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/assets', label: 'Assets' },
+  { href: '/liabilities', label: 'Liabilities' },
   { href: '/goals', label: 'Goals' },
   { href: '/expenses', label: 'Expenses' },
   { href: '/reports', label: 'Reports' },

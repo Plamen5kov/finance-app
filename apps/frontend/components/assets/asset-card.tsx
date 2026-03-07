@@ -1,6 +1,5 @@
 'use client';
 
-import { Asset } from '@/hooks/use-assets';
 import { formatCurrency } from '@/lib/utils';
 import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -8,18 +7,32 @@ const TYPE_COLORS: Record<string, string> = {
   etf: 'bg-blue-100 text-blue-700',
   crypto: 'bg-orange-100 text-orange-700',
   gold: 'bg-yellow-100 text-yellow-700',
-  mortgage: 'bg-purple-100 text-purple-700',
+  apartment: 'bg-purple-100 text-purple-700',
+  mortgage: 'bg-red-100 text-red-700',
+  loan: 'bg-red-100 text-red-700',
 };
 
 const TYPE_ICONS: Record<string, string> = {
   etf: '📈',
   crypto: '₿',
   gold: '🥇',
-  mortgage: '🏠',
+  apartment: '🏠',
+  mortgage: '🏦',
+  loan: '💳',
 };
 
+interface CardItem {
+  id: string;
+  type: string;
+  name: string;
+  value: number;
+  currency?: string;
+  costBasis?: number;
+  quantity?: number;
+}
+
 interface AssetCardProps {
-  asset: Asset;
+  asset: CardItem;
   onDelete: (id: string) => void;
 }
 

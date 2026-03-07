@@ -1,6 +1,6 @@
 'use client';
 
-import { useAssets } from '@/hooks/use-assets';
+import { useAssetAllocation } from '@/hooks/use-net-worth';
 import { formatCurrency } from '@/lib/utils';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
@@ -12,39 +12,31 @@ const COLORS: Record<string, string> = {
   etf: '#2D6A4F',
   crypto: '#F59E0B',
   gold: '#D97706',
-  mortgage: '#EF4444',
+  apartment: '#8B5CF6',
 };
 
 const TYPE_LABELS: Record<string, string> = {
   etf: 'ETF / Stocks',
   crypto: 'Crypto',
   gold: 'Gold',
-  mortgage: 'Mortgage',
+  apartment: 'Apartment',
 };
 
 const PLANNED: Record<string, number> = {
   etf: 60,
   crypto: 20,
   gold: 10,
-  mortgage: 10,
+  apartment: 10,
 };
 
 export default function AllocationComparisonPage() {
-  const { data: assets, isLoading } = useAssets();
+  const { data: allocation, isLoading } = useAssetAllocation();
 
-  const positiveAssets = (assets ?? []).filter((a) => a.type !== 'mortgage');
-  const total = positiveAssets.reduce((s, a) => s + a.value, 0);
-
-  const byType: Record<string, number> = {};
-  for (const a of positiveAssets) {
-    byType[a.type] = (byType[a.type] ?? 0) + a.value;
-  }
-
-  const actualData = Object.entries(byType).map(([type, value]) => ({
-    name: TYPE_LABELS[type] ?? type,
-    type,
-    value,
-    pct: total > 0 ? Math.round((value / total) * 100) : 0,
+  const actualData = (allocation ?? []).map((item) => ({
+    name: TYPE_LABELS[item.type] ?? item.type,
+    type: item.type,
+    value: item.value,
+    pct: item.pct,
   }));
 
   const plannedData = Object.entries(PLANNED).map(([type, pct]) => ({
