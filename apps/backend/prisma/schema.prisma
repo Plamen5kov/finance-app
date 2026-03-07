@@ -1,0 +1,314 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============== User Models ==============
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  name      String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets            Asset[]
+  expenses          Expense[]
+  goals             Goal[]
+  documents         Document[]
+  allocationPlans   AllocationPlan[]
+  expenseCategories ExpenseCategory[]
+  actualAllocations ActualAllocation[] @relation("ActualAllocations")
+  taxInfo           TaxInfo[]
+}
+
+// ============== Asset Models ==============
+
+model Asset {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      String  // 'mortgage' | 'etf' | 'crypto' | 'gold'
+  name      String
+  value     Float   // Current value in EUR
+  quantity  Float?  // For ETF, crypto, gold
+  costBasis Float?  // Average cost
+  currency  String  @default("EUR")
+
+  metadata  Json?   // ticker, symbol, purity, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  snapshots AssetSnapshot[]
+
+  @@index([userId])
+  @@index([type])
+}
+
+model AssetSnapshot {
+  id         String   @id @default(cuid())
+  assetId    String
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  value      Float    // Total value at snapshot time
+  price      Float?   // Price per unit
+  capturedAt DateTime @default(now())
+
+  @@index([assetId])
+  @@index([capturedAt])
+}
+
+// ============== Expense Models ==============
+
+model Expense {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  categoryId  String
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  merchant    String?
+  description String?
+  date        DateTime
+
+  source     String   @default("manual") // 'manual' | 'imported'
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([date])
+}
+
+model ExpenseCategory {
+  id         String @id @default(cuid())
+  userId     String
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name       String
+  type       String  // 'income' | 'expense' | 'goal' | 'required'
+  color      String? // Hex color e.g. #FF6B6B
+  predefined Boolean @default(false)
+
+  expenses          Expense[]
+  actualAllocations ActualAllocation[] @relation("ActualAllocationsToCategory")
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+// ============== Goal Models ==============
+
+model Goal {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name            String
+  targetAmount    Float
+  targetDate      DateTime? // Null for 'monthly' recurring goals
+  currentAmount   Float     @default(0)
+
+  // null = one-time savings, 'monthly' = fixed monthly expense, 'annual' = yearly lump-sum (auto-resets)
+  recurringPeriod String?
+
+  priority    Int    @default(2) // 1=high, 2=medium, 3=low
+  status      String @default("active") // 'active' | 'at_risk' | 'completed' | 'archived'
+  description String?
+  category    String? // 'travel' | 'family' | 'emergency' | 'housing' | 'transport' etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  allocationItems   AllocationPlanItem[]
+  actualAllocations ActualAllocation[]   @relation("ActualAllocationsToGoal")
+  snapshots         GoalSnapshot[]       @relation("GoalSnapshots")
+
+  @@index([userId])
+  @@index([status])
+  @@index([recurringPeriod])
+}
+
+model AllocationPlan {
+  id            String @id @default(cuid())
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  month         DateTime // YYYY-MM-01
+  monthlyIncome Float
+
+  status String @default("proposed") // 'proposed' | 'approved' | 'archived'
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items             AllocationPlanItem[]
+  actualAllocations ActualAllocation[]
+
+  @@unique([userId, month])
+  @@index([userId])
+}
+
+model AllocationPlanItem {
+  id     String @id @default(cuid())
+  planId String
+  plan   AllocationPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  amount Float // Allocated amount for this goal this month
+
+  @@index([planId])
+  @@index([goalId])
+}
+
+// ============== Planned vs Actual Tracking ==============
+
+model ActualAllocation {
+  id               String  @id @default(cuid())
+  allocationPlanId String
+  allocationPlan   AllocationPlan @relation(fields: [allocationPlanId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("ActualAllocations", fields: [userId], references: [id], onDelete: Cascade)
+
+  goalId     String?
+  goal       Goal?            @relation("ActualAllocationsToGoal", fields: [goalId], references: [id], onDelete: SetNull)
+
+  categoryId String?
+  category   ExpenseCategory? @relation("ActualAllocationsToCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+
+  type          String   // 'goal' | 'category'
+  month         DateTime // YYYY-MM-01
+  plannedAmount Float
+  actualAmount  Float
+  variance      Float    // actual - planned (positive = over, negative = under)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, goalId, month])
+  @@index([userId])
+  @@index([month])
+  @@index([goalId])
+  @@index([categoryId])
+}
+
+model GoalSnapshot {
+  id     String @id @default(cuid())
+  goalId String
+  goal   Goal   @relation("GoalSnapshots", fields: [goalId], references: [id], onDelete: Cascade)
+
+  month                   DateTime // YYYY-MM-01
+  targetAmount            Float
+  targetDate              DateTime?
+  balanceAsOf             Float    // Accumulated amount saved
+  allocatedThisMonth      Float    @default(0)
+  actualSavedThisMonth    Float    @default(0)
+  projectedCompletionDate DateTime?
+  onTrack                 Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@unique([goalId, month])
+  @@index([goalId])
+  @@index([month])
+  @@index([onTrack])
+}
+
+// ============== Document Models ==============
+
+model Document {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fileName    String
+  fileType    String  // 'csv' | 'pdf'
+  fileUrl     String
+
+  parseStatus String  @default("pending") // 'pending' | 'parsed' | 'error'
+  parseError  String?
+  metadata    Json?
+
+  uploadedAt DateTime  @default(now())
+  parsedAt   DateTime?
+
+  transactions Transaction[]
+  expenses     Expense[]
+
+  @@index([userId])
+  @@index([uploadedAt])
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  amount      Float
+  currency    String   @default("EUR")
+  date        DateTime
+  merchant    String?
+  description String?
+  categoryId  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([documentId])
+  @@index([date])
+}
+
+// ============== Tax Information ==============
+
+model TaxInfo {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  taxYear Int    // e.g. 2025
+  country String // e.g. "Bulgaria"
+
+  annualSalary    Float?
+  monthlyIncome   Float?
+  freeLanceIncome Float?
+
+  stateSocialInsurance   Float? // 0.183
+  supplementaryPension   Float? // 0.05
+  healthInsurance        Float? // 0.08
+  incomeTaxRate          Float? // 0.10
+  recognizedExpensesRate Float? // 0.25
+
+  totalContributions Float?
+  taxableIncome      Float?
+  totalTaxLiability  Float?
+  taxPaidToDate      Float?
+  taxRefundDue       Float?
+
+  status      String    @default("draft") // 'draft' | 'submitted' | 'completed'
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  submittedAt DateTime?
+
+  @@unique([userId, taxYear])
+  @@index([userId])
+  @@index([taxYear])
+}

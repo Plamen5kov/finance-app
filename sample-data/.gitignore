@@ -1,0 +1,15 @@
+# Don't commit actual data files (privacy/security)
+
+# Revolut statements
+revolut-statements/*.csv
+revolut-statements/*.xlsx
+revolut-statements/*.xls
+
+# Existing data files
+existing-data/*.json
+existing-data/*.csv
+existing-data/*.xlsx
+
+# Keep README files for documentation
+!**/README.md
+!
