@@ -234,13 +234,22 @@ async function main() {
   const latestLeasingRow = pastLeasingRows.at(-1);
   const currentLeasingBalance = latestLeasingRow ? parseLeasingNumber(latestLeasingRow[12]) : 17053.54;
 
+  const leasingMetadata = {
+    originalValue: 28500.77,  // total car price (financed + down payment)
+    downPayment: 5113,        // ~10K BGN converted to EUR
+    residualValue: 6496.60,   // balloon payment due at end of term
+    interestRate: 4.23,
+    monthlyPayment: 335.47,
+    termMonths: 60,
+    startDate: '2024-03-06',
+  };
   let carLeasingLiability = await prisma.liability.findFirst({
     where: { userId: user.id, type: 'leasing', name: 'Car Lease' },
   });
   if (carLeasingLiability) {
     carLeasingLiability = await prisma.liability.update({
       where: { id: carLeasingLiability.id },
-      data: { value: currentLeasingBalance },
+      data: { value: currentLeasingBalance, metadata: leasingMetadata as object },
     });
   } else {
     carLeasingLiability = await prisma.liability.create({
@@ -250,15 +259,7 @@ async function main() {
         name: 'Car Lease',
         value: currentLeasingBalance,
         currency: 'EUR',
-        metadata: {
-          originalValue: 23387.77,  // initial principal balance (amount financed)
-          downPayment: 0,
-          residualValue: 6496.60,   // balloon payment due at end of term
-          interestRate: 4.23,
-          monthlyPayment: 335.47,
-          termMonths: 60,
-          startDate: '2024-03-06',
-        },
+        metadata: leasingMetadata as object,
       },
     });
   }

@@ -159,39 +159,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
 
-      {/* Balance + Currency */}
-      <div className="grid grid-cols-2 gap-3">
-        {showMortgageFields ? (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Outstanding Balance</label>
-            <p className="text-sm text-gray-500 italic py-2">Calculated from amortization + events</p>
-            <input type="hidden" {...register('value')} />
-          </div>
-        ) : (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Outstanding Balance *</label>
-            <input
-              {...register('value')}
-              type="number"
-              step="0.01"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-              placeholder="0.00"
-            />
-            {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
-          </div>
-        )}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-          <select
-            {...register('currency')}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-          >
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Hidden fields — balance is calculated, currency defaults to EUR */}
+      <input type="hidden" {...register('value')} />
+      <input type="hidden" {...register('currency')} />
 
       {/* Leasing specific fields */}
       {showLeasingFields && (
