@@ -55,31 +55,51 @@ This is a personal finance management PWA designed for the user and their spouse
 
 ---
 
-### 2. Mortgage & Property Management
+### 2. Liabilities Management
 
-**Primary Goal**: Track mortgage obligations and property value growth
+**Primary Goal**: Track all financial obligations — mortgages, loans, and vehicle leases — with full amortization details and payoff projections
 
-**Data Points**:
-- Property value (user input)
-- Mortgage balance (auto-calculated or manual entry)
-- Loan amount (original)
-- Interest rate (%)
-- Monthly payment
-- Remaining term (years)
-- Payment due date
-- Payoff timeline
+**Supported Liability Types**:
+
+**A. Mortgage**
+- Outstanding balance
+- Original amount, interest rate, monthly payment, term (months), start date
+- Rate history (multiple rate changes over time, chronologically tracked)
+- Projected payoff date and estimated interest remaining
+
+**B. Loan**
+- Outstanding balance
+- Original amount, interest rate, monthly payment, term (months), start date
+
+**C. Leasing**
+- Outstanding balance (amount still owed)
+- Asset value (original car/equipment price), down payment
+- Balloon/residual payment (due at end of lease)
+- Interest rate, monthly payment, term (months), start date
+- Derived: months remaining, lease end date, total lease cost
 
 **Features**:
-- Display current mortgage details
-- Show historical balance progression (monthly snapshots)
-- Calculate equity buildup over time
-- Property value trend (user updates periodic valuations)
-- Payoff projection based on current rate
+- Create / edit / delete liabilities of any type
+- Type-specific card display with computed derived values (months remaining, interest remaining, total lease cost)
+- Historical balance snapshots — one per month — for chart integration
+- Net Worth history includes liability snapshots for accurate trend display
+- Projection: balance amortized forward month-by-month; lines cut off at zero (mortgage/loan) or residual value (leasing)
+- Seeded from amortization schedule CSV (car leasing seeded from car-leasing.csv)
 
-**Data Sources**:
-- Manual input (bank statements, loan documents)
-- Monthly snapshots from backend jobs
-- User-provided updates
+**Data Points per Type**:
+
+| Field | Mortgage | Loan | Leasing |
+|-------|----------|------|---------|
+| Outstanding balance | ✅ | ✅ | ✅ |
+| Original amount | ✅ | optional | — |
+| Asset value | — | — | ✅ |
+| Down payment | — | — | ✅ |
+| Residual/balloon | — | — | ✅ |
+| Interest rate | ✅ | optional | ✅ |
+| Monthly payment | ✅ | optional | ✅ |
+| Term (months) | ✅ | optional | ✅ |
+| Start date | ✅ | optional | ✅ |
+| Rate history | ✅ | — | — |
 
 ---
 
@@ -689,14 +709,14 @@ Job: Fetch & Update Prices
 - created_at, updated_at
 - role: "owner" | "spouse" (both have equal access)
 
-**Asset** (Mortgage, ETF, Crypto, Gold)
+**Asset** (ETF, Crypto, Gold, Apartment)
 - id
 - user_id
-- type: "mortgage" | "etf" | "crypto" | "gold"
-- name (e.g., "Home Mortgage", "VTSAX", "Bitcoin", "Gold Coins")
-- value (current value in €)
-- quantity (for ETF, crypto, gold)
-- cost_basis (average cost)
+- type: "etf" | "crypto" | "gold" | "apartment"
+- name (e.g., "ETF Portfolio", "Crypto Portfolio", "Gold (злато)", "Apartment")
+- value (current value)
+- quantity (optional, for ETF/crypto/gold)
+- cost_basis (optional, average cost)
 - currency
 - metadata (ticker, symbol, purity, etc.)
 - created_at, updated_at
@@ -706,6 +726,22 @@ Job: Fetch & Update Prices
 - asset_id
 - value (snapshot value)
 - price (per unit, if applicable)
+- captured_at (timestamp)
+
+**Liability** (Mortgage, Loan, Leasing)
+- id
+- user_id
+- type: "mortgage" | "loan" | "leasing"
+- name (e.g., "Home Mortgage", "Car Lease")
+- value (outstanding balance — what is currently owed)
+- currency
+- metadata (JSON — type-specific fields: interest rate, monthly payment, term, start date, rate history, original amount, residual value, etc.)
+- created_at, updated_at
+
+**LiabilitySnapshot** (Historical balance tracking)
+- id
+- liability_id
+- value (outstanding balance at snapshot time)
 - captured_at (timestamp)
 
 **Expense**
@@ -864,16 +900,35 @@ Job: Fetch & Update Prices
 
 ## MVP Scope vs. Future Features
 
-### MVP (v1.0)
-- ✅ User authentication (email/password)
-- ✅ Dashboard with net worth summary
-- ✅ Asset tracking (mortgage, ETF, crypto, gold)
-- ✅ Monthly price updates (automated jobs)
+### MVP (v1.0) — Current State
+
+**Implemented:**
+- ✅ User authentication (email/password, JWT)
+- ✅ Dashboard with net worth summary (assets, liabilities, goals)
+- ✅ Asset tracking (ETF, crypto, gold, apartment) with manual snapshot history entry
+- ✅ Liabilities tracking (mortgage, loan, leasing) with amortization details
 - ✅ Expense tracking and categorization
-- ✅ Document parsing (Revolut CSV initially)
-- ✅ Goal planning and allocation tool
-- ✅ Planned vs Actual comparison (dual-line charts showing goal/category performance)
-- ✅ Basic financial reports
+- ✅ Goal planning (one-time, annual, monthly recurring)
+- ✅ Net Worth report with historical chart, projection, and per-asset/liability breakdown
+  - Historical line anchored to real snapshots (carry-forward for months with no snapshot)
+  - Projected net worth line starting from last historical point
+  - Per-liability projection lines, cut off at zero/residual
+  - Projection end year selector (None / This Year / up to 30 years out)
+  - Horizontal reference line at y=0
+- ✅ Seed script importing historical data from CSV (mind.csv, car-leasing.csv, Revolut statement)
+  - 205 NN asset snapshots (2019–2026)
+  - Apartment snapshots at key valuation dates
+  - 24 car leasing balance snapshots (Apr 2024–Mar 2026)
+
+**Partially implemented:**
+- 🚧 Document parsing (Revolut CSV imported via seed; upload UI is a stub)
+- 🚧 Reports: Allocation comparison, goal comparison, deadline status pages exist but are stubs
+
+**Not yet built (planned):**
+- 📋 Monthly price update jobs (Bull queue configured but jobs not implemented)
+- 📋 Smart allocation tool (allocation plan creation/approval)
+- 📋 Planned vs Actual comparison (schema exists, UI not built)
+- 📋 Document upload + parsing UI
 
 ### Phase 2 (v1.1)
 - Account sharing settings (read-only vs. edit)

@@ -3,7 +3,7 @@
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CreateLiabilityInput, MortgageMetadata } from '@/hooks/use-liabilities';
+import { CreateLiabilityInput, MortgageMetadata, LeasingMetadata } from '@/hooks/use-liabilities';
 import { LIABILITY_TYPES, CURRENCIES } from '@finances/shared';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -24,6 +24,10 @@ const schema = z.object({
   termMonths: z.coerce.number().min(0).optional().or(z.literal('')),
   startDate: z.string().optional(),
   rateHistory: z.array(rateChangeSchema).optional(),
+  // Leasing-specific fields
+  originalValue: z.coerce.number().min(0).optional().or(z.literal('')),
+  downPayment: z.coerce.number().min(0).optional().or(z.literal('')),
+  residualValue: z.coerce.number().min(0).optional().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -37,7 +41,7 @@ interface LiabilityFormProps {
 }
 
 function toFormDefaults(defaults?: Partial<CreateLiabilityInput>): Partial<FormValues> {
-  const meta = defaults?.metadata as MortgageMetadata | undefined;
+  const meta = defaults?.metadata as (MortgageMetadata & LeasingMetadata) | undefined;
   return {
     type: defaults?.type ?? 'mortgage',
     name: defaults?.name ?? '',
@@ -48,7 +52,10 @@ function toFormDefaults(defaults?: Partial<CreateLiabilityInput>): Partial<FormV
     monthlyPayment: meta?.monthlyPayment ?? ('' as unknown as number),
     termMonths: meta?.termMonths ?? ('' as unknown as number),
     startDate: meta?.startDate ?? '',
-    rateHistory: meta?.rateHistory ?? [],
+    rateHistory: (meta as MortgageMetadata | undefined)?.rateHistory ?? [],
+    originalValue: (meta as LeasingMetadata | undefined)?.originalValue ?? ('' as unknown as number),
+    downPayment: (meta as LeasingMetadata | undefined)?.downPayment ?? ('' as unknown as number),
+    residualValue: (meta as LeasingMetadata | undefined)?.residualValue ?? ('' as unknown as number),
   };
 }
 
@@ -65,18 +72,16 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
   const selectedType = watch('type');
   const showMortgageFields = selectedType === 'mortgage' || selectedType === 'loan';
+  const showLeasingFields = selectedType === 'leasing';
 
   async function submit(values: FormValues) {
-    let metadata: MortgageMetadata | undefined;
+    let metadata: MortgageMetadata | LeasingMetadata | undefined;
 
     if (showMortgageFields) {
       const sortedRateHistory = (values.rateHistory ?? [])
         .filter((r) => r.date && r.rate != null)
         .sort((a, b) => a.date.localeCompare(b.date));
-
-      // Current rate = latest entry in rate history, or the interestRate field
-      const latestRate = sortedRateHistory.at(-1)?.rate ?? Number(values.interestRate) || 0;
-
+      const latestRate = sortedRateHistory.at(-1)?.rate ?? (Number(values.interestRate) || 0);
       metadata = {
         originalAmount: Number(values.originalAmount) || 0,
         interestRate: latestRate,
@@ -84,6 +89,16 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
         termMonths: Number(values.termMonths) || 0,
         startDate: values.startDate ?? '',
         rateHistory: sortedRateHistory,
+      };
+    } else if (showLeasingFields) {
+      metadata = {
+        originalValue: Number(values.originalValue) || 0,
+        downPayment: Number(values.downPayment) || 0,
+        residualValue: Number(values.residualValue) || 0,
+        interestRate: Number(values.interestRate) || 0,
+        monthlyPayment: Number(values.monthlyPayment) || 0,
+        termMonths: Number(values.termMonths) || 0,
+        startDate: values.startDate ?? '',
       };
     }
 
@@ -147,6 +162,91 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
           </select>
         </div>
       </div>
+
+      {/* Leasing specific fields */}
+      {showLeasingFields && (
+        <div className="border-t border-gray-100 pt-4 space-y-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lease Details</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Asset Value</label>
+              <input
+                {...register('originalValue')}
+                type="number"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="e.g. 40000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Down Payment</label>
+              <input
+                {...register('downPayment')}
+                type="number"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Balloon Payment</label>
+              <input
+                {...register('residualValue')}
+                type="number"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="e.g. 10000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+              <input
+                {...register('interestRate')}
+                type="number"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="e.g. 5.5"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Payment</label>
+              <input
+                {...register('monthlyPayment')}
+                type="number"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Term (months)</label>
+              <input
+                {...register('termMonths')}
+                type="number"
+                step="1"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="e.g. 48"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              {...register('startDate')}
+              type="date"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Mortgage / Loan specific fields */}
       {showMortgageFields && (

@@ -2,17 +2,17 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import type { MortgageMetadata, LoanMetadata } from '@finances/shared';
+import type { MortgageMetadata, LoanMetadata, LeasingMetadata } from '@finances/shared';
 
-export type { MortgageMetadata, LoanMetadata } from '@finances/shared';
+export type { MortgageMetadata, LoanMetadata, LeasingMetadata } from '@finances/shared';
 
 export interface Liability {
   id: string;
-  type: 'mortgage' | 'loan';
+  type: 'mortgage' | 'loan' | 'leasing';
   name: string;
   value: number;
   currency: string;
-  metadata?: MortgageMetadata | LoanMetadata | null;
+  metadata?: MortgageMetadata | LoanMetadata | LeasingMetadata | null;
   createdAt: string;
 }
 
@@ -31,7 +31,7 @@ export interface CreateLiabilityInput {
   name: string;
   value: number;
   currency?: string;
-  metadata?: MortgageMetadata | LoanMetadata;
+  metadata?: MortgageMetadata | LoanMetadata | LeasingMetadata;
 }
 
 export function useLiabilities() {

@@ -2,16 +2,18 @@
 
 import { formatCurrency } from '@/lib/utils';
 import { Trash2, Pencil } from 'lucide-react';
-import { Liability, MortgageMetadata } from '@/hooks/use-liabilities';
+import { Liability, MortgageMetadata, LeasingMetadata } from '@/hooks/use-liabilities';
 
 const TYPE_COLORS: Record<string, string> = {
   mortgage: 'bg-red-100 text-red-700',
   loan: 'bg-orange-100 text-orange-700',
+  leasing: 'bg-purple-100 text-purple-700',
 };
 
 const TYPE_ICONS: Record<string, string> = {
   mortgage: '🏦',
   loan: '💳',
+  leasing: '🚗',
 };
 
 /** Returns estimated months remaining given current balance, annual rate %, and monthly payment. */
@@ -31,35 +33,56 @@ interface LiabilityCardProps {
 }
 
 export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProps) {
-  const meta = liability.type === 'mortgage' || liability.type === 'loan'
+  const isLeasing = liability.type === 'leasing';
+  const leasingMeta = isLeasing ? (liability.metadata as LeasingMetadata | null) : null;
+  const mortgageMeta = !isLeasing && (liability.type === 'mortgage' || liability.type === 'loan')
     ? (liability.metadata as MortgageMetadata | null)
     : null;
 
-  const latestRate = meta?.rateHistory?.length
-    ? [...meta.rateHistory].sort((a, b) => b.date.localeCompare(a.date))[0].rate
-    : meta?.interestRate;
+  const latestRate = mortgageMeta?.rateHistory?.length
+    ? [...mortgageMeta.rateHistory].sort((a, b) => b.date.localeCompare(a.date))[0].rate
+    : mortgageMeta?.interestRate;
 
-  const monthsRemaining = (() => {
-    if (!meta) return null;
-    // Prefer termMonths − elapsed when the user has configured both
-    if (meta.termMonths && meta.startDate) {
-      const start = new Date(meta.startDate + 'T00:00:00Z');
+  const mortgageMonthsRemaining = (() => {
+    if (!mortgageMeta) return null;
+    if (mortgageMeta.termMonths && mortgageMeta.startDate) {
+      const start = new Date(mortgageMeta.startDate + 'T00:00:00Z');
       const elapsed = Math.max(0, Math.floor(
         (Date.now() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)
       ));
-      return Math.max(0, meta.termMonths - elapsed);
+      return Math.max(0, mortgageMeta.termMonths - elapsed);
     }
-    // Fall back to amortization formula
-    if (latestRate != null && meta.monthlyPayment) {
-      return calcMonthsRemaining(liability.value, latestRate, meta.monthlyPayment);
+    if (latestRate != null && mortgageMeta.monthlyPayment) {
+      return calcMonthsRemaining(liability.value, latestRate, mortgageMeta.monthlyPayment);
     }
     return null;
   })();
 
   const totalInterestRemaining =
-    monthsRemaining != null && meta?.monthlyPayment
-      ? meta.monthlyPayment * monthsRemaining - liability.value
+    mortgageMonthsRemaining != null && mortgageMeta?.monthlyPayment
+      ? mortgageMeta.monthlyPayment * mortgageMonthsRemaining - liability.value
       : null;
+
+  // Leasing derived values
+  const leasingMonthsRemaining = (() => {
+    if (!leasingMeta?.startDate || !leasingMeta.termMonths) return null;
+    const start = new Date(leasingMeta.startDate + 'T00:00:00Z');
+    const elapsed = Math.max(0, Math.floor(
+      (Date.now() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)
+    ));
+    return Math.max(0, leasingMeta.termMonths - elapsed);
+  })();
+
+  const leasingEndDate = (() => {
+    if (!leasingMeta?.startDate || !leasingMeta.termMonths) return null;
+    const d = new Date(leasingMeta.startDate + 'T00:00:00Z');
+    d.setUTCMonth(d.getUTCMonth() + leasingMeta.termMonths);
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  })();
+
+  const totalLeasingCost = leasingMeta
+    ? leasingMeta.monthlyPayment * leasingMeta.termMonths + leasingMeta.residualValue
+    : null;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
@@ -96,8 +119,62 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
       <p className="text-2xl font-bold text-gray-900">{formatCurrency(liability.value)}</p>
       <p className="text-xs text-gray-400 mt-0.5">Outstanding balance</p>
 
+      {/* Leasing details */}
+      {leasingMeta && (
+        <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+          {leasingMeta.monthlyPayment > 0 && (
+            <>
+              <span className="text-gray-500">Monthly payment</span>
+              <span className="font-medium text-gray-800">{formatCurrency(leasingMeta.monthlyPayment)}</span>
+            </>
+          )}
+          {leasingMeta.residualValue > 0 && (
+            <>
+              <span className="text-gray-500">Balloon payment</span>
+              <span className="font-medium text-orange-600">{formatCurrency(leasingMeta.residualValue)}</span>
+            </>
+          )}
+          {leasingMeta.interestRate > 0 && (
+            <>
+              <span className="text-gray-500">Interest rate</span>
+              <span className="font-medium text-gray-800">{leasingMeta.interestRate.toFixed(2)}%</span>
+            </>
+          )}
+          {leasingMonthsRemaining != null && (
+            <>
+              <span className="text-gray-500">Months remaining</span>
+              <span className="font-medium text-gray-800">{leasingMonthsRemaining} mo</span>
+            </>
+          )}
+          {leasingEndDate && (
+            <>
+              <span className="text-gray-500">Lease ends</span>
+              <span className="font-medium text-gray-800">{leasingEndDate}</span>
+            </>
+          )}
+          {leasingMeta.originalValue > 0 && (
+            <>
+              <span className="text-gray-500">Asset value</span>
+              <span className="font-medium text-gray-800">{formatCurrency(leasingMeta.originalValue)}</span>
+            </>
+          )}
+          {leasingMeta.downPayment > 0 && (
+            <>
+              <span className="text-gray-500">Down payment</span>
+              <span className="font-medium text-gray-800">{formatCurrency(leasingMeta.downPayment)}</span>
+            </>
+          )}
+          {totalLeasingCost != null && (
+            <>
+              <span className="text-gray-500">Total cost</span>
+              <span className="font-medium text-red-600">{formatCurrency(totalLeasingCost)}</span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Mortgage / Loan details */}
-      {meta && (
+      {mortgageMeta && (
         <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
           {latestRate != null && (
             <>
@@ -105,16 +182,16 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
               <span className="font-medium text-gray-800">{latestRate.toFixed(2)}%</span>
             </>
           )}
-          {meta.monthlyPayment > 0 && (
+          {mortgageMeta.monthlyPayment > 0 && (
             <>
               <span className="text-gray-500">Monthly payment</span>
-              <span className="font-medium text-gray-800">{formatCurrency(meta.monthlyPayment)}</span>
+              <span className="font-medium text-gray-800">{formatCurrency(mortgageMeta.monthlyPayment)}</span>
             </>
           )}
-          {monthsRemaining != null && (
+          {mortgageMonthsRemaining != null && (
             <>
               <span className="text-gray-500">Est. months left</span>
-              <span className="font-medium text-gray-800">{monthsRemaining} mo</span>
+              <span className="font-medium text-gray-800">{mortgageMonthsRemaining} mo</span>
             </>
           )}
           {totalInterestRemaining != null && totalInterestRemaining > 0 && (
@@ -123,16 +200,16 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
               <span className="font-medium text-red-600">{formatCurrency(totalInterestRemaining)}</span>
             </>
           )}
-          {meta.originalAmount > 0 && (
+          {mortgageMeta.originalAmount > 0 && (
             <>
               <span className="text-gray-500">Original amount</span>
-              <span className="font-medium text-gray-800">{formatCurrency(meta.originalAmount)}</span>
+              <span className="font-medium text-gray-800">{formatCurrency(mortgageMeta.originalAmount)}</span>
             </>
           )}
-          {meta.rateHistory?.length > 1 && (
+          {mortgageMeta.rateHistory?.length > 1 && (
             <>
               <span className="text-gray-500">Rate changes</span>
-              <span className="font-medium text-gray-800">{meta.rateHistory.length}</span>
+              <span className="font-medium text-gray-800">{mortgageMeta.rateHistory.length}</span>
             </>
           )}
         </div>

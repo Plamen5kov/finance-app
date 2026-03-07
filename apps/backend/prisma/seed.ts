@@ -32,6 +32,7 @@ const prisma = new PrismaClient();
 const SAMPLE_DATA_DIR = path.join(__dirname, '../../../sample-data');
 const FINANCES_CSV = path.join(SAMPLE_DATA_DIR, 'existing-data', 'mind.csv');
 const REVOLUT_CSV = path.join(SAMPLE_DATA_DIR, 'revolut-statements/statment.csv');
+const CAR_LEASING_CSV = path.join(SAMPLE_DATA_DIR, 'existing-data', 'car-leasing.csv');
 
 const SEED_USER = {
   name: 'Plamen',
@@ -85,6 +86,34 @@ async function readCSV(filePath: string): Promise<string[][]> {
   return rows;
 }
 
+/** Parse DD.MM.YYYY date string (used in car-leasing.csv) */
+function parseLeasingDate(s: string): Date | null {
+  if (!s || !s.trim()) return null;
+  const parts = s.trim().split('.');
+  if (parts.length !== 3) return null;
+  const [dd, mm, yyyy] = parts.map(Number);
+  if (!dd || !mm || !yyyy) return null;
+  const d = new Date(Date.UTC(yyyy, mm - 1, dd));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/** Parse number with spaces as thousand separators, e.g. "23 387.77" */
+function parseLeasingNumber(s: string): number {
+  if (!s || !s.trim()) return 0;
+  const n = parseFloat(s.replace(/\s/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
+/** Read semicolon-delimited CSV (leasing schedule format) */
+async function readSemicolonCSV(filePath: string): Promise<string[][]> {
+  const rows: string[][] = [];
+  const rl = readline.createInterface({ input: fs.createReadStream(filePath) });
+  for await (const line of rl) {
+    rows.push(line.split(';'));
+  }
+  return rows;
+}
+
 // ─── main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -99,14 +128,13 @@ async function main() {
   });
   console.log(`✅ User: ${user.email} (id: ${user.id})`);
 
-  // 2. Clear re-seedable data; preserve assets/liabilities and their metadata
-  await prisma.assetSnapshot.deleteMany({ where: { asset: { userId: user.id } } });
-  await prisma.liabilitySnapshot.deleteMany({ where: { liability: { userId: user.id } } });
+  // 2. Clear re-seedable data; preserve assets/liabilities, their metadata, and any manually-added snapshots.
+  // Asset snapshots for CSV-managed assets are cleared below (after we have their IDs).
   await prisma.goalSnapshot.deleteMany({ where: { goal: { userId: user.id } } });
   await prisma.goal.deleteMany({ where: { userId: user.id } });
   await prisma.expense.deleteMany({ where: { userId: user.id } });
   await prisma.expenseCategory.deleteMany({ where: { userId: user.id } });
-  console.log('🧹 Cleared snapshots/goals/expenses (assets/liabilities and their metadata preserved)\n');
+  console.log('🧹 Cleared goals/expenses (assets, liabilities, and manually-added snapshots preserved)\n');
 
   // 3. Parse mind.csv (clean column layout, no shifts)
   // Columns: [0]=empty, [1]=date(MM/DD/YYYY), [2]=income, [3]=expenses,
@@ -143,9 +171,15 @@ async function main() {
         : prisma.asset.create({ data: { userId: user.id, type, name, value, currency: 'BGN' } }),
     );
 
+  // Find latest NN value (last row with a non-zero NN value)
+  const latestNNRow = [...dataRows].reverse().find((r) => parseFloat2(r[4]) > 0);
+  const latestNNValue = latestNNRow ? parseFloat2(latestNNRow[4]) : 0;
+
+  const nnAsset = await upsertAsset('etf', 'NN', latestNNValue);
   const cryptoAsset = await upsertAsset('crypto', 'Crypto Portfolio', parseFloat2(latestRow[5]));
   const etfAsset = await upsertAsset('etf', 'ETF Portfolio', parseFloat2(latestRow[6]));
   const goldAsset = await upsertAsset('gold', 'Gold (злато)', parseFloat2(latestRow[13]));
+  const apartmentAsset = await upsertAsset('apartment', 'Apartment', 420000);
 
   // Find-or-create mortgage (preserve user-configured metadata like rate history)
   let mortgageLiability = await prisma.liability.findFirst({ where: { userId: user.id, type: 'mortgage', name: 'Home Mortgage' } });
@@ -167,47 +201,114 @@ async function main() {
     });
   }
 
-  console.log(`✅ Upserted 3 assets (crypto, ETF, gold) + 1 liability (mortgage)`);
+  // Find-or-create car leasing liability
+  // CSV columns (semicolon-separated): [0]=empty, [1]=№, [2]=date(DD.MM.YYYY),
+  //   [3]=start_bgn, [4]=start_eur, [5]=principal_bgn, [6]=principal_eur,
+  //   [7]=interest_bgn, [8]=interest_eur, [9]=payment_bgn, [10]=payment_eur,
+  //   [11]=remaining_bgn, [12]=remaining_eur, [13]=prepayment
+  const leasingRows = await readSemicolonCSV(CAR_LEASING_CSV);
+  const leasingDataRows = leasingRows.filter((r) => {
+    const num = parseInt(r[1]);
+    return !isNaN(num) && num > 0 && num <= 60; // rows 1-60 are regular monthly payments
+  });
 
-  // 5. Create asset & liability snapshots from all historical rows up to latest date
+  const today = new Date();
+  const pastLeasingRows = leasingDataRows.filter((r) => {
+    const d = parseLeasingDate(r[2]);
+    return d !== null && d <= today;
+  });
+
+  // Current balance = remaining balance EUR from the most recent paid row
+  const latestLeasingRow = pastLeasingRows.at(-1);
+  const currentLeasingBalance = latestLeasingRow ? parseLeasingNumber(latestLeasingRow[12]) : 17053.54;
+
+  let carLeasingLiability = await prisma.liability.findFirst({
+    where: { userId: user.id, type: 'leasing', name: 'Car Lease' },
+  });
+  if (carLeasingLiability) {
+    carLeasingLiability = await prisma.liability.update({
+      where: { id: carLeasingLiability.id },
+      data: { value: currentLeasingBalance },
+    });
+  } else {
+    carLeasingLiability = await prisma.liability.create({
+      data: {
+        userId: user.id,
+        type: 'leasing',
+        name: 'Car Lease',
+        value: currentLeasingBalance,
+        currency: 'EUR',
+        metadata: {
+          originalValue: 23387.77,  // initial principal balance (amount financed)
+          downPayment: 0,
+          residualValue: 6496.60,   // balloon payment due at end of term
+          interestRate: 4.23,
+          monthlyPayment: 335.47,
+          termMonths: 60,
+          startDate: '2024-03-06',
+        },
+      },
+    });
+  }
+
+  console.log(`✅ Upserted 4 assets (NN, crypto, ETF, gold) + 2 liabilities (mortgage, car lease)`);
+
+  // Seed historical leasing snapshots (one per paid installment)
+  await prisma.liabilitySnapshot.deleteMany({ where: { liabilityId: carLeasingLiability.id } });
+  const leasingSnapshots = pastLeasingRows.map((r) => ({
+    liabilityId: carLeasingLiability!.id,
+    value: parseLeasingNumber(r[12]), // remaining balance EUR
+    capturedAt: parseLeasingDate(r[2])!,
+  }));
+  await prisma.liabilitySnapshot.createMany({ data: leasingSnapshots });
+  console.log(`✅ Seeded ${leasingSnapshots.length} car leasing snapshots`);
+
+  // 5. Create asset & liability snapshots from all historical rows up to latest date.
+  // Only delete snapshots for CSV-managed assets so manually-added snapshots (e.g. apartment) are preserved.
+  const APARTMENT_SNAPSHOTS = [
+    { month: '2020-02', value: 180000 },
+    { month: '2022-12', value: 320000 },
+    { month: '2025-11', value: 360000 },
+    { month: '2026-03', value: 420000 },
+  ];
+  await prisma.assetSnapshot.deleteMany({ where: { assetId: apartmentAsset.id } });
+  await prisma.assetSnapshot.createMany({
+    data: APARTMENT_SNAPSHOTS.map(({ month, value }) => ({
+      assetId: apartmentAsset.id,
+      value,
+      capturedAt: new Date(`${month}-01T00:00:00.000Z`),
+    })),
+  });
+  console.log(`✅ Seeded ${APARTMENT_SNAPSHOTS.length} apartment snapshots`);
+
+  const managedAssetIds = [nnAsset.id, cryptoAsset.id, etfAsset.id, goldAsset.id];
+  await prisma.assetSnapshot.deleteMany({ where: { assetId: { in: managedAssetIds } } });
+  await prisma.liabilitySnapshot.deleteMany({ where: { liabilityId: mortgageLiability.id } });
+
   const historicalRows = dataRows.filter((r) => {
     const d = parseDate(r[1]);
     return d !== null && d <= latestDate;
   });
 
-  // Collect existing snapshot months to avoid duplicates on re-runs
-  const toMonthSet = (existing: Array<{ capturedAt: Date }>) =>
-    new Set(existing.map((s) => s.capturedAt.toISOString().slice(0, 7)));
-
-  const [existingCrypto, existingEtf, existingGold, existingMortgage] = await Promise.all([
-    prisma.assetSnapshot.findMany({ where: { assetId: cryptoAsset.id }, select: { capturedAt: true } }),
-    prisma.assetSnapshot.findMany({ where: { assetId: etfAsset.id }, select: { capturedAt: true } }),
-    prisma.assetSnapshot.findMany({ where: { assetId: goldAsset.id }, select: { capturedAt: true } }),
-    prisma.liabilitySnapshot.findMany({ where: { liabilityId: mortgageLiability.id }, select: { capturedAt: true } }),
-  ]);
-  const cryptoMonths = toMonthSet(existingCrypto);
-  const etfMonths = toMonthSet(existingEtf);
-  const goldMonths = toMonthSet(existingGold);
-  const mortgageMonths = toMonthSet(existingMortgage);
-
   const snapshots: Array<{ assetId: string; value: number; capturedAt: Date }> = [];
   const liabilitySnapshots: Array<{ liabilityId: string; value: number; capturedAt: Date }> = [];
   for (const row of historicalRows) {
     const capturedAt = parseDate(row[1])!;
-    const monthKey = capturedAt.toISOString().slice(0, 7);
-    if (parseFloat2(row[5]) > 0 && !cryptoMonths.has(monthKey))
+    if (parseFloat2(row[4]) > 0)
+      snapshots.push({ assetId: nnAsset.id, value: parseFloat2(row[4]), capturedAt });
+    if (parseFloat2(row[5]) > 0)
       snapshots.push({ assetId: cryptoAsset.id, value: parseFloat2(row[5]), capturedAt });
-    if (parseFloat2(row[6]) > 0 && !etfMonths.has(monthKey))
+    if (parseFloat2(row[6]) > 0)
       snapshots.push({ assetId: etfAsset.id, value: parseFloat2(row[6]), capturedAt });
-    if (parseFloat2(row[13]) > 0 && !goldMonths.has(monthKey))
+    if (parseFloat2(row[13]) > 0)
       snapshots.push({ assetId: goldAsset.id, value: parseFloat2(row[13]), capturedAt });
-    if (parseFloat2(row[11]) > 0 && !mortgageMonths.has(monthKey))
+    if (parseFloat2(row[11]) > 0)
       liabilitySnapshots.push({ liabilityId: mortgageLiability.id, value: parseFloat2(row[11]), capturedAt });
   }
 
   await prisma.assetSnapshot.createMany({ data: snapshots });
   await prisma.liabilitySnapshot.createMany({ data: liabilitySnapshots });
-  console.log(`✅ Added ${snapshots.length} new asset snapshots, ${liabilitySnapshots.length} new liability snapshots\n`);
+  console.log(`✅ Imported ${snapshots.length} asset snapshots, ${liabilitySnapshots.length} liability snapshots\n`);
 
   // 6. Create goals
   const emergencyGoal = await prisma.goal.create({

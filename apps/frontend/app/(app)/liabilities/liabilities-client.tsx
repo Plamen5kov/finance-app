@@ -27,7 +27,7 @@ function EditLiabilityModal({ liability, onClose }: { liability: Liability; onCl
   return (
     <Modal title={`Edit — ${liability.name}`} onClose={onClose}>
       <LiabilityForm
-        defaultValues={liability}
+        defaultValues={{ ...liability, metadata: liability.metadata ?? undefined }}
         onSubmit={handleSubmit}
         onCancel={onClose}
         isLoading={update.isPending}

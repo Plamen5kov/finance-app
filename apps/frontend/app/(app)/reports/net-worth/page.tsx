@@ -39,7 +39,7 @@ export default function NetWorthReportPage() {
   const [showNetWorthProjection, setShowNetWorthProjection] = useState(true);
   const [showLiabilityProjection, setShowLiabilityProjection] = useState(true);
   const currentYear = new Date().getFullYear();
-  const [projectionEndYear, setProjectionEndYear] = useState(currentYear + 5);
+  const [projectionEndYear, setProjectionEndYear] = useState<number | null>(currentYear + 1);
 
   const isLoading = summaryLoading || historyLoading || projectionLoading;
 
@@ -87,7 +87,7 @@ export default function NetWorthReportPage() {
   const mergedData = (() => {
     const map = new Map<string, Record<string, unknown>>();
     for (const d of chartData) map.set(d.month as string, { ...d });
-    const projPoints = (projection?.points ?? []).filter(
+    const projPoints = projectionEndYear == null ? [] : (projection?.points ?? []).filter(
       (p) => p.month <= `${projectionEndYear}-12`,
     );
 
@@ -101,6 +101,7 @@ export default function NetWorthReportPage() {
         ? lastHistoricalNW - firstProjPoint.projectedNetWorth
         : 0;
 
+    const liabHitZero = new Set<string>();
     projPoints.forEach((p, i) => {
       const existing = map.get(p.month) ?? { month: p.month };
       const adjusted = p.projectedNetWorth + projectionOffset;
@@ -109,13 +110,18 @@ export default function NetWorthReportPage() {
         row['Net Worth'] = adjusted;
       }
       for (const l of p.liabilities) {
-        if (l.balance > 0.01) row[`${l.name} (projected)`] = l.balance;
+        if (l.balance > 0.01) {
+          row[`${l.name} (projected)`] = l.balance;
+        } else if (!liabHitZero.has(l.name)) {
+          row[`${l.name} (projected)`] = 0;
+          liabHitZero.add(l.name);
+        }
       }
       map.set(p.month, row);
     });
     return Array.from(map.values())
       .sort((a, b) => String(a.month).localeCompare(String(b.month)))
-      .filter((d) => String(d.month) <= `${projectionEndYear}-12`);
+      .filter((d) => projectionEndYear == null || String(d.month) <= `${projectionEndYear}-12`);
   })();
 
   const hasProjection = (projection?.points.length ?? 0) > 0;
@@ -255,10 +261,12 @@ export default function NetWorthReportPage() {
                 <label className="flex items-center gap-1.5 select-none">
                   Project until
                   <select
-                    value={projectionEndYear}
-                    onChange={(e) => setProjectionEndYear(Number(e.target.value))}
+                    value={projectionEndYear ?? ''}
+                    onChange={(e) => setProjectionEndYear(e.target.value === '' ? null : Number(e.target.value))}
                     className="border border-gray-200 rounded px-1.5 py-0.5 text-xs bg-white"
                   >
+                    <option value="">None</option>
+                    <option value={currentYear}>This year</option>
                     {Array.from({ length: 30 }, (_, i) => currentYear + 1 + i).map((yr) => (
                       <option key={yr} value={yr}>{yr}</option>
                     ))}
@@ -273,7 +281,7 @@ export default function NetWorthReportPage() {
         ) : mergedData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">No snapshot history</p>
         ) : (
-          <ResponsiveContainer key={projectionEndYear} width="100%" height={340}>
+          <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={340}>
             <LineChart data={mergedData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis

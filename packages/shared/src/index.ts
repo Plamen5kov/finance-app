@@ -1,7 +1,7 @@
 export const ASSET_TYPES = ['etf', 'crypto', 'gold', 'apartment'] as const;
 export type AssetType = (typeof ASSET_TYPES)[number];
 
-export const LIABILITY_TYPES = ['mortgage', 'loan'] as const;
+export const LIABILITY_TYPES = ['mortgage', 'loan', 'leasing'] as const;
 export type LiabilityType = (typeof LIABILITY_TYPES)[number];
 
 export const ALL_FINANCIAL_TYPES = [...ASSET_TYPES, ...LIABILITY_TYPES] as const;
@@ -34,4 +34,14 @@ export interface LoanMetadata {
   monthlyPayment?: number;
   termMonths?: number;
   startDate?: string;
+}
+
+export interface LeasingMetadata {
+  originalValue: number;    // Total asset price (e.g. car value)
+  downPayment: number;      // Initial down payment
+  residualValue: number;    // Balloon payment due at end of lease
+  interestRate: number;     // Annual rate %
+  monthlyPayment: number;   // Fixed monthly payment
+  termMonths: number;       // Total lease duration in months
+  startDate: string;        // ISO date YYYY-MM-DD
 }

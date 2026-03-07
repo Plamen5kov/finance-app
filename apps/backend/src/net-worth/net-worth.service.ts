@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { MortgageMetadata } from '@finances/shared';
+import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 
 @Injectable()
 export class NetWorthService {
@@ -67,27 +67,57 @@ export class NetWorthService {
     const liabByMonth = new Map<string, LiabEntry[]>();
 
     for (const l of liabilities) {
-      const meta = l.metadata as unknown as MortgageMetadata | null;
-      if (meta?.originalAmount && meta?.startDate && meta?.monthlyPayment && meta?.interestRate !== undefined) {
-        const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
-        let balance = meta.originalAmount;
-        let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
-        while (true) {
-          const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-          if (monthKey > nowMonthKey) break;
-          if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
-          liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: balance });
-          if (balance <= 0.01) break;
-          balance = this.amortizeMonth(balance, monthKey, sortedRates, meta.interestRate, meta.monthlyPayment);
-          month++;
-          if (month > 12) { month = 1; year++; }
+      if (l.type === 'leasing') {
+        const meta = l.metadata as unknown as LeasingMetadata | null;
+        if (meta?.startDate && meta?.monthlyPayment && meta?.interestRate !== undefined && meta?.termMonths) {
+          const financed = (meta.originalValue ?? 0) - (meta.downPayment ?? 0);
+          const residual = meta.residualValue ?? 0;
+          const monthlyRate = meta.interestRate / 100 / 12;
+          let balance = financed;
+          let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
+          for (let i = 0; i <= meta.termMonths; i++) {
+            const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+            if (monthKey > nowMonthKey) break;
+            const displayBalance = i === meta.termMonths ? residual : Math.max(residual, balance);
+            if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
+            liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: displayBalance });
+            if (i < meta.termMonths) {
+              const interest = balance * monthlyRate;
+              const principal = meta.monthlyPayment - interest;
+              balance = Math.max(residual, balance - (principal > 0 ? principal : 0));
+            }
+            month++;
+            if (month > 12) { month = 1; year++; }
+          }
+        } else {
+          for (const s of l.snapshots) {
+            const monthKey = s.capturedAt.toISOString().slice(0, 7);
+            if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
+            liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: s.value });
+          }
         }
       } else {
-        // Fall back to carry-forward from stored snapshots
-        for (const s of l.snapshots) {
-          const monthKey = s.capturedAt.toISOString().slice(0, 7);
-          if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
-          liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: s.value });
+        const meta = l.metadata as unknown as MortgageMetadata | null;
+        if (meta?.originalAmount && meta?.startDate && meta?.monthlyPayment && meta?.interestRate !== undefined) {
+          const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
+          let balance = meta.originalAmount;
+          let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
+          while (true) {
+            const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+            if (monthKey > nowMonthKey) break;
+            if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
+            liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: balance });
+            if (balance <= 0.01) break;
+            balance = this.amortizeMonth(balance, monthKey, sortedRates, meta.interestRate, meta.monthlyPayment);
+            month++;
+            if (month > 12) { month = 1; year++; }
+          }
+        } else {
+          for (const s of l.snapshots) {
+            const monthKey = s.capturedAt.toISOString().slice(0, 7);
+            if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
+            liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: s.value });
+          }
         }
       }
     }
@@ -112,12 +142,31 @@ export class NetWorthService {
 
     const sortedMonths = Array.from(allMonths).sort();
 
+    // The earliest month that any liability appears — used so a snapshot-less asset (e.g. apartment)
+    // is included from when its paired liability first shows up, even if the asset was added to the
+    // app later than the liability start date.
+    const earliestLiabilityMonth = liabByMonth.size > 0
+      ? Array.from(liabByMonth.keys()).sort()[0]
+      : null;
+
     return sortedMonths.map((month) => {
       const items: Array<{ name: string; type: string; value: number; isLiability: boolean }> = [];
 
-      // Assets: carry forward the most recent snapshot value for each asset
+      // Assets: carry forward the most recent snapshot value for each asset.
+      // Assets with no snapshots are included from the earlier of (createdAt, firstLiabilityMonth)
+      // using their current value, so that manually-tracked assets (e.g. apartment) offset a
+      // paired liability (e.g. mortgage) without causing phantom net-worth drops.
       for (const a of assets) {
-        if (!a.snapshots.length) continue;
+        if (!a.snapshots.length) {
+          const createdAtMonth = a.createdAt.toISOString().slice(0, 7);
+          const effectiveStart = earliestLiabilityMonth && earliestLiabilityMonth < createdAtMonth
+            ? earliestLiabilityMonth
+            : createdAtMonth;
+          if (month >= effectiveStart) {
+            items.push({ name: a.name, type: a.type, value: a.value, isLiability: false });
+          }
+          continue;
+        }
         const firstMonth = a.snapshots[0].capturedAt.toISOString().slice(0, 7);
         if (month < firstMonth) continue;
         const snap = [...a.snapshots].reverse().find(
@@ -160,32 +209,51 @@ export class NetWorthService {
     const totalAssets = assetAgg._sum.value ?? 0;
 
     const projectable = liabilities.filter((l) => {
-      const meta = l.metadata as unknown as MortgageMetadata | null;
-      return meta && meta.monthlyPayment > 0 && l.value > 0 && meta.interestRate >= 0;
+      const meta = l.metadata as unknown as MortgageMetadata | LeasingMetadata | null;
+      return meta && (meta as MortgageMetadata).monthlyPayment > 0 && l.value > 0;
     });
 
     if (!projectable.length) return { payoffMonth: null, points: [] as Array<{ month: string; projectedNetWorth: number }> };
 
     const now = new Date();
-
     const nowMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     let balances = projectable.map((l) => {
-      const meta = l.metadata as unknown as MortgageMetadata;
-      const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
-      const balance = meta.originalAmount && meta.startDate
-        ? this.amortizeToMonth(meta, nowMonthKey)
-        : l.value;
-      const latestRate = sortedRates.length > 0
-        ? (sortedRates[sortedRates.length - 1].rate)
-        : meta.interestRate;
-      return {
-        name: l.name,
-        type: l.type,
-        balance,
-        monthlyRate: latestRate / 100 / 12,
-        payment: meta.monthlyPayment,
-      };
+      if (l.type === 'leasing') {
+        const meta = l.metadata as unknown as LeasingMetadata;
+        const financed = (meta.originalValue ?? 0) - (meta.downPayment ?? 0);
+        const residual = meta.residualValue ?? 0;
+        const monthlyRate = meta.interestRate / 100 / 12;
+        // Compute current leasing balance by running amortization from start to now
+        let balance = financed;
+        if (meta.startDate) {
+          let [yr, mo] = meta.startDate.slice(0, 7).split('-').map(Number);
+          for (let i = 0; i < meta.termMonths; i++) {
+            const mk = `${yr}-${String(mo).padStart(2, '0')}`;
+            if (mk >= nowMonthKey) break;
+            const interest = balance * monthlyRate;
+            const principal = meta.monthlyPayment - interest;
+            balance = Math.max(residual, balance - (principal > 0 ? principal : 0));
+            mo++; if (mo > 12) { mo = 1; yr++; }
+          }
+        }
+        // Compute end-of-lease month for payoff tracking
+        let endMonthKey: string | null = null;
+        if (meta.startDate && meta.termMonths) {
+          const d = new Date(meta.startDate + 'T00:00:00Z');
+          d.setUTCMonth(d.getUTCMonth() + meta.termMonths);
+          endMonthKey = d.toISOString().slice(0, 7);
+        }
+        return { name: l.name, type: l.type, balance, monthlyRate, payment: meta.monthlyPayment, residual, endMonthKey };
+      } else {
+        const meta = l.metadata as unknown as MortgageMetadata;
+        const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
+        const balance = meta.originalAmount && meta.startDate
+          ? this.amortizeToMonth(meta, nowMonthKey)
+          : l.value;
+        const latestRate = sortedRates.length > 0 ? sortedRates[sortedRates.length - 1].rate : meta.interestRate;
+        return { name: l.name, type: l.type, balance, monthlyRate: latestRate / 100 / 12, payment: meta.monthlyPayment, residual: 0, endMonthKey: null as string | null };
+      }
     });
 
     const points: Array<{
@@ -211,11 +279,13 @@ export class NetWorthService {
       if (payoffMonth) continue;
 
       balances = balances.map((b) => {
-        if (b.balance <= 0) return b;
+        if (b.balance <= b.residual) return b;
+        // For leasing: at end month the residual (balloon) is paid — balance drops to 0
+        if (b.endMonthKey && month >= b.endMonthKey) return { ...b, balance: 0 };
         const interest = b.balance * b.monthlyRate;
         const principal = b.payment - interest;
         if (principal <= 0) return b;
-        return { ...b, balance: Math.max(0, b.balance - principal) };
+        return { ...b, balance: Math.max(b.residual, b.balance - principal) };
       });
     }
 
