@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -125,6 +126,10 @@ export function InviteClient({ token }: { token: string }) {
         <p className="text-xs text-gray-400 mt-4">
           Expires {new Date(info.expiresAt).toLocaleDateString()}
         </p>
+      </div>
+
+      <div className="max-w-sm w-full mt-4">
+        <PwaInstallPrompt />
       </div>
     </div>
   );
