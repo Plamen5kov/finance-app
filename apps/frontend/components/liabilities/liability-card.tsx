@@ -35,18 +35,31 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
     ? (liability.metadata as MortgageMetadata | null)
     : null;
 
-  const monthsRemaining = meta?.interestRate != null && meta?.monthlyPayment
-    ? calcMonthsRemaining(liability.value, meta.interestRate, meta.monthlyPayment)
-    : null;
+  const latestRate = meta?.rateHistory?.length
+    ? [...meta.rateHistory].sort((a, b) => b.date.localeCompare(a.date))[0].rate
+    : meta?.interestRate;
+
+  const monthsRemaining = (() => {
+    if (!meta) return null;
+    // Prefer termMonths − elapsed when the user has configured both
+    if (meta.termMonths && meta.startDate) {
+      const start = new Date(meta.startDate + 'T00:00:00Z');
+      const elapsed = Math.max(0, Math.floor(
+        (Date.now() - start.getTime()) / (1000 * 60 * 60 * 24 * 30.4375)
+      ));
+      return Math.max(0, meta.termMonths - elapsed);
+    }
+    // Fall back to amortization formula
+    if (latestRate != null && meta.monthlyPayment) {
+      return calcMonthsRemaining(liability.value, latestRate, meta.monthlyPayment);
+    }
+    return null;
+  })();
 
   const totalInterestRemaining =
     monthsRemaining != null && meta?.monthlyPayment
       ? meta.monthlyPayment * monthsRemaining - liability.value
       : null;
-
-  const latestRate = meta?.rateHistory?.length
-    ? [...meta.rateHistory].sort((a, b) => b.date.localeCompare(a.date))[0].rate
-    : meta?.interestRate;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">

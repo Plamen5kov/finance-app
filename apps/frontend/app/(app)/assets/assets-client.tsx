@@ -5,12 +5,14 @@ import { useAssets, useCreateAsset, useDeleteAsset, CreateAssetInput } from '@/h
 import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
 import { AssetForm } from '@/components/assets/asset-form';
+import { AssetSnapshotModal } from '@/components/assets/asset-snapshot-modal';
 import { Modal } from '@/components/ui/modal';
 import { formatCurrency } from '@/lib/utils';
 import { Plus, TrendingUp } from 'lucide-react';
 
 export function AssetsClient() {
   const [showForm, setShowForm] = useState(false);
+  const [historyAssetId, setHistoryAssetId] = useState<string | null>(null);
 
   const { data: assets, isLoading } = useAssets();
   const createAsset = useCreateAsset();
@@ -94,7 +96,7 @@ export function AssetsClient() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {group.map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} />
+                    <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} onHistory={setHistoryAssetId} />
                   ))}
                 </div>
               </section>
@@ -111,6 +113,14 @@ export function AssetsClient() {
             isLoading={createAsset.isPending}
           />
         </Modal>
+      )}
+
+      {historyAssetId && (
+        <AssetSnapshotModal
+          assetId={historyAssetId}
+          assetName={assets?.find((a) => a.id === historyAssetId)?.name ?? ''}
+          onClose={() => setHistoryAssetId(null)}
+        />
       )}
     </div>
   );

@@ -84,3 +84,47 @@ export function useDeleteAsset() {
     },
   });
 }
+
+export interface AssetSnapshot {
+  id: string;
+  assetId: string;
+  value: number;
+  capturedAt: string;
+}
+
+export function useAssetSnapshots(assetId: string) {
+  return useQuery({
+    queryKey: ['assets', assetId, 'snapshots'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<AssetSnapshot[]>(`/assets/${assetId}/snapshots`);
+      return data;
+    },
+  });
+}
+
+export function useAddAssetSnapshot(assetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { value: number; month: string }) => {
+      const { data } = await apiClient.post<AssetSnapshot>(`/assets/${assetId}/snapshots`, input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets', assetId, 'snapshots'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth', 'history'] });
+    },
+  });
+}
+
+export function useDeleteAssetSnapshot(assetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (snapshotId: string) => {
+      await apiClient.delete(`/assets/${assetId}/snapshots/${snapshotId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets', assetId, 'snapshots'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth', 'history'] });
+    },
+  });
+}

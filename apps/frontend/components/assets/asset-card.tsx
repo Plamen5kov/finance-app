@@ -1,7 +1,7 @@
 'use client';
 
 import { formatCurrency } from '@/lib/utils';
-import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, History } from 'lucide-react';
 
 const TYPE_COLORS: Record<string, string> = {
   etf: 'bg-blue-100 text-blue-700',
@@ -34,9 +34,10 @@ interface CardItem {
 interface AssetCardProps {
   asset: CardItem;
   onDelete: (id: string) => void;
+  onHistory: (id: string) => void;
 }
 
-export function AssetCard({ asset, onDelete }: AssetCardProps) {
+export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
   const gain = asset.costBasis != null ? asset.value - asset.costBasis : null;
   const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
 
@@ -52,6 +53,13 @@ export function AssetCard({ asset, onDelete }: AssetCardProps) {
             </span>
           </div>
         </div>
+        <button
+          onClick={() => onHistory(asset.id)}
+          className="p-1.5 text-gray-300 hover:text-brand transition-colors"
+          aria-label="Asset history"
+        >
+          <History size={14} />
+        </button>
         <button
           onClick={() => onDelete(asset.id)}
           className="p-1.5 text-gray-300 hover:text-red-500 transition-colors"

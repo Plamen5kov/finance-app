@@ -69,6 +69,29 @@ export class AssetsService {
     }));
   }
 
+  async getSnapshots(userId: string, assetId: string) {
+    await this.assertOwner(userId, assetId);
+    return this.prisma.assetSnapshot.findMany({
+      where: { assetId },
+      orderBy: { capturedAt: 'asc' },
+    });
+  }
+
+  async addSnapshot(userId: string, assetId: string, value: number, month: string) {
+    await this.assertOwner(userId, assetId);
+    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
+    const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
+    if (existing) {
+      return this.prisma.assetSnapshot.update({ where: { id: existing.id }, data: { value } });
+    }
+    return this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt } });
+  }
+
+  async deleteSnapshot(userId: string, assetId: string, snapshotId: string) {
+    await this.assertOwner(userId, assetId);
+    await this.prisma.assetSnapshot.delete({ where: { id: snapshotId } });
+  }
+
   private async assertOwner(userId: string, assetId: string) {
     const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
     if (!asset) throw new NotFoundException('Asset not found');

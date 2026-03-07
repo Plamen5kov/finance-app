@@ -39,7 +39,7 @@ export default function NetWorthReportPage() {
   const [showNetWorthProjection, setShowNetWorthProjection] = useState(true);
   const [showLiabilityProjection, setShowLiabilityProjection] = useState(true);
   const currentYear = new Date().getFullYear();
-  const [projectionEndYear, setProjectionEndYear] = useState(currentYear + 30);
+  const [projectionEndYear, setProjectionEndYear] = useState(currentYear + 5);
 
   const isLoading = summaryLoading || historyLoading || projectionLoading;
 
@@ -90,15 +90,26 @@ export default function NetWorthReportPage() {
     const projPoints = (projection?.points ?? []).filter(
       (p) => p.month <= `${projectionEndYear}-12`,
     );
+
+    // Anchor projection to the last historical net worth value so the line connects seamlessly
+    const firstProjPoint = projPoints[0];
+    const lastHistoricalNW = chartData.length > 0
+      ? (chartData[chartData.length - 1]['Net Worth'] as number | undefined)
+      : undefined;
+    const projectionOffset =
+      lastHistoricalNW != null && firstProjPoint != null
+        ? lastHistoricalNW - firstProjPoint.projectedNetWorth
+        : 0;
+
     projPoints.forEach((p, i) => {
       const existing = map.get(p.month) ?? { month: p.month };
-      const row: Record<string, unknown> = { ...existing, 'Projected Net Worth': p.projectedNetWorth };
-      // Bridge the gap at the start of the projection: seed Net Worth so the two lines connect
+      const adjusted = p.projectedNetWorth + projectionOffset;
+      const row: Record<string, unknown> = { ...existing, 'Projected Net Worth': adjusted };
       if (i === 0 && row['Net Worth'] == null) {
-        row['Net Worth'] = p.projectedNetWorth;
+        row['Net Worth'] = adjusted;
       }
       for (const l of p.liabilities) {
-        row[`${l.name} (projected)`] = l.balance;
+        if (l.balance > 0.01) row[`${l.name} (projected)`] = l.balance;
       }
       map.set(p.month, row);
     });
@@ -262,7 +273,7 @@ export default function NetWorthReportPage() {
         ) : mergedData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">No snapshot history</p>
         ) : (
-          <ResponsiveContainer width="100%" height={340}>
+          <ResponsiveContainer key={projectionEndYear} width="100%" height={340}>
             <LineChart data={mergedData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
@@ -280,6 +291,7 @@ export default function NetWorthReportPage() {
               />
               <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
               <Legend />
+              <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1} />
               <ReferenceLine
                 x={todayMonth}
                 stroke="#D1D5DB"

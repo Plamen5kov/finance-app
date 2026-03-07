@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { AssetsService } from './assets.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
+import { CreateSnapshotDto } from './dto/create-snapshot.dto';
 
 @Controller({ path: 'assets', version: '1' })
 @UseGuards(JwtAuthGuard)
@@ -63,5 +64,29 @@ export class AssetsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.assetsService.remove(user.userId, id);
+  }
+
+  @Get(':id/snapshots')
+  getSnapshots(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.assetsService.getSnapshots(user.userId, id);
+  }
+
+  @Post(':id/snapshots')
+  addSnapshot(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: CreateSnapshotDto,
+  ) {
+    return this.assetsService.addSnapshot(user.userId, id, dto.value, dto.month);
+  }
+
+  @Delete(':id/snapshots/:sid')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteSnapshot(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('sid') sid: string,
+  ) {
+    return this.assetsService.deleteSnapshot(user.userId, id, sid);
   }
 }
