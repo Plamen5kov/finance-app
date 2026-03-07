@@ -181,12 +181,24 @@ async function main() {
   const goldAsset = await upsertAsset('gold', 'Gold (злато)', parseFloat2(latestRow[13]));
   const apartmentAsset = await upsertAsset('apartment', 'Apartment', 420000);
 
-  // Find-or-create mortgage (preserve user-configured metadata like rate history)
+  // Find-or-create mortgage with lifecycle events
+  const mortgageMetadata = {
+    originalAmount: 180000,
+    interestRate: 2.5,
+    monthlyPayment: 475,
+    termMonths: 240,
+    startDate: '2020-02-01',
+    events: [
+      { id: 'evt-1', type: 'refinance', date: '2023-01-01', newBalance: 116458.37, newRate: 2.2, notes: 'Refinanced — rate dropped from 2.5% to 2.2%, balance includes effect of extra payments during 2020-2022' },
+      { id: 'evt-2', type: 'payment_change', date: '2023-03-01', newMonthlyPayment: 1010.01, notes: 'Increased monthly payment to shorten term' },
+      { id: 'evt-3', type: 'rate_change', date: '2025-01-01', newRate: 2.58, notes: 'Bank rate increase' },
+    ],
+  };
   let mortgageLiability = await prisma.liability.findFirst({ where: { userId: user.id, type: 'mortgage', name: 'Home Mortgage' } });
   if (mortgageLiability) {
     mortgageLiability = await prisma.liability.update({
       where: { id: mortgageLiability.id },
-      data: { value: parseFloat2(latestRow[11]) },
+      data: { value: parseFloat2(latestRow[11]), metadata: mortgageMetadata as object },
     });
   } else {
     mortgageLiability = await prisma.liability.create({
@@ -195,8 +207,8 @@ async function main() {
         type: 'mortgage',
         name: 'Home Mortgage',
         value: parseFloat2(latestRow[11]),
-        currency: 'BGN',
-        metadata: { monthlyPayment: parseFloat2(latestRow[8]), interestRate: 2.58, note: 'Remaining balance' },
+        currency: 'EUR',
+        metadata: mortgageMetadata as object,
       },
     });
   }
@@ -417,64 +429,25 @@ async function main() {
   await prisma.goalSnapshot.createMany({ data: goalSnaps });
   console.log(`✅ Created ${goalSnaps.length} goal snapshots\n`);
 
-  // 7. Import monthly income/expense history from mind.csv (2015+)
-  const salaryCat = await prisma.expenseCategory.create({
-    data: { userId: user.id, name: 'Salary / Income', color: '#10B981', type: 'income' },
-  });
-  const fixedCat = await prisma.expenseCategory.create({
-    data: { userId: user.id, name: 'Fixed Expenses', color: '#6366F1', type: 'expense' },
-  });
-
-  const historicalExpenses: Array<{
-    userId: string; amount: number; description: string; merchant: string;
-    date: Date; categoryId: string; source: string;
-  }> = [];
-
-  for (const row of dataRows) {
-    const d = parseDate(row[1]);
-    if (!d) continue;
-    const income = parseFloat2(row[2]);
-    const fixed = parseFloat2(row[3]);
-    const expDate = new Date(d.getFullYear(), d.getMonth(), 1);
-
-    if (income > 0) {
-      historicalExpenses.push({
-        userId: user.id, amount: income,
-        description: `Monthly salary ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-        merchant: 'Employer', date: expDate, categoryId: salaryCat.id, source: 'imported',
-      });
-    }
-    if (fixed > 0) {
-      historicalExpenses.push({
-        userId: user.id, amount: fixed,
-        description: `Fixed expenses ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-        merchant: 'Various', date: expDate, categoryId: fixedCat.id, source: 'imported',
-      });
-    }
-  }
-  await prisma.expense.createMany({ data: historicalExpenses });
-  console.log(`✅ Imported ${historicalExpenses.length} historical income/expense records (2015+)\n`);
-
-  // 8. Parse Revolut statement → expenses
-  const revRows = await readCSV(REVOLUT_CSV);
-  const revHeader = revRows[0];
-  // Columns: Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
-  const typeIdx = revHeader.indexOf('Type');
-  const descIdx = revHeader.indexOf('Description');
-  const amountIdx = revHeader.indexOf('Amount');
-  const dateIdx = revHeader.indexOf('Completed Date');
-  const stateIdx = revHeader.indexOf('State');
-
-  // Create expense categories based on Revolut transaction types
-  const categoryMap: Record<string, string> = {};
+  // 7. Create expense categories
   const categoryDefs = [
-    { name: 'Card Payment', color: '#EF4444', type: 'expense' },
-    { name: 'Transfer', color: '#8B5CF6', type: 'expense' },
-    { name: 'Income / Topup', color: '#10B981', type: 'income' },
-    { name: 'Exchange', color: '#F59E0B', type: 'expense' },
+    { name: 'Salary / Income', color: '#10B981', type: 'income' },
+    { name: 'Housing', color: '#6366F1', type: 'required' },
+    { name: 'Utilities', color: '#8B5CF6', type: 'required' },
+    { name: 'Groceries', color: '#F59E0B', type: 'required' },
+    { name: 'Transport', color: '#3B82F6', type: 'expense' },
+    { name: 'Dining Out', color: '#EF4444', type: 'expense' },
+    { name: 'Entertainment', color: '#EC4899', type: 'expense' },
+    { name: 'Healthcare', color: '#14B8A6', type: 'expense' },
+    { name: 'Shopping', color: '#F97316', type: 'expense' },
+    { name: 'Subscriptions', color: '#A855F7', type: 'expense' },
+    { name: 'Insurance', color: '#64748B', type: 'required' },
+    { name: 'Education', color: '#06B6D4', type: 'expense' },
+    { name: 'Travel', color: '#84CC16', type: 'expense' },
     { name: 'Other', color: '#6B7280', type: 'expense' },
   ];
 
+  const categoryMap: Record<string, string> = {};
   for (const def of categoryDefs) {
     const cat = await prisma.expenseCategory.create({
       data: { userId: user.id, name: def.name, color: def.color, type: def.type },
@@ -483,49 +456,116 @@ async function main() {
   }
   console.log(`✅ Created ${categoryDefs.length} expense categories`);
 
-  // Import transactions as expenses (only outgoing card payments and transfers)
+  // 8. Import monthly income/expense history from mind.csv (2015+)
+  // Split the "Fixed Expenses" lump sum into realistic sub-categories
+  const historicalExpenses: Array<{
+    userId: string; amount: number; description: string; merchant: string;
+    date: Date; categoryId: string; source: string;
+  }> = [];
+
+  // Typical monthly budget split (ratios of fixed expenses)
+  const fixedSplits = [
+    { cat: 'Housing', ratio: 0.35, merchant: 'Landlord / Mortgage' },
+    { cat: 'Utilities', ratio: 0.10, merchant: 'Utility Providers' },
+    { cat: 'Groceries', ratio: 0.20, merchant: 'Supermarket' },
+    { cat: 'Transport', ratio: 0.08, merchant: 'Fuel / Transit' },
+    { cat: 'Dining Out', ratio: 0.07, merchant: 'Restaurants' },
+    { cat: 'Insurance', ratio: 0.06, merchant: 'Insurance Co' },
+    { cat: 'Subscriptions', ratio: 0.04, merchant: 'Various Services' },
+    { cat: 'Healthcare', ratio: 0.04, merchant: 'Pharmacy / Doctor' },
+    { cat: 'Shopping', ratio: 0.04, merchant: 'Various Shops' },
+    { cat: 'Entertainment', ratio: 0.02, merchant: 'Cinema / Events' },
+  ];
+
+  for (const row of dataRows) {
+    const d = parseDate(row[1]);
+    if (!d) continue;
+    const income = parseFloat2(row[2]);
+    const fixed = parseFloat2(row[3]);
+    const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+    if (income > 0) {
+      historicalExpenses.push({
+        userId: user.id, amount: income,
+        description: `Monthly salary ${monthStr}`,
+        merchant: 'Employer', date: new Date(d.getFullYear(), d.getMonth(), 1),
+        categoryId: categoryMap['Salary / Income'], source: 'imported',
+      });
+    }
+    if (fixed > 0) {
+      // Deterministic pseudo-random variation per month+category (±15%)
+      const monthSeed = d.getFullYear() * 100 + d.getMonth();
+      for (const split of fixedSplits) {
+        const catSeed = split.cat.length;
+        const variation = 1 + (((monthSeed * catSeed * 7 + 13) % 31) - 15) / 100;
+        const amount = Math.round(fixed * split.ratio * variation * 100) / 100;
+        if (amount > 0) {
+          historicalExpenses.push({
+            userId: user.id, amount,
+            description: `${split.cat} ${monthStr}`,
+            merchant: split.merchant,
+            date: new Date(d.getFullYear(), d.getMonth(), 1 + ((catSeed * 3) % 25)),
+            categoryId: categoryMap[split.cat], source: 'imported',
+          });
+        }
+      }
+    }
+  }
+  await prisma.expense.createMany({ data: historicalExpenses });
+  console.log(`✅ Imported ${historicalExpenses.length} historical income/expense records (2015+)\n`);
+
+  // 9. Parse Revolut statement → expenses (mapped to proper categories)
+  const revRows = await readCSV(REVOLUT_CSV);
+  const revHeader = revRows[0];
+  const descIdx = revHeader.indexOf('Description');
+  const amountIdx = revHeader.indexOf('Amount');
+  const dateIdx = revHeader.indexOf('Completed Date');
+  const stateIdx = revHeader.indexOf('State');
+
+  // Keyword-based category mapping for Revolut descriptions
+  const revCategoryRules: Array<{ keywords: string[]; category: string }> = [
+    { keywords: ['lidl', 'kaufland', 'billa', 'market', 'fantastico', 'cba'], category: 'Groceries' },
+    { keywords: ['restaurant', 'pizza', 'burger', 'sushi', 'cafe', 'bistro', 'bar', 'grill', 'food'], category: 'Dining Out' },
+    { keywords: ['shell', 'omv', 'lukoil', 'petrol', 'fuel', 'parking', 'taxi', 'bolt', 'uber'], category: 'Transport' },
+    { keywords: ['netflix', 'spotify', 'youtube', 'hbo', 'apple.com', 'google', 'subscription'], category: 'Subscriptions' },
+    { keywords: ['pharmacy', 'apteka', 'doctor', 'clinic', 'dental', 'medical', 'hospital'], category: 'Healthcare' },
+    { keywords: ['ikea', 'decathlon', 'zara', 'h&m', 'emag', 'amazon', 'aliexpress'], category: 'Shopping' },
+    { keywords: ['cinema', 'theater', 'concert', 'event', 'ticket', 'game'], category: 'Entertainment' },
+    { keywords: ['hotel', 'airbnb', 'booking', 'airline', 'flight', 'ryanair', 'wizz'], category: 'Travel' },
+    { keywords: ['insurance', 'zastrahovka'], category: 'Insurance' },
+    { keywords: ['electricity', 'water', 'internet', 'phone', 'mobile', 'vivacom', 'a1', 'telenor', 'cez'], category: 'Utilities' },
+  ];
+
+  function classifyRevolutExpense(description: string): string {
+    const lower = description.toLowerCase();
+    for (const rule of revCategoryRules) {
+      if (rule.keywords.some((kw) => lower.includes(kw))) return rule.category;
+    }
+    return 'Other';
+  }
+
   const expenseRows = revRows.slice(1).filter((r) => {
     if (!r[stateIdx]?.includes('COMPLETED')) return false;
-    const amount = parseFloat2(r[amountIdx]);
-    return amount < 0; // only expenses (negative amounts)
+    return parseFloat2(r[amountIdx]) < 0;
   });
 
   const expenses: Array<{
-    userId: string;
-    amount: number;
-    description: string;
-    merchant: string;
-    date: Date;
-    categoryId: string;
-    source: string;
+    userId: string; amount: number; description: string; merchant: string;
+    date: Date; categoryId: string; source: string;
   }> = [];
 
   for (const row of expenseRows) {
-    const type = row[typeIdx]?.trim() ?? 'Other';
     const dateStr = row[dateIdx]?.trim();
     const amount = Math.abs(parseFloat2(row[amountIdx]));
     const description = row[descIdx]?.trim() ?? 'Unknown';
-
     if (!dateStr || amount === 0) continue;
-
     const date = new Date(dateStr.split(' ')[0]);
     if (isNaN(date.getTime())) continue;
 
-    let catName = 'Other';
-    if (type === 'Card Payment') catName = 'Card Payment';
-    else if (type === 'Transfer') catName = 'Transfer';
-    else if (type === 'Exchange') catName = 'Exchange';
-
-    const categoryId = categoryMap[catName] ?? categoryMap['Other'];
-
+    const catName = classifyRevolutExpense(description);
     expenses.push({
-      userId: user.id,
-      amount,
-      description,
-      merchant: description,
-      date,
-      categoryId,
-      source: 'imported',
+      userId: user.id, amount, description, merchant: description,
+      date, categoryId: categoryMap[catName] ?? categoryMap['Other'], source: 'imported',
     });
   }
 

@@ -2,9 +2,10 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import type { MortgageMetadata, LoanMetadata, LeasingMetadata } from '@finances/shared';
+import type { MortgageMetadata, LoanMetadata, LeasingMetadata, MortgageEvent, MortgageEventType } from '@finances/shared';
 
-export type { MortgageMetadata, LoanMetadata, LeasingMetadata } from '@finances/shared';
+export type { MortgageMetadata, LoanMetadata, LeasingMetadata, MortgageEvent, MortgageEventType } from '@finances/shared';
+export { MORTGAGE_EVENT_TYPES } from '@finances/shared';
 
 export interface Liability {
   id: string;

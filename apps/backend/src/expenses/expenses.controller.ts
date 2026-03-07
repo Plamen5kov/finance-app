@@ -36,6 +36,11 @@ export class ExpensesController {
     return this.expensesService.getMonthlySummary(user.userId, month);
   }
 
+  @Get('report/monthly')
+  getMonthlyReport(@CurrentUser() user: JwtPayload, @Query('months') months?: string) {
+    return this.expensesService.getMonthlyReport(user.userId, months ? parseInt(months, 10) : 12);
+  }
+
   @Get('categories')
   findCategories(@CurrentUser() user: JwtPayload) {
     return this.expensesService.findCategories(user.userId);

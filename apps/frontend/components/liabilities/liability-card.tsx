@@ -39,9 +39,16 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
     ? (liability.metadata as MortgageMetadata | null)
     : null;
 
-  const latestRate = mortgageMeta?.rateHistory?.length
-    ? [...mortgageMeta.rateHistory].sort((a, b) => b.date.localeCompare(a.date))[0].rate
-    : mortgageMeta?.interestRate;
+  const latestRate = (() => {
+    if (!mortgageMeta) return undefined;
+    let rate = mortgageMeta.interestRate;
+    for (const evt of (mortgageMeta.events ?? []).slice().sort((a, b) => a.date.localeCompare(b.date))) {
+      if (evt.type === 'rate_change' || evt.type === 'refinance') {
+        if (evt.newRate != null) rate = evt.newRate;
+      }
+    }
+    return rate;
+  })();
 
   const mortgageMonthsRemaining = (() => {
     if (!mortgageMeta) return null;
@@ -206,10 +213,10 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
               <span className="font-medium text-gray-800">{formatCurrency(mortgageMeta.originalAmount)}</span>
             </>
           )}
-          {mortgageMeta.rateHistory?.length > 1 && (
+          {(mortgageMeta.events?.length ?? 0) > 0 && (
             <>
-              <span className="text-gray-500">Rate changes</span>
-              <span className="font-medium text-gray-800">{mortgageMeta.rateHistory.length}</span>
+              <span className="text-gray-500">Events</span>
+              <span className="font-medium text-gray-800">{mortgageMeta.events!.length}</span>
             </>
           )}
         </div>

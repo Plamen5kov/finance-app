@@ -14,18 +14,27 @@ export function isLiability(type: string): boolean {
 export const CURRENCIES = ['EUR', 'USD', 'GBP'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
-export interface RateChange {
-  date: string;   // ISO date string YYYY-MM-DD
-  rate: number;   // annual rate as a percentage, e.g. 3.5
+export const MORTGAGE_EVENT_TYPES = ['rate_change', 'payment_change', 'extra_payment', 'refinance'] as const;
+export type MortgageEventType = (typeof MORTGAGE_EVENT_TYPES)[number];
+
+export interface MortgageEvent {
+  id: string;
+  type: MortgageEventType;
+  date: string;                  // YYYY-MM-DD
+  newRate?: number;              // rate_change, refinance
+  newMonthlyPayment?: number;    // payment_change, refinance
+  amount?: number;               // extra_payment
+  newBalance?: number;           // refinance (sets balance directly)
+  notes?: string;
 }
 
 export interface MortgageMetadata {
   originalAmount: number;   // original loan amount
-  interestRate: number;     // current annual rate %
-  monthlyPayment: number;   // current monthly payment
+  interestRate: number;     // initial annual rate % at startDate
+  monthlyPayment: number;   // initial monthly payment
   termMonths: number;       // total loan term in months
   startDate: string;        // ISO date YYYY-MM-DD
-  rateHistory: RateChange[]; // chronological log of rate changes
+  events: MortgageEvent[];  // lifecycle events (rate changes, refinances, extra payments)
 }
 
 export interface LoanMetadata {
@@ -34,6 +43,7 @@ export interface LoanMetadata {
   monthlyPayment?: number;
   termMonths?: number;
   startDate?: string;
+  events?: MortgageEvent[];
 }
 
 export interface LeasingMetadata {

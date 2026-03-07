@@ -43,6 +43,77 @@ export class ExpensesService {
     return { month, total, byCategory: result };
   }
 
+  async getMonthlyReport(userId: string, months: number) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+
+    const [expenses, categories] = await Promise.all([
+      this.prisma.expense.findMany({
+        where: { userId, date: { gte: start } },
+        include: { category: true },
+        orderBy: { date: 'asc' },
+      }),
+      this.prisma.expenseCategory.findMany({ where: { userId } }),
+    ]);
+
+    // Group by month → category
+    const monthMap = new Map<string, Map<string, { total: number; count: number; categoryName: string; categoryColor: string | null; categoryType: string }>>();
+
+    for (const exp of expenses) {
+      const monthKey = `${exp.date.getFullYear()}-${String(exp.date.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthMap.has(monthKey)) monthMap.set(monthKey, new Map());
+      const catMap = monthMap.get(monthKey)!;
+      if (!catMap.has(exp.categoryId)) {
+        catMap.set(exp.categoryId, {
+          total: 0, count: 0,
+          categoryName: exp.category?.name ?? 'Unknown',
+          categoryColor: exp.category?.color ?? null,
+          categoryType: exp.category?.type ?? 'expense',
+        });
+      }
+      const entry = catMap.get(exp.categoryId)!;
+      entry.total += exp.amount;
+      entry.count += 1;
+    }
+
+    // Build sorted month array
+    const sortedMonths = Array.from(monthMap.keys()).sort();
+    const monthlyData = sortedMonths.map((month) => {
+      const catMap = monthMap.get(month)!;
+      const byCategory = Array.from(catMap.entries()).map(([categoryId, data]) => ({
+        categoryId, ...data, total: Math.round(data.total * 100) / 100,
+      }));
+      const totalExpenses = byCategory.filter((c) => c.categoryType !== 'income').reduce((s, c) => s + c.total, 0);
+      const totalIncome = byCategory.filter((c) => c.categoryType === 'income').reduce((s, c) => s + c.total, 0);
+      return { month, totalExpenses: Math.round(totalExpenses * 100) / 100, totalIncome: Math.round(totalIncome * 100) / 100, byCategory };
+    });
+
+    // Category averages across all months (expenses only)
+    const catTotals = new Map<string, { total: number; months: number; name: string; color: string | null; type: string }>();
+    for (const md of monthlyData) {
+      for (const c of md.byCategory) {
+        if (c.categoryType === 'income') continue;
+        if (!catTotals.has(c.categoryId)) catTotals.set(c.categoryId, { total: 0, months: 0, name: c.categoryName, color: c.categoryColor, type: c.categoryType });
+        const entry = catTotals.get(c.categoryId)!;
+        entry.total += c.total;
+        entry.months += 1;
+      }
+    }
+    const categoryAverages = Array.from(catTotals.entries())
+      .map(([categoryId, data]) => ({
+        categoryId, name: data.name, color: data.color, type: data.type,
+        average: Math.round((data.total / Math.max(data.months, 1)) * 100) / 100,
+        total: Math.round(data.total * 100) / 100,
+      }))
+      .sort((a, b) => b.average - a.average);
+
+    return {
+      months: monthlyData,
+      categoryAverages,
+      categories: categories.map((c) => ({ id: c.id, name: c.name, color: c.color, type: c.type })),
+    };
+  }
+
   async create(userId: string, dto: CreateExpenseDto) {
     return this.prisma.expense.create({
       data: {

@@ -5,6 +5,7 @@ export const metadata: Metadata = { title: 'Reports' };
 
 const reports = [
   { href: '/reports/net-worth', label: 'Net Worth Over Time' },
+  { href: '/reports/expense-budget', label: 'Monthly Budget Report' },
   { href: '/reports/allocation-comparison', label: 'Planned vs Actual Allocations' },
   { href: '/reports/goal-comparison', label: 'Goal Progress Tracking' },
   { href: '/reports/deadline-status', label: 'Deadline Status' },

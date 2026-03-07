@@ -6,36 +6,74 @@ import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 export class NetWorthService {
   constructor(private prisma: PrismaService) {}
 
-  /** Apply one month's payment and return the new balance. */
-  private amortizeMonth(
-    balance: number,
-    monthKey: string,
-    sortedRates: Array<{ date: string; rate: number }>,
-    defaultRate: number,
-    monthlyPayment: number,
-  ): number {
-    const applicableRate =
-      [...sortedRates].reverse().find((r) => r.date.slice(0, 7) <= monthKey)?.rate ?? defaultRate;
-    const monthlyRate = applicableRate / 100 / 12;
-    const interest = balance * monthlyRate;
-    const principal = monthlyPayment - interest;
-    if (principal <= 0) return balance;
-    return Math.max(0, balance - principal);
-  }
+  /** Run amortization with lifecycle events, returning balance per month. */
+  private amortizeWithEvents(
+    meta: MortgageMetadata,
+    untilMonthKey: string,
+  ): Map<string, number> {
+    const balances = new Map<string, number>();
+    const events = (meta.events ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
 
-  /** Run amortization from meta.originalAmount at meta.startDate up to (but not including) untilMonthKey. */
-  private amortizeToMonth(meta: MortgageMetadata, untilMonthKey: string): number {
-    const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
     let balance = meta.originalAmount;
+    let rate = meta.interestRate;
+    let payment = meta.monthlyPayment;
     let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
+
     while (balance > 0.01) {
       const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-      if (monthKey >= untilMonthKey) break;
-      balance = this.amortizeMonth(balance, monthKey, sortedRates, meta.interestRate, meta.monthlyPayment);
+      if (monthKey > untilMonthKey) break;
+
+      // Apply events for this month
+      for (const evt of events) {
+        const evtMonth = evt.date.slice(0, 7);
+        if (evtMonth !== monthKey) continue;
+        switch (evt.type) {
+          case 'rate_change':
+            if (evt.newRate != null) rate = evt.newRate;
+            break;
+          case 'payment_change':
+            if (evt.newMonthlyPayment != null) payment = evt.newMonthlyPayment;
+            break;
+          case 'extra_payment':
+            if (evt.amount != null) balance = Math.max(0, balance - evt.amount);
+            break;
+          case 'refinance':
+            if (evt.newBalance != null) balance = evt.newBalance;
+            if (evt.newRate != null) rate = evt.newRate;
+            if (evt.newMonthlyPayment != null) payment = evt.newMonthlyPayment;
+            break;
+        }
+      }
+
+      balances.set(monthKey, balance);
+
+      // Standard amortization step
+      const monthlyRate = rate / 100 / 12;
+      const interest = balance * monthlyRate;
+      const principal = payment - interest;
+      if (principal > 0) balance = Math.max(0, balance - principal);
+
       month++;
       if (month > 12) { month = 1; year++; }
     }
-    return balance;
+
+    return balances;
+  }
+
+  /** Get the effective rate and payment at a given month from events. */
+  private getEffectiveTerms(meta: MortgageMetadata, atMonthKey: string) {
+    let rate = meta.interestRate;
+    let payment = meta.monthlyPayment;
+    for (const evt of (meta.events ?? []).slice().sort((a, b) => a.date.localeCompare(b.date))) {
+      if (evt.date.slice(0, 7) > atMonthKey) break;
+      if (evt.type === 'rate_change' || evt.type === 'refinance') {
+        if (evt.newRate != null) rate = evt.newRate;
+      }
+      if (evt.type === 'payment_change' || evt.type === 'refinance') {
+        if (evt.newMonthlyPayment != null) payment = evt.newMonthlyPayment;
+      }
+    }
+    return { rate, payment };
   }
 
   async getSummary(userId: string) {
@@ -99,18 +137,10 @@ export class NetWorthService {
       } else {
         const meta = l.metadata as unknown as MortgageMetadata | null;
         if (meta?.originalAmount && meta?.startDate && meta?.monthlyPayment && meta?.interestRate !== undefined) {
-          const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
-          let balance = meta.originalAmount;
-          let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
-          while (true) {
-            const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-            if (monthKey > nowMonthKey) break;
+          const balanceMap = this.amortizeWithEvents(meta, nowMonthKey);
+          for (const [monthKey, balance] of balanceMap) {
             if (!liabByMonth.has(monthKey)) liabByMonth.set(monthKey, []);
             liabByMonth.get(monthKey)!.push({ name: l.name, type: l.type, value: balance });
-            if (balance <= 0.01) break;
-            balance = this.amortizeMonth(balance, monthKey, sortedRates, meta.interestRate, meta.monthlyPayment);
-            month++;
-            if (month > 12) { month = 1; year++; }
           }
         } else {
           for (const s of l.snapshots) {
@@ -247,12 +277,15 @@ export class NetWorthService {
         return { name: l.name, type: l.type, balance, monthlyRate, payment: meta.monthlyPayment, residual, endMonthKey };
       } else {
         const meta = l.metadata as unknown as MortgageMetadata;
-        const sortedRates = (meta.rateHistory ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
-        const balance = meta.originalAmount && meta.startDate
-          ? this.amortizeToMonth(meta, nowMonthKey)
-          : l.value;
-        const latestRate = sortedRates.length > 0 ? sortedRates[sortedRates.length - 1].rate : meta.interestRate;
-        return { name: l.name, type: l.type, balance, monthlyRate: latestRate / 100 / 12, payment: meta.monthlyPayment, residual: 0, endMonthKey: null as string | null };
+        let balance: number;
+        if (meta.originalAmount && meta.startDate) {
+          const balanceMap = this.amortizeWithEvents(meta, nowMonthKey);
+          balance = balanceMap.get(nowMonthKey) ?? l.value;
+        } else {
+          balance = l.value;
+        }
+        const { rate, payment } = this.getEffectiveTerms(meta, nowMonthKey);
+        return { name: l.name, type: l.type, balance, monthlyRate: rate / 100 / 12, payment, residual: 0, endMonthKey: null as string | null };
       }
     });
 
