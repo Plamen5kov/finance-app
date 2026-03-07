@@ -7,55 +7,55 @@ import { isLiability } from '@finances/shared';
 export class AssetsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId: string) {
+  async findAll(householdId: string) {
     return this.prisma.asset.findMany({
-      where: { userId },
+      where: { householdId },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async findOne(userId: string, id: string) {
+  async findOne(householdId: string, id: string) {
     const asset = await this.prisma.asset.findUnique({
       where: { id },
       include: { snapshots: { orderBy: { capturedAt: 'desc' }, take: 24 } },
     });
     if (!asset) throw new NotFoundException('Asset not found');
-    if (asset.userId !== userId) throw new ForbiddenException();
+    if (asset.householdId !== householdId) throw new ForbiddenException();
     return asset;
   }
 
-  async create(userId: string, dto: CreateAssetDto) {
-    return this.prisma.asset.create({ data: { userId, ...dto } });
+  async create(householdId: string, userId: string, dto: CreateAssetDto) {
+    return this.prisma.asset.create({ data: { userId, householdId, ...dto } });
   }
 
-  async update(userId: string, id: string, dto: Partial<CreateAssetDto>) {
-    await this.assertOwner(userId, id);
+  async update(householdId: string, id: string, dto: Partial<CreateAssetDto>) {
+    await this.assertHouseholdAccess(householdId, id);
     return this.prisma.asset.update({ where: { id }, data: dto });
   }
 
-  async remove(userId: string, id: string) {
-    await this.assertOwner(userId, id);
+  async remove(householdId: string, id: string) {
+    await this.assertHouseholdAccess(householdId, id);
     await this.prisma.asset.delete({ where: { id } });
   }
 
-  async getHistory(userId: string) {
+  async getHistory(householdId: string) {
     return this.prisma.asset.findMany({
-      where: { userId },
+      where: { householdId },
       include: { snapshots: { orderBy: { capturedAt: 'asc' } } },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async getNetWorth(userId: string) {
-    const assets = await this.prisma.asset.findMany({ where: { userId } });
+  async getNetWorth(householdId: string) {
+    const assets = await this.prisma.asset.findMany({ where: { householdId } });
     const total = assets.reduce((sum, a) => {
       return isLiability(a.type) ? sum - a.value : sum + a.value;
     }, 0);
     return { total, assets };
   }
 
-  async getAllocation(userId: string) {
-    const assets = await this.prisma.asset.findMany({ where: { userId } });
+  async getAllocation(householdId: string) {
+    const assets = await this.prisma.asset.findMany({ where: { householdId } });
     const byType: Record<string, number> = {};
     let total = 0;
     for (const asset of assets) {
@@ -69,16 +69,16 @@ export class AssetsService {
     }));
   }
 
-  async getSnapshots(userId: string, assetId: string) {
-    await this.assertOwner(userId, assetId);
+  async getSnapshots(householdId: string, assetId: string) {
+    await this.assertHouseholdAccess(householdId, assetId);
     return this.prisma.assetSnapshot.findMany({
       where: { assetId },
       orderBy: { capturedAt: 'asc' },
     });
   }
 
-  async addSnapshot(userId: string, assetId: string, value: number, month: string) {
-    await this.assertOwner(userId, assetId);
+  async addSnapshot(householdId: string, assetId: string, value: number, month: string) {
+    await this.assertHouseholdAccess(householdId, assetId);
     const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
     const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
     if (existing) {
@@ -87,15 +87,15 @@ export class AssetsService {
     return this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt } });
   }
 
-  async deleteSnapshot(userId: string, assetId: string, snapshotId: string) {
-    await this.assertOwner(userId, assetId);
+  async deleteSnapshot(householdId: string, assetId: string, snapshotId: string) {
+    await this.assertHouseholdAccess(householdId, assetId);
     await this.prisma.assetSnapshot.delete({ where: { id: snapshotId } });
   }
 
-  private async assertOwner(userId: string, assetId: string) {
+  private async assertHouseholdAccess(householdId: string, assetId: string) {
     const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
     if (!asset) throw new NotFoundException('Asset not found');
-    if (asset.userId !== userId) throw new ForbiddenException();
+    if (asset.householdId !== householdId) throw new ForbiddenException();
     return asset;
   }
 }

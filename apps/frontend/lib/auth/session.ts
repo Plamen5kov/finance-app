@@ -8,6 +8,7 @@ interface SessionPayload {
   userId: string;
   email: string;
   name?: string;
+  householdId?: string;
   expiresAt: Date;
 }
 

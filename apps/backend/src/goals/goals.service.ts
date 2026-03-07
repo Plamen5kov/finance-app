@@ -7,8 +7,8 @@ import { UpdateGoalDto, UpdateGoalStatusDto } from './dto/update-goal.dto';
 export class GoalsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId: string, recurringPeriod?: string | null) {
-    const where: Record<string, unknown> = { userId };
+  async findAll(householdId: string, recurringPeriod?: string | null) {
+    const where: Record<string, unknown> = { householdId };
 
     if (recurringPeriod !== undefined) {
       // query param 'null' string → actual null
@@ -21,28 +21,29 @@ export class GoalsService {
     });
   }
 
-  async getHistory(userId: string) {
+  async getHistory(householdId: string) {
     return this.prisma.goal.findMany({
-      where: { userId },
+      where: { householdId },
       include: { snapshots: { orderBy: { month: 'asc' } } },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async findOne(userId: string, id: string) {
+  async findOne(householdId: string, id: string) {
     const goal = await this.prisma.goal.findUnique({
       where: { id },
       include: { snapshots: { orderBy: { month: 'desc' }, take: 12 } },
     });
     if (!goal) throw new NotFoundException('Goal not found');
-    if (goal.userId !== userId) throw new ForbiddenException();
+    if (goal.householdId !== householdId) throw new ForbiddenException();
     return goal;
   }
 
-  async create(userId: string, dto: CreateGoalDto) {
+  async create(householdId: string, userId: string, dto: CreateGoalDto) {
     return this.prisma.goal.create({
       data: {
         userId,
+        householdId,
         name: dto.name,
         targetAmount: dto.targetAmount,
         targetDate: dto.targetDate ? new Date(dto.targetDate) : null,
@@ -54,8 +55,8 @@ export class GoalsService {
     });
   }
 
-  async update(userId: string, id: string, dto: UpdateGoalDto) {
-    await this.assertOwner(userId, id);
+  async update(householdId: string, id: string, dto: UpdateGoalDto) {
+    await this.assertHouseholdAccess(householdId, id);
     return this.prisma.goal.update({
       where: { id },
       data: {
@@ -72,20 +73,20 @@ export class GoalsService {
     });
   }
 
-  async updateStatus(userId: string, id: string, dto: UpdateGoalStatusDto) {
-    await this.assertOwner(userId, id);
+  async updateStatus(householdId: string, id: string, dto: UpdateGoalStatusDto) {
+    await this.assertHouseholdAccess(householdId, id);
     return this.prisma.goal.update({ where: { id }, data: { status: dto.status } });
   }
 
-  async remove(userId: string, id: string) {
-    await this.assertOwner(userId, id);
+  async remove(householdId: string, id: string) {
+    await this.assertHouseholdAccess(householdId, id);
     await this.prisma.goal.delete({ where: { id } });
   }
 
-  private async assertOwner(userId: string, goalId: string) {
+  private async assertHouseholdAccess(householdId: string, goalId: string) {
     const goal = await this.prisma.goal.findUnique({ where: { id: goalId } });
     if (!goal) throw new NotFoundException('Goal not found');
-    if (goal.userId !== userId) throw new ForbiddenException();
+    if (goal.householdId !== householdId) throw new ForbiddenException();
     return goal;
   }
 }

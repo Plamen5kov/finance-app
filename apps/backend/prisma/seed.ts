@@ -25,6 +25,7 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
+import { buildClassifierChain } from '../src/expenses/transaction-classifier';
 import * as readline from 'readline';
 
 const prisma = new PrismaClient();
@@ -119,21 +120,35 @@ async function readSemicolonCSV(filePath: string): Promise<string[][]> {
 async function main() {
   console.log('🌱 Starting seed...\n');
 
-  // 1. Upsert user
+  // 1. Upsert user + household
   const hash = await bcrypt.hash(SEED_USER.password, 10);
   const user = await prisma.user.upsert({
     where: { email: SEED_USER.email },
     update: {},
     create: { name: SEED_USER.name, email: SEED_USER.email, password: hash },
   });
-  console.log(`✅ User: ${user.email} (id: ${user.id})`);
+
+  // Ensure household + membership exist
+  let membership = await prisma.householdMember.findFirst({ where: { userId: user.id } });
+  if (!membership) {
+    const household = await prisma.household.create({
+      data: {
+        name: `${SEED_USER.name}'s Household`,
+        members: { create: { userId: user.id, role: 'owner' } },
+      },
+    });
+    membership = await prisma.householdMember.findFirst({ where: { userId: user.id, householdId: household.id } });
+  }
+  const householdId = membership!.householdId;
+  console.log(`✅ User: ${user.email} (id: ${user.id}, household: ${householdId})`);
 
   // 2. Clear re-seedable data; preserve assets/liabilities, their metadata, and any manually-added snapshots.
   // Asset snapshots for CSV-managed assets are cleared below (after we have their IDs).
-  await prisma.goalSnapshot.deleteMany({ where: { goal: { userId: user.id } } });
-  await prisma.goal.deleteMany({ where: { userId: user.id } });
-  await prisma.expense.deleteMany({ where: { userId: user.id } });
-  await prisma.expenseCategory.deleteMany({ where: { userId: user.id } });
+  await prisma.goalSnapshot.deleteMany({ where: { goal: { householdId } } });
+  await prisma.goal.deleteMany({ where: { householdId } });
+  await prisma.expense.deleteMany({ where: { householdId } });
+  await prisma.merchantCategoryMap.deleteMany({ where: { householdId } });
+  await prisma.expenseCategory.deleteMany({ where: { householdId } });
   console.log('🧹 Cleared goals/expenses (assets, liabilities, and manually-added snapshots preserved)\n');
 
   // 3. Parse mind.csv (clean column layout, no shifts)
@@ -165,10 +180,10 @@ async function main() {
 
   // 4. Find-or-create assets (preserve existing metadata/configuration)
   const upsertAsset = (type: string, name: string, value: number) =>
-    prisma.asset.findFirst({ where: { userId: user.id, type, name } }).then((existing) =>
+    prisma.asset.findFirst({ where: { householdId, type, name } }).then((existing) =>
       existing
         ? prisma.asset.update({ where: { id: existing.id }, data: { value } })
-        : prisma.asset.create({ data: { userId: user.id, type, name, value, currency: 'BGN' } }),
+        : prisma.asset.create({ data: { userId: user.id, householdId, type, name, value, currency: 'BGN' } }),
     );
 
   // Find latest NN value (last row with a non-zero NN value)
@@ -194,7 +209,7 @@ async function main() {
       { id: 'evt-3', type: 'rate_change', date: '2025-01-01', newRate: 2.58, notes: 'Bank rate increase' },
     ],
   };
-  let mortgageLiability = await prisma.liability.findFirst({ where: { userId: user.id, type: 'mortgage', name: 'Home Mortgage' } });
+  let mortgageLiability = await prisma.liability.findFirst({ where: { householdId, type: 'mortgage', name: 'Home Mortgage' } });
   if (mortgageLiability) {
     mortgageLiability = await prisma.liability.update({
       where: { id: mortgageLiability.id },
@@ -204,6 +219,7 @@ async function main() {
     mortgageLiability = await prisma.liability.create({
       data: {
         userId: user.id,
+        householdId,
         type: 'mortgage',
         name: 'Home Mortgage',
         value: parseFloat2(latestRow[11]),
@@ -244,7 +260,7 @@ async function main() {
     startDate: '2024-03-06',
   };
   let carLeasingLiability = await prisma.liability.findFirst({
-    where: { userId: user.id, type: 'leasing', name: 'Car Lease' },
+    where: { householdId, type: 'leasing', name: 'Car Lease' },
   });
   if (carLeasingLiability) {
     carLeasingLiability = await prisma.liability.update({
@@ -255,6 +271,7 @@ async function main() {
     carLeasingLiability = await prisma.liability.create({
       data: {
         userId: user.id,
+        householdId,
         type: 'leasing',
         name: 'Car Lease',
         value: currentLeasingBalance,
@@ -327,6 +344,7 @@ async function main() {
   const emergencyGoal = await prisma.goal.create({
     data: {
       userId: user.id,
+      householdId,
       name: 'Emergency Fund',
       targetAmount: 15000,
       currentAmount: parseFloat2(latestRow[14]),
@@ -341,6 +359,7 @@ async function main() {
   const babyGoal = await prisma.goal.create({
     data: {
       userId: user.id,
+      householdId,
       name: 'Baby Fund',
       targetAmount: 20000,
       currentAmount: parseFloat2(latestRow[15]),
@@ -448,10 +467,17 @@ async function main() {
     { name: 'Other', color: '#6B7280', type: 'expense' },
   ];
 
+
   const categoryMap: Record<string, string> = {};
   for (const def of categoryDefs) {
     const cat = await prisma.expenseCategory.create({
-      data: { userId: user.id, name: def.name, color: def.color, type: def.type },
+      data: {
+        userId: user.id,
+        householdId,
+        name: def.name,
+        color: def.color,
+        type: def.type,
+      },
     });
     categoryMap[def.name] = cat.id;
   }
@@ -460,56 +486,23 @@ async function main() {
   // 8. Import monthly income/expense history from mind.csv (2015+)
   // Split the "Fixed Expenses" lump sum into realistic sub-categories
   const historicalExpenses: Array<{
-    userId: string; amount: number; description: string; merchant: string;
+    userId: string; householdId: string; amount: number; description: string; merchant: string;
     date: Date; categoryId: string; source: string;
   }> = [];
-
-  // Typical monthly budget split (ratios of fixed expenses)
-  const fixedSplits = [
-    { cat: 'Housing', ratio: 0.35, merchant: 'Landlord / Mortgage' },
-    { cat: 'Utilities', ratio: 0.10, merchant: 'Utility Providers' },
-    { cat: 'Groceries', ratio: 0.20, merchant: 'Supermarket' },
-    { cat: 'Transport', ratio: 0.08, merchant: 'Fuel / Transit' },
-    { cat: 'Dining Out', ratio: 0.07, merchant: 'Restaurants' },
-    { cat: 'Insurance', ratio: 0.06, merchant: 'Insurance Co' },
-    { cat: 'Subscriptions', ratio: 0.04, merchant: 'Various Services' },
-    { cat: 'Healthcare', ratio: 0.04, merchant: 'Pharmacy / Doctor' },
-    { cat: 'Shopping', ratio: 0.04, merchant: 'Various Shops' },
-    { cat: 'Entertainment', ratio: 0.02, merchant: 'Cinema / Events' },
-  ];
 
   for (const row of dataRows) {
     const d = parseDate(row[1]);
     if (!d) continue;
     const income = parseFloat2(row[2]);
-    const fixed = parseFloat2(row[3]);
     const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
     if (income > 0) {
       historicalExpenses.push({
-        userId: user.id, amount: income,
+        userId: user.id, householdId, amount: income,
         description: `Monthly salary ${monthStr}`,
         merchant: 'Employer', date: new Date(d.getFullYear(), d.getMonth(), 1),
         categoryId: categoryMap['Salary / Income'], source: 'imported',
       });
-    }
-    if (fixed > 0) {
-      // Deterministic pseudo-random variation per month+category (±15%)
-      const monthSeed = d.getFullYear() * 100 + d.getMonth();
-      for (const split of fixedSplits) {
-        const catSeed = split.cat.length;
-        const variation = 1 + (((monthSeed * catSeed * 7 + 13) % 31) - 15) / 100;
-        const amount = Math.round(fixed * split.ratio * variation * 100) / 100;
-        if (amount > 0) {
-          historicalExpenses.push({
-            userId: user.id, amount,
-            description: `${split.cat} ${monthStr}`,
-            merchant: split.merchant,
-            date: new Date(d.getFullYear(), d.getMonth(), 1 + ((catSeed * 3) % 25)),
-            categoryId: categoryMap[split.cat], source: 'imported',
-          });
-        }
-      }
     }
   }
   await prisma.expense.createMany({ data: historicalExpenses });
@@ -523,55 +516,65 @@ async function main() {
   const dateIdx = revHeader.indexOf('Completed Date');
   const stateIdx = revHeader.indexOf('State');
 
-  // Keyword-based category mapping for Revolut descriptions
-  const revCategoryRules: Array<{ keywords: string[]; category: string }> = [
-    { keywords: ['lidl', 'kaufland', 'billa', 'market', 'fantastico', 'cba'], category: 'Groceries' },
-    { keywords: ['restaurant', 'pizza', 'burger', 'sushi', 'cafe', 'bistro', 'bar', 'grill', 'food'], category: 'Dining Out' },
-    { keywords: ['shell', 'omv', 'lukoil', 'petrol', 'fuel', 'parking', 'taxi', 'bolt', 'uber'], category: 'Transport' },
-    { keywords: ['netflix', 'spotify', 'youtube', 'hbo', 'apple.com', 'google', 'subscription'], category: 'Subscriptions' },
-    { keywords: ['pharmacy', 'apteka', 'doctor', 'clinic', 'dental', 'medical', 'hospital'], category: 'Healthcare' },
-    { keywords: ['ikea', 'decathlon', 'zara', 'h&m', 'emag', 'amazon', 'aliexpress'], category: 'Shopping' },
-    { keywords: ['cinema', 'theater', 'concert', 'event', 'ticket', 'game'], category: 'Entertainment' },
-    { keywords: ['hotel', 'airbnb', 'booking', 'airline', 'flight', 'ryanair', 'wizz'], category: 'Travel' },
-    { keywords: ['insurance', 'zastrahovka'], category: 'Insurance' },
-    { keywords: ['electricity', 'water', 'internet', 'phone', 'mobile', 'vivacom', 'a1', 'telenor', 'cez'], category: 'Utilities' },
-  ];
+  // Build classifier chain (saved mappings → amount sign → fallback)
+  const existingMappings = await prisma.merchantCategoryMap.findMany({ where: { householdId } });
+  const savedMerchantMap = new Map(existingMappings.map((m) => [m.merchant, m.categoryId]));
+  const { classify } = buildClassifierChain(categoryMap, savedMerchantMap);
 
-  function classifyRevolutExpense(description: string): string {
-    const lower = description.toLowerCase();
-    for (const rule of revCategoryRules) {
-      if (rule.keywords.some((kw) => lower.includes(kw))) return rule.category;
-    }
-    return 'Other';
-  }
-
-  const expenseRows = revRows.slice(1).filter((r) => {
+  // --- Parse and classify Revolut transactions (before March 2026 — March+ is for Import testing) ---
+  const SEED_CUTOFF = '2026-03-01';
+  const typeIdx = revHeader.indexOf('Type');
+  const completedRows = revRows.slice(1).filter((r) => {
     if (!r[stateIdx]?.includes('COMPLETED')) return false;
-    return parseFloat2(r[amountIdx]) < 0;
+    const type = r[typeIdx]?.trim();
+    if (type === 'Exchange') return false;
+    if (parseFloat2(r[amountIdx]) === 0) return false;
+    const dateStr = r[dateIdx]?.trim();
+    if (dateStr && dateStr >= SEED_CUTOFF) return false;
+    return true;
   });
 
-  const expenses: Array<{
-    userId: string; amount: number; description: string; merchant: string;
+  const transactions: Array<{
+    userId: string; householdId: string; amount: number; description: string; merchant: string;
     date: Date; categoryId: string; source: string;
   }> = [];
+  const newMappings = new Map<string, string>();
 
-  for (const row of expenseRows) {
+  for (const row of completedRows) {
     const dateStr = row[dateIdx]?.trim();
-    const amount = Math.abs(parseFloat2(row[amountIdx]));
-    const description = row[descIdx]?.trim() ?? 'Unknown';
+    const amount = parseFloat2(row[amountIdx]);
+    const merchant = row[descIdx]?.trim() ?? 'Unknown';
     if (!dateStr || amount === 0) continue;
     const date = new Date(dateStr.split(' ')[0]);
     if (isNaN(date.getTime())) continue;
 
-    const catName = classifyRevolutExpense(description);
-    expenses.push({
-      userId: user.id, amount, description, merchant: description,
-      date, categoryId: categoryMap[catName] ?? categoryMap['Other'], source: 'imported',
+    const categoryId = classify(merchant, amount);
+
+    if (amount < 0 && !savedMerchantMap.has(merchant) && !newMappings.has(merchant)) {
+      newMappings.set(merchant, categoryId);
+    }
+
+    transactions.push({
+      userId: user.id, householdId, amount, description: merchant, merchant,
+      date, categoryId, source: 'imported',
     });
   }
 
-  await prisma.expense.createMany({ data: expenses });
-  console.log(`✅ Imported ${expenses.length} expenses from Revolut statement\n`);
+  // Persist new mappings for future imports
+  if (newMappings.size > 0) {
+    await prisma.merchantCategoryMap.createMany({
+      data: Array.from(newMappings.entries()).map(([merchant, categoryId]) => ({
+        userId: user.id, householdId, merchant, categoryId,
+      })),
+      skipDuplicates: true,
+    });
+    console.log(`✅ Saved ${newMappings.size} merchant→category mappings`);
+  }
+
+  await prisma.expense.createMany({ data: transactions });
+  const expCount = transactions.filter((t) => t.amount < 0).length;
+  const incCount = transactions.filter((t) => t.amount > 0).length;
+  console.log(`✅ Imported ${expCount} expenses and ${incCount} income entries from Revolut statement\n`);
 
   console.log('🎉 Seed complete!\n');
   console.log(`Login with:`);

@@ -23,11 +23,24 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already in use');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: { name: dto.name, email: dto.email, password: hashedPassword },
+
+    // Create user + household + membership in a single transaction
+    const { user, household } = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name: dto.name, email: dto.email, password: hashedPassword },
+      });
+
+      const household = await tx.household.create({
+        data: {
+          name: dto.name ? `${dto.name}'s Household` : 'My Household',
+          members: { create: { userId: user.id, role: 'owner' } },
+        },
+      });
+
+      return { user, household };
     });
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.generateTokens(user.id, user.email, household.id);
     return { user: { id: user.id, name: user.name, email: user.email }, ...tokens };
   }
 
@@ -43,12 +56,18 @@ export class AuthService {
       data: { updatedAt: new Date() },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    // Get the user's first household (for now, users have one household)
+    const membership = await this.prisma.householdMember.findFirst({
+      where: { userId: user.id },
+    });
+    if (!membership) throw new UnauthorizedException('User has no household');
+
+    const tokens = await this.generateTokens(user.id, user.email, membership.householdId);
     return { user: { id: user.id, name: user.name, email: user.email }, ...tokens };
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  private async generateTokens(userId: string, email: string, householdId: string) {
+    const payload = { sub: userId, email, householdId };
 
     const accessToken = await this.jwt.signAsync(payload, {
       expiresIn: this.config.get('jwt.expiration'),
@@ -61,7 +80,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async refreshToken(userId: string, email: string) {
-    return this.generateTokens(userId, email);
+  async refreshToken(userId: string, email: string, householdId: string) {
+    return this.generateTokens(userId, email, householdId);
   }
 }

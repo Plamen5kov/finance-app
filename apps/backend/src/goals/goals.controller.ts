@@ -24,27 +24,27 @@ export class GoalsController {
 
   @Get()
   findAll(@CurrentUser() user: JwtPayload, @Query('recurringPeriod') recurringPeriod?: string) {
-    return this.goalsService.findAll(user.userId, recurringPeriod);
+    return this.goalsService.findAll(user.householdId, recurringPeriod);
   }
 
   @Get('history')
   getHistory(@CurrentUser() user: JwtPayload) {
-    return this.goalsService.getHistory(user.userId);
+    return this.goalsService.getHistory(user.householdId);
   }
 
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.goalsService.findOne(user.userId, id);
+    return this.goalsService.findOne(user.householdId, id);
   }
 
   @Post()
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateGoalDto) {
-    return this.goalsService.create(user.userId, dto);
+    return this.goalsService.create(user.householdId, user.userId, dto);
   }
 
   @Patch(':id')
   update(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: UpdateGoalDto) {
-    return this.goalsService.update(user.userId, id, dto);
+    return this.goalsService.update(user.householdId, id, dto);
   }
 
   @Patch(':id/status')
@@ -53,12 +53,12 @@ export class GoalsController {
     @Param('id') id: string,
     @Body() dto: UpdateGoalStatusDto,
   ) {
-    return this.goalsService.updateStatus(user.userId, id, dto);
+    return this.goalsService.updateStatus(user.householdId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.goalsService.remove(user.userId, id);
+    return this.goalsService.remove(user.householdId, id);
   }
 }

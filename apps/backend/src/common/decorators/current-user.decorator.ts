@@ -3,6 +3,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export interface JwtPayload {
   userId: string;
   email: string;
+  householdId: string;
 }
 
 export const CurrentUser = createParamDecorator(

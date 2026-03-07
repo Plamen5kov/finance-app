@@ -289,6 +289,8 @@ export default function NetWorthReportPage() {
                 tick={{ fontSize: 10 }}
                 tickLine={false}
                 interval="preserveStartEnd"
+                tickFormatter={range === 0 ? (v: string) => v.slice(0, 4) : undefined}
+                ticks={range === 0 ? [...new Set(mergedData.map((d) => String(d.month).slice(0, 4)).map((y) => `${y}-01`))] : undefined}
               />
               <YAxis
                 domain={yDomain}

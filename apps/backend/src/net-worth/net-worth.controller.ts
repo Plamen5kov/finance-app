@@ -10,16 +10,16 @@ export class NetWorthController {
 
   @Get()
   getSummary(@CurrentUser() user: JwtPayload) {
-    return this.netWorthService.getSummary(user.userId);
+    return this.netWorthService.getSummary(user.householdId);
   }
 
   @Get('history')
   getHistory(@CurrentUser() user: JwtPayload) {
-    return this.netWorthService.getHistory(user.userId);
+    return this.netWorthService.getHistory(user.householdId);
   }
 
   @Get('projection')
   getProjection(@CurrentUser() user: JwtPayload) {
-    return this.netWorthService.getProjection(user.userId);
+    return this.netWorthService.getProjection(user.householdId);
   }
 }

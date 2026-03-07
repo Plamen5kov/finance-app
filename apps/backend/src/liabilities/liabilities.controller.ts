@@ -14,27 +14,27 @@ export class LiabilitiesController {
 
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
-    return this.liabilitiesService.findAll(user.userId);
+    return this.liabilitiesService.findAll(user.householdId);
   }
 
   @Get('total')
   getTotal(@CurrentUser() user: JwtPayload) {
-    return this.liabilitiesService.getTotal(user.userId);
+    return this.liabilitiesService.getTotal(user.householdId);
   }
 
   @Get('history')
   getHistory(@CurrentUser() user: JwtPayload) {
-    return this.liabilitiesService.getHistory(user.userId);
+    return this.liabilitiesService.getHistory(user.householdId);
   }
 
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.liabilitiesService.findOne(user.userId, id);
+    return this.liabilitiesService.findOne(user.householdId, id);
   }
 
   @Post()
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateLiabilityDto) {
-    return this.liabilitiesService.create(user.userId, dto);
+    return this.liabilitiesService.create(user.householdId, user.userId, dto);
   }
 
   @Patch(':id')
@@ -43,12 +43,12 @@ export class LiabilitiesController {
     @Param('id') id: string,
     @Body() dto: Partial<CreateLiabilityDto>,
   ) {
-    return this.liabilitiesService.update(user.userId, id, dto);
+    return this.liabilitiesService.update(user.householdId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.liabilitiesService.remove(user.userId, id);
+    return this.liabilitiesService.remove(user.householdId, id);
   }
 }

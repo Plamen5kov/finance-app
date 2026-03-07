@@ -9,6 +9,41 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ============== Household (Tenant) ==============
+
+model Household {
+  id        String   @id @default(cuid())
+  name      String   @default("My Household")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members              HouseholdMember[]
+  assets               Asset[]
+  liabilities          Liability[]
+  expenses             Expense[]
+  expenseCategories    ExpenseCategory[]
+  merchantCategoryMaps MerchantCategoryMap[]
+  goals                Goal[]
+  allocationPlans      AllocationPlan[]
+  actualAllocations    ActualAllocation[]
+  documents            Document[]
+  taxInfo              TaxInfo[]
+}
+
+model HouseholdMember {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  role        String    @default("member") // "member" for now; "admin"/"owner" later
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, householdId])
+  @@index([userId])
+  @@index([householdId])
+}
+
 // ============== User Models ==============
 
 model User {
@@ -20,23 +55,29 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assets            Asset[]
-  liabilities       Liability[]
-  expenses          Expense[]
-  goals             Goal[]
-  documents         Document[]
-  allocationPlans   AllocationPlan[]
-  expenseCategories ExpenseCategory[]
-  actualAllocations ActualAllocation[] @relation("ActualAllocations")
-  taxInfo           TaxInfo[]
+  memberships HouseholdMember[]
+
+  // Audit trail: who created each record
+  assets               Asset[]
+  liabilities          Liability[]
+  expenses             Expense[]
+  goals                Goal[]
+  documents            Document[]
+  allocationPlans      AllocationPlan[]
+  expenseCategories    ExpenseCategory[]
+  merchantCategoryMaps MerchantCategoryMap[]
+  actualAllocations    ActualAllocation[] @relation("ActualAllocations")
+  taxInfo              TaxInfo[]
 }
 
 // ============== Asset Models ==============
 
 model Asset {
-  id        String  @id @default(cuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   type      String  // 'etf' | 'crypto' | 'gold' | 'apartment'
   name      String
@@ -53,6 +94,7 @@ model Asset {
   snapshots AssetSnapshot[]
 
   @@index([userId])
+  @@index([householdId])
   @@index([type])
 }
 
@@ -72,9 +114,11 @@ model AssetSnapshot {
 // ============== Liability Models ==============
 
 model Liability {
-  id        String  @id @default(cuid())
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   type      String  // 'mortgage' | 'loan'
   name      String
@@ -89,6 +133,7 @@ model Liability {
   snapshots LiabilitySnapshot[]
 
   @@index([userId])
+  @@index([householdId])
   @@index([type])
 }
 
@@ -110,6 +155,8 @@ model Expense {
   id          String          @id @default(cuid())
   userId      String
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   amount      Float
   categoryId  String
@@ -126,35 +173,61 @@ model Expense {
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([householdId])
   @@index([categoryId])
   @@index([date])
 }
 
 model ExpenseCategory {
-  id         String @id @default(cuid())
-  userId     String
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   name       String
   type       String  // 'income' | 'expense' | 'goal' | 'required'
   color      String? // Hex color e.g. #FF6B6B
+  keywords   String[] @default([]) // Keywords for auto-classification (e.g. ["lidl", "kaufland", "billa"])
   predefined Boolean @default(false)
 
-  expenses          Expense[]
-  actualAllocations ActualAllocation[] @relation("ActualAllocationsToCategory")
+  expenses             Expense[]
+  merchantCategoryMaps MerchantCategoryMap[]
+  actualAllocations    ActualAllocation[] @relation("ActualAllocationsToCategory")
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, name])
+  @@unique([householdId, name])
   @@index([userId])
+  @@index([householdId])
+}
+
+model MerchantCategoryMap {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  merchant    String
+  categoryId  String
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([householdId, merchant])
+  @@index([userId])
+  @@index([householdId])
 }
 
 // ============== Goal Models ==============
 
 model Goal {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   name            String
   targetAmount    Float
@@ -177,14 +250,17 @@ model Goal {
   snapshots         GoalSnapshot[]       @relation("GoalSnapshots")
 
   @@index([userId])
+  @@index([householdId])
   @@index([status])
   @@index([recurringPeriod])
 }
 
 model AllocationPlan {
-  id            String @id @default(cuid())
-  userId        String
-  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   month         DateTime // YYYY-MM-01
   monthlyIncome Float
@@ -197,8 +273,9 @@ model AllocationPlan {
   items             AllocationPlanItem[]
   actualAllocations ActualAllocation[]
 
-  @@unique([userId, month])
+  @@unique([householdId, month])
   @@index([userId])
+  @@index([householdId])
 }
 
 model AllocationPlanItem {
@@ -222,8 +299,10 @@ model ActualAllocation {
   allocationPlanId String
   allocationPlan   AllocationPlan @relation(fields: [allocationPlanId], references: [id], onDelete: Cascade)
 
-  userId String
-  user   User   @relation("ActualAllocations", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation("ActualAllocations", fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   goalId     String?
   goal       Goal?            @relation("ActualAllocationsToGoal", fields: [goalId], references: [id], onDelete: SetNull)
@@ -240,8 +319,9 @@ model ActualAllocation {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, goalId, month])
+  @@unique([householdId, goalId, month])
   @@index([userId])
+  @@index([householdId])
   @@index([month])
   @@index([goalId])
   @@index([categoryId])
@@ -272,9 +352,11 @@ model GoalSnapshot {
 // ============== Document Models ==============
 
 model Document {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   fileName    String
   fileType    String  // 'csv' | 'pdf'
@@ -291,6 +373,7 @@ model Document {
   expenses     Expense[]
 
   @@index([userId])
+  @@index([householdId])
   @@index([uploadedAt])
 }
 
@@ -315,9 +398,11 @@ model Transaction {
 // ============== Tax Information ==============
 
 model TaxInfo {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   taxYear Int    // e.g. 2025
   country String // e.g. "Bulgaria"
@@ -344,7 +429,8 @@ model TaxInfo {
   updatedAt   DateTime  @updatedAt
   submittedAt DateTime?
 
-  @@unique([userId, taxYear])
+  @@unique([householdId, taxYear])
   @@index([userId])
+  @@index([householdId])
   @@index([taxYear])
 }

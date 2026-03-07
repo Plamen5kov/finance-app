@@ -76,24 +76,24 @@ export class NetWorthService {
     return { rate, payment };
   }
 
-  async getSummary(userId: string) {
+  async getSummary(householdId: string) {
     const [assets, liabilities] = await Promise.all([
-      this.prisma.asset.findMany({ where: { userId } }),
-      this.prisma.liability.findMany({ where: { userId } }),
+      this.prisma.asset.findMany({ where: { householdId } }),
+      this.prisma.liability.findMany({ where: { householdId } }),
     ]);
     const totalAssets = assets.reduce((s, a) => s + a.value, 0);
     const totalLiabilities = liabilities.reduce((s, l) => s + l.value, 0);
     return { netWorth: totalAssets - totalLiabilities, totalAssets, totalLiabilities };
   }
 
-  async getHistory(userId: string) {
+  async getHistory(householdId: string) {
     const [assets, liabilities] = await Promise.all([
       this.prisma.asset.findMany({
-        where: { userId },
+        where: { householdId },
         include: { snapshots: { orderBy: { capturedAt: 'asc' } } },
       }),
       this.prisma.liability.findMany({
-        where: { userId },
+        where: { householdId },
         include: { snapshots: { orderBy: { capturedAt: 'asc' } } },
       }),
     ]);
@@ -230,10 +230,10 @@ export class NetWorthService {
     });
   }
 
-  async getProjection(userId: string) {
+  async getProjection(householdId: string) {
     const [liabilities, assetAgg] = await Promise.all([
-      this.prisma.liability.findMany({ where: { userId } }),
-      this.prisma.asset.aggregate({ where: { userId }, _sum: { value: true } }),
+      this.prisma.liability.findMany({ where: { householdId } }),
+      this.prisma.asset.aggregate({ where: { householdId }, _sum: { value: true } }),
     ]);
 
     const totalAssets = assetAgg._sum.value ?? 0;

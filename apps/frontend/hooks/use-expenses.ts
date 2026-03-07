@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api-client';
 export interface ExpenseCategory {
   id: string;
   name: string;
+  type?: string;
   color?: string;
   icon?: string;
 }
@@ -14,6 +15,7 @@ export interface Expense {
   id: string;
   amount: number;
   description: string;
+  merchant?: string;
   date: string;
   categoryId: string;
   category?: ExpenseCategory;
@@ -82,6 +84,28 @@ export function useCreateExpense() {
   });
 }
 
+export function useUpdateExpense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...input }: { id: string } & Partial<CreateExpenseInput>) => {
+      const { data } = await apiClient.patch<Expense>(`/expenses/${id}`, input);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+  });
+}
+
+export function useReassignMerchant() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { merchant: string; categoryId: string }) => {
+      const { data } = await apiClient.patch<{ updated: number }>('/expenses/merchant/reassign', input);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+  });
+}
+
 export function useDeleteExpense() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -136,7 +160,7 @@ export function useMonthlyReport(months = 12) {
 export function useCreateCategory() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { name: string; color?: string; icon?: string }) => {
+    mutationFn: async (input: { name: string; type?: string; color?: string; icon?: string }) => {
       const { data } = await apiClient.post<ExpenseCategory>('/expenses/categories', input);
       return data;
     },

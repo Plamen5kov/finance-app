@@ -23,32 +23,32 @@ export class AssetsController {
 
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {
-    return this.assetsService.findAll(user.userId);
+    return this.assetsService.findAll(user.householdId);
   }
 
   @Get('net-worth')
   getNetWorth(@CurrentUser() user: JwtPayload) {
-    return this.assetsService.getNetWorth(user.userId);
+    return this.assetsService.getNetWorth(user.householdId);
   }
 
   @Get('history')
   getHistory(@CurrentUser() user: JwtPayload) {
-    return this.assetsService.getHistory(user.userId);
+    return this.assetsService.getHistory(user.householdId);
   }
 
   @Get('allocation')
   getAllocation(@CurrentUser() user: JwtPayload) {
-    return this.assetsService.getAllocation(user.userId);
+    return this.assetsService.getAllocation(user.householdId);
   }
 
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.assetsService.findOne(user.userId, id);
+    return this.assetsService.findOne(user.householdId, id);
   }
 
   @Post()
   create(@CurrentUser() user: JwtPayload, @Body() dto: CreateAssetDto) {
-    return this.assetsService.create(user.userId, dto);
+    return this.assetsService.create(user.householdId, user.userId, dto);
   }
 
   @Patch(':id')
@@ -57,18 +57,18 @@ export class AssetsController {
     @Param('id') id: string,
     @Body() dto: Partial<CreateAssetDto>,
   ) {
-    return this.assetsService.update(user.userId, id, dto);
+    return this.assetsService.update(user.householdId, id, dto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.assetsService.remove(user.userId, id);
+    return this.assetsService.remove(user.householdId, id);
   }
 
   @Get(':id/snapshots')
   getSnapshots(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
-    return this.assetsService.getSnapshots(user.userId, id);
+    return this.assetsService.getSnapshots(user.householdId, id);
   }
 
   @Post(':id/snapshots')
@@ -77,7 +77,7 @@ export class AssetsController {
     @Param('id') id: string,
     @Body() dto: CreateSnapshotDto,
   ) {
-    return this.assetsService.addSnapshot(user.userId, id, dto.value, dto.month);
+    return this.assetsService.addSnapshot(user.householdId, id, dto.value, dto.month);
   }
 
   @Delete(':id/snapshots/:sid')
@@ -87,6 +87,6 @@ export class AssetsController {
     @Param('id') id: string,
     @Param('sid') sid: string,
   ) {
-    return this.assetsService.deleteSnapshot(user.userId, id, sid);
+    return this.assetsService.deleteSnapshot(user.householdId, id, sid);
   }
 }

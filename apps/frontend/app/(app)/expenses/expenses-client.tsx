@@ -6,9 +6,12 @@ import {
   useMonthlySummary,
   useExpenseCategories,
   useCreateExpense,
+  useUpdateExpense,
+  useReassignMerchant,
   useDeleteExpense,
   useCreateCategory,
   CreateExpenseInput,
+  Expense,
 } from '@/hooks/use-expenses';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import { Modal } from '@/components/ui/modal';
@@ -26,15 +29,25 @@ export function ExpensesClient() {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
   const [newCatName, setNewCatName] = useState('');
+  const [reassignPrompt, setReassignPrompt] = useState<{
+    expense: Expense;
+    newCategoryId: string;
+    newCategoryName: string;
+  } | null>(null);
 
   const month = getMonthStr(monthOffset);
   const [year, mon] = month.split('-');
   const monthLabel = new Date(Number(year), Number(mon) - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-  const { data: expenses, isLoading } = useExpenses({ month });
+  const { data: allEntries, isLoading } = useExpenses({ month });
+  // Expenses = negative amounts
+  const expenses = (allEntries ?? []).filter((e) => e.amount < 0);
   const { data: summary } = useMonthlySummary(month);
-  const { data: categories = [] } = useExpenseCategories();
+  const { data: allCategories = [] } = useExpenseCategories();
+  const categories = allCategories.filter((c) => c.type !== 'income');
   const createExpense = useCreateExpense();
+  const updateExpense = useUpdateExpense();
+  const reassignMerchant = useReassignMerchant();
   const deleteExpense = useDeleteExpense();
   const createCategory = useCreateCategory();
 
@@ -48,10 +61,42 @@ export function ExpensesClient() {
     await deleteExpense.mutateAsync(id);
   }
 
+  function handleCategoryChange(expense: Expense, newCategoryId: string) {
+    if (newCategoryId === expense.categoryId) return;
+    const newCat = categories.find((c) => c.id === newCategoryId);
+    if (expense.merchant) {
+      setReassignPrompt({
+        expense,
+        newCategoryId,
+        newCategoryName: newCat?.name ?? 'Unknown',
+      });
+    } else {
+      updateExpense.mutate({ id: expense.id, categoryId: newCategoryId });
+    }
+  }
+
+  async function handleReassignYes() {
+    if (!reassignPrompt) return;
+    await reassignMerchant.mutateAsync({
+      merchant: reassignPrompt.expense.merchant!,
+      categoryId: reassignPrompt.newCategoryId,
+    });
+    setReassignPrompt(null);
+  }
+
+  async function handleReassignNo() {
+    if (!reassignPrompt) return;
+    await updateExpense.mutateAsync({
+      id: reassignPrompt.expense.id,
+      categoryId: reassignPrompt.newCategoryId,
+    });
+    setReassignPrompt(null);
+  }
+
   async function handleCreateCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!newCatName.trim()) return;
-    await createCategory.mutateAsync({ name: newCatName.trim() });
+    await createCategory.mutateAsync({ name: newCatName.trim(), type: 'expense' });
     setNewCatName('');
     setShowCategoryForm(false);
   }
@@ -116,14 +161,14 @@ export function ExpensesClient() {
         </div>
       )}
 
-      {!isLoading && (expenses?.length ?? 0) === 0 && (
+      {!isLoading && expenses.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <p className="text-lg font-medium">No expenses in {monthLabel}</p>
           <p className="text-sm mt-1">Add your first expense to start tracking</p>
         </div>
       )}
 
-      {!isLoading && (expenses?.length ?? 0) > 0 && (
+      {!isLoading && expenses.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
@@ -136,15 +181,25 @@ export function ExpensesClient() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {(expenses ?? []).map((expense) => (
+              {expenses.map((expense) => (
                 <tr key={expense.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {expense.description}
                     {expense.isRecurring && <span className="ml-2 text-xs text-brand bg-brand/10 px-1.5 py-0.5 rounded">recurring</span>}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{expense.category?.name ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={expense.categoryId}
+                      onChange={(e) => handleCategoryChange(expense, e.target.value)}
+                      className="text-sm text-gray-500 bg-transparent border-none cursor-pointer hover:text-gray-900 focus:outline-none focus:ring-1 focus:ring-brand rounded px-1 py-0.5 -ml-1"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(expense.date)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatCurrency(expense.amount)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-red-600">-{formatCurrency(Math.abs(expense.amount))}</td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={() => handleDelete(expense.id)} className="text-gray-300 hover:text-red-500 transition-colors">
                       <Trash2 size={14} />
@@ -198,6 +253,32 @@ export function ExpensesClient() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {reassignPrompt && (
+        <Modal title="Reassign Category" onClose={() => setReassignPrompt(null)}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              Move <strong>all</strong> expenses from <strong>&ldquo;{reassignPrompt.expense.merchant}&rdquo;</strong> to <strong>&ldquo;{reassignPrompt.newCategoryName}&rdquo;</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleReassignNo}
+                disabled={updateExpense.isPending}
+                className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+              >
+                {updateExpense.isPending ? 'Saving…' : 'No, just this one'}
+              </button>
+              <button
+                onClick={handleReassignYes}
+                disabled={reassignMerchant.isPending}
+                className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
+              >
+                {reassignMerchant.isPending ? 'Saving…' : 'Yes, all of them'}
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

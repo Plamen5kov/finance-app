@@ -6,55 +6,55 @@ import { CreateLiabilityDto } from './dto/create-liability.dto';
 export class LiabilitiesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(userId: string) {
+  async findAll(householdId: string) {
     return this.prisma.liability.findMany({
-      where: { userId },
+      where: { householdId },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async findOne(userId: string, id: string) {
+  async findOne(householdId: string, id: string) {
     const liability = await this.prisma.liability.findUnique({
       where: { id },
       include: { snapshots: { orderBy: { capturedAt: 'desc' }, take: 24 } },
     });
     if (!liability) throw new NotFoundException('Liability not found');
-    if (liability.userId !== userId) throw new ForbiddenException();
+    if (liability.householdId !== householdId) throw new ForbiddenException();
     return liability;
   }
 
-  async create(userId: string, dto: CreateLiabilityDto) {
-    return this.prisma.liability.create({ data: { userId, ...dto } });
+  async create(householdId: string, userId: string, dto: CreateLiabilityDto) {
+    return this.prisma.liability.create({ data: { userId, householdId, ...dto } });
   }
 
-  async update(userId: string, id: string, dto: Partial<CreateLiabilityDto>) {
-    await this.assertOwner(userId, id);
+  async update(householdId: string, id: string, dto: Partial<CreateLiabilityDto>) {
+    await this.assertHouseholdAccess(householdId, id);
     return this.prisma.liability.update({ where: { id }, data: dto });
   }
 
-  async remove(userId: string, id: string) {
-    await this.assertOwner(userId, id);
+  async remove(householdId: string, id: string) {
+    await this.assertHouseholdAccess(householdId, id);
     await this.prisma.liability.delete({ where: { id } });
   }
 
-  async getHistory(userId: string) {
+  async getHistory(householdId: string) {
     return this.prisma.liability.findMany({
-      where: { userId },
+      where: { householdId },
       include: { snapshots: { orderBy: { capturedAt: 'asc' } } },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async getTotal(userId: string) {
-    const liabilities = await this.prisma.liability.findMany({ where: { userId } });
+  async getTotal(householdId: string) {
+    const liabilities = await this.prisma.liability.findMany({ where: { householdId } });
     const total = liabilities.reduce((sum, l) => sum + l.value, 0);
     return { total, liabilities };
   }
 
-  private async assertOwner(userId: string, liabilityId: string) {
+  private async assertHouseholdAccess(householdId: string, liabilityId: string) {
     const liability = await this.prisma.liability.findUnique({ where: { id: liabilityId } });
     if (!liability) throw new NotFoundException('Liability not found');
-    if (liability.userId !== userId) throw new ForbiddenException();
+    if (liability.householdId !== householdId) throw new ForbiddenException();
     return liability;
   }
 }

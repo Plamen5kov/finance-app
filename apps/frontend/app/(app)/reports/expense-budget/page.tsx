@@ -178,15 +178,16 @@ export default function ExpenseBudgetPage() {
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
+                  outerRadius={80}
+                  label={({ name, percent }) => percent >= 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                  labelLine={({ percent }: { percent: number }) => percent >= 0.05}
                 >
                   {pieData.map((entry, i) => (
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name]} />
+                <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ fontSize: 11 }} />
               </PieChart>
             </ResponsiveContainer>
           )}

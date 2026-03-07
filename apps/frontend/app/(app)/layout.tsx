@@ -7,7 +7,9 @@ const NAV_LINKS = [
   { href: '/liabilities', label: 'Liabilities' },
   { href: '/goals', label: 'Goals' },
   { href: '/expenses', label: 'Expenses' },
+  { href: '/income', label: 'Income' },
   { href: '/reports', label: 'Reports' },
+  { href: '/import', label: 'Import' },
   { href: '/documents', label: 'Documents' },
 ];
 
