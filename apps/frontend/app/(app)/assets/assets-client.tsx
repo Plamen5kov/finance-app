@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAssets, useCreateAsset, useDeleteAsset, useRefreshPrices, CreateAssetInput } from '@/hooks/use-assets';
+import { useAssets, useCreateAsset, useUpdateAsset, useDeleteAsset, useRefreshPrices, Asset, CreateAssetInput } from '@/hooks/use-assets';
 import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
 import { AssetForm } from '@/components/assets/asset-form';
@@ -11,9 +11,38 @@ import { formatCurrency } from '@/lib/utils';
 import { Plus, TrendingUp, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
+function EditAssetForm({ asset, onDone }: { asset: Asset; onDone: () => void }) {
+  const { t } = useTranslation();
+  const updateAsset = useUpdateAsset(asset.id);
+
+  async function handleUpdate(input: CreateAssetInput) {
+    await updateAsset.mutateAsync(input);
+    onDone();
+  }
+
+  return (
+    <AssetForm
+      defaultValues={{
+        type: asset.type,
+        name: asset.name,
+        value: asset.value,
+        quantity: asset.quantity,
+        costBasis: asset.costBasis,
+        currency: asset.currency,
+        metadata: asset.metadata,
+      }}
+      onSubmit={handleUpdate}
+      onCancel={onDone}
+      isLoading={updateAsset.isPending}
+      submitLabel={t('common.save')}
+    />
+  );
+}
+
 export function AssetsClient() {
   const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [historyAssetId, setHistoryAssetId] = useState<string | null>(null);
 
   const { data: assets, isLoading } = useAssets();
@@ -31,6 +60,11 @@ export function AssetsClient() {
   async function handleCreate(input: CreateAssetInput) {
     await createAsset.mutateAsync(input);
     setShowForm(false);
+  }
+
+  function handleEdit(id: string) {
+    const asset = assets?.find((a) => a.id === id);
+    if (asset) setEditingAsset(asset);
   }
 
   async function handleDelete(id: string) {
@@ -109,7 +143,7 @@ export function AssetsClient() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {group.map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} onHistory={setHistoryAssetId} />
+                    <AssetCard key={asset.id} asset={asset} onEdit={handleEdit} onDelete={handleDelete} onHistory={setHistoryAssetId} />
                   ))}
                 </div>
               </section>
@@ -124,6 +158,15 @@ export function AssetsClient() {
             onSubmit={handleCreate}
             onCancel={() => setShowForm(false)}
             isLoading={createAsset.isPending}
+          />
+        </Modal>
+      )}
+
+      {editingAsset && (
+        <Modal title={t('common.edit')} onClose={() => setEditingAsset(null)}>
+          <EditAssetForm
+            asset={editingAsset}
+            onDone={() => setEditingAsset(null)}
           />
         </Modal>
       )}

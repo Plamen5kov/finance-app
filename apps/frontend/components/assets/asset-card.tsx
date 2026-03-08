@@ -1,7 +1,7 @@
 'use client';
 
 import { formatCurrency } from '@/lib/utils';
-import { Trash2, TrendingUp, TrendingDown, History } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, History, Pencil } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -35,11 +35,12 @@ interface CardItem {
 
 interface AssetCardProps {
   asset: CardItem;
+  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onHistory: (id: string) => void;
 }
 
-export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
+export function AssetCard({ asset, onEdit, onDelete, onHistory }: AssetCardProps) {
   const { t } = useTranslation();
   const gain = asset.costBasis != null ? asset.value - asset.costBasis : null;
   const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
@@ -59,20 +60,29 @@ export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
             </span>
           </div>
         </div>
-        <button
-          onClick={() => onHistory(asset.id)}
-          className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
-          aria-label="Asset history"
-        >
-          <History size={16} />
-        </button>
-        <button
-          onClick={() => onDelete(asset.id)}
-          className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
-          aria-label="Delete asset"
-        >
-          <Trash2 size={16} />
-        </button>
+        <div className="flex items-center">
+          <button
+            onClick={() => onEdit(asset.id)}
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
+            aria-label="Edit asset"
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            onClick={() => onHistory(asset.id)}
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
+            aria-label="Asset history"
+          >
+            <History size={16} />
+          </button>
+          <button
+            onClick={() => onDelete(asset.id)}
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
+            aria-label="Delete asset"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="mt-2">
