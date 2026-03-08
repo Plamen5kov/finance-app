@@ -1,20 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { Menu, RefreshCw } from 'lucide-react';
-import { useTranslation } from '@/i18n';
+import { useState, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { RefreshCw } from 'lucide-react';
 
 interface MobileShellProps {
   sidebar: React.ReactNode;
+  bottomNav: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function MobileShell({ sidebar, children }: MobileShellProps) {
-  const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+export function MobileShell({ sidebar, bottomNav, children }: MobileShellProps) {
   const router = useRouter();
-  const { t } = useTranslation();
 
   // Pull-to-refresh state
   const [pulling, setPulling] = useState(false);
@@ -25,27 +22,12 @@ export function MobileShell({ sidebar, children }: MobileShellProps) {
 
   const PULL_THRESHOLD = 80;
 
-  // Close sidebar on route change
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
-  // Prevent body scroll when sidebar is open
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
-
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const el = mainRef.current;
-    if (!el || el.scrollTop > 0 || open) return;
+    if (!el || el.scrollTop > 0) return;
     touchStartY.current = e.touches[0].clientY;
     setPulling(true);
-  }, [open]);
+  }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!pulling || refreshing) return;
@@ -80,20 +62,6 @@ export function MobileShell({ sidebar, children }: MobileShellProps) {
         {sidebar}
       </aside>
 
-      {/* Mobile overlay */}
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setOpen(false)} />
-      )}
-
-      {/* Mobile sidebar drawer */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col transform transition-transform duration-200 ease-in-out md:hidden ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {sidebar}
-      </aside>
-
       {/* Main content */}
       <main
         ref={mainRef}
@@ -102,18 +70,6 @@ export function MobileShell({ sidebar, children }: MobileShellProps) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Mobile top bar */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 bg-gray-50 border-b border-gray-200 px-4 py-3 md:hidden">
-          <button
-            onClick={() => setOpen(true)}
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors"
-            aria-label="Open menu"
-          >
-            <Menu size={22} />
-          </button>
-          <span className="text-sm font-bold text-brand">{t('nav.finances')}</span>
-        </div>
-
         {/* Pull-to-refresh indicator */}
         <div
           className="flex items-center justify-center overflow-hidden transition-all duration-200 ease-out md:hidden"
@@ -126,8 +82,12 @@ export function MobileShell({ sidebar, children }: MobileShellProps) {
           />
         </div>
 
-        <div className="p-4 md:p-6">{children}</div>
+        {/* pb-20 on mobile to clear the bottom nav bar */}
+        <div className="p-4 md:p-6 pb-20 md:pb-6">{children}</div>
       </main>
+
+      {/* Bottom nav — mobile only */}
+      {bottomNav}
     </div>
   );
 }
