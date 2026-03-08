@@ -103,6 +103,10 @@
   "assets.refreshDone": "Updated {{updated}} assets",
   "assets.autoTracked": "Auto-tracked",
   "assets.pricePerUnit": "Price/unit",
+  "assets.manual": "Manual",
+  "assets.autoTrackNote": "Value will be auto-calculated as quantity × market price when you refresh prices.",
+  "assets.addQuantityNote": "Add a quantity to enable auto price tracking.",
+  "assets.autoCalculated": "auto-calculated on refresh",
 
   "liabilities.title": "Liabilities",
   "liabilities.totalLiabilities": "Total Liabilities",

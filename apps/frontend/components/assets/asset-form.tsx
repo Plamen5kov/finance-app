@@ -48,6 +48,16 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
   });
 
   const selectedType = useWatch({ control, name: 'type' });
+  const watchedTicker = useWatch({ control, name: 'ticker' });
+  const watchedCoinId = useWatch({ control, name: 'coinId' });
+  const watchedQuantity = useWatch({ control, name: 'quantity' });
+
+  const hasTrackingId = !!(
+    (selectedType === 'etf' && watchedTicker) ||
+    (selectedType === 'crypto' && watchedCoinId) ||
+    selectedType === 'gold'
+  );
+  const isAutoMode = hasTrackingId && !!watchedQuantity;
 
   async function submit(values: FormValues) {
     // Build metadata based on type
@@ -117,9 +127,29 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
         </div>
       )}
 
+      {/* Auto vs manual mode indicator */}
+      {isAutoMode && (
+        <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-3 py-2">
+          <p className="text-xs text-green-700 dark:text-green-400">
+            {t('assets.autoTrackNote' as any)}
+          </p>
+        </div>
+      )}
+
+      {hasTrackingId && !watchedQuantity && (
+        <div className="rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-3 py-2">
+          <p className="text-xs text-yellow-700 dark:text-yellow-500">
+            {t('assets.addQuantityNote' as any)}
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currentValue')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('assetForm.currentValue')} *
+            {isAutoMode && <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">({t('assets.autoCalculated' as any)})</span>}
+          </label>
           <input {...register('value')} type="number" step="0.01" className={inputClass} placeholder="0.00" />
           {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
         </div>

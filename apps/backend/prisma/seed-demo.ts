@@ -250,52 +250,62 @@ async function main() {
   });
   console.log(`✅ Car: ${carValues.length} snapshots, current: €27,000`);
 
-  // --- ETF: Vanguard FTSE All-World (VWCE) — monthly DCA since Jan 2022 ---
+  // --- ETF: Vanguard FTSE All-World (VWCE.DE) — quantity-based with real-ish prices ---
+  // VWCE.DE approximate EUR prices per share (monthly)
+  const vwcePrices: [string, number][] = [
+    ['2022-01', 102], ['2022-04', 98], ['2022-07', 91], ['2022-10', 88],
+    ['2023-01', 95], ['2023-04', 98], ['2023-07', 101], ['2023-10', 97],
+    ['2024-01', 106], ['2024-04', 110], ['2024-07', 113], ['2024-10', 108],
+    ['2025-01', 115], ['2025-04', 118], ['2025-07', 121], ['2025-10', 119],
+    ['2026-01', 124], ['2026-03', 126],
+  ];
+  const vwceQty = 145; // ~145 shares accumulated via DCA
   const etf1 = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
-      type: 'etf', name: 'Vanguard FTSE All-World (VWCE)', value: 0, currency: 'EUR',
-      metadata: { ticker: 'VWCE', broker: 'Interactive Brokers' },
+      type: 'etf', name: 'Vanguard FTSE All-World (VWCE)', value: vwceQty * vwcePrices.at(-1)![1], currency: 'EUR',
+      quantity: vwceQty, costBasis: vwceQty * 99, // avg cost ~€99/share
+      metadata: { ticker: 'VWCE.DE' },
     },
   });
-  const etfMonths = monthRange(2022, 1, 2026, 3);
-  let etfVal = 0;
-  const etfSnapshots: { assetId: string; value: number; capturedAt: Date }[] = [];
-  for (const [y, m] of etfMonths) {
-    etfVal += 400; // monthly contribution
-    etfVal *= 1 + rand(-0.02, 0.035); // monthly return
-    etfSnapshots.push({ assetId: etf1.id, value: Math.round(etfVal * 100) / 100, capturedAt: monthDate(y, m) });
-  }
-  await prisma.assetSnapshot.createMany({ data: etfSnapshots });
-  await prisma.asset.update({ where: { id: etf1.id }, data: { value: etfSnapshots.at(-1)!.value } });
-  console.log(`✅ ETF (VWCE): ${etfSnapshots.length} snapshots, current: €${etfSnapshots.at(-1)!.value.toFixed(0)}`);
+  await prisma.assetSnapshot.createMany({
+    data: vwcePrices.map(([month, price]) => ({
+      assetId: etf1.id, value: Math.round(vwceQty * price * 100) / 100, price,
+      capturedAt: new Date(`${month}-01T00:00:00Z`),
+    })),
+  });
+  console.log(`✅ ETF (VWCE): ${vwcePrices.length} snapshots, ${vwceQty} shares × €${vwcePrices.at(-1)![1]} = €${vwceQty * vwcePrices.at(-1)![1]}`);
 
-  // --- ETF 2: iShares MSCI World (IWDA) — lump sum + sporadic additions ---
+  // --- ETF 2: iShares MSCI World (IWDA.AS) — quantity-based ---
+  const iwdaPrices: [string, number][] = [
+    ['2023-03', 74], ['2023-06', 76], ['2023-09', 73], ['2023-12', 78],
+    ['2024-03', 82], ['2024-06', 84], ['2024-09', 81], ['2024-12', 86],
+    ['2025-03', 88], ['2025-06', 91], ['2025-09', 89], ['2025-12', 93],
+    ['2026-03', 95],
+  ];
+  const iwdaQty = 85; // ~85 shares
   const etf2 = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
-      type: 'etf', name: 'iShares MSCI World (IWDA)', value: 0, currency: 'EUR',
-      metadata: { ticker: 'IWDA', broker: 'Interactive Brokers' },
+      type: 'etf', name: 'iShares MSCI World (IWDA)', value: iwdaQty * iwdaPrices.at(-1)![1], currency: 'EUR',
+      quantity: iwdaQty, costBasis: iwdaQty * 79,
+      metadata: { ticker: 'IWDA.AS' },
     },
   });
-  const iwdaMonths = monthRange(2023, 3, 2026, 3);
-  let iwdaVal = 5000; // initial lump sum
-  const iwdaSnapshots: { assetId: string; value: number; capturedAt: Date }[] = [];
-  for (const [y, m] of iwdaMonths) {
-    if (m % 3 === 0) iwdaVal += 1000; // quarterly top-up
-    iwdaVal *= 1 + rand(-0.015, 0.03);
-    iwdaSnapshots.push({ assetId: etf2.id, value: Math.round(iwdaVal * 100) / 100, capturedAt: monthDate(y, m) });
-  }
-  await prisma.assetSnapshot.createMany({ data: iwdaSnapshots });
-  await prisma.asset.update({ where: { id: etf2.id }, data: { value: iwdaSnapshots.at(-1)!.value } });
-  console.log(`✅ ETF (IWDA): ${iwdaSnapshots.length} snapshots, current: €${iwdaSnapshots.at(-1)!.value.toFixed(0)}`);
+  await prisma.assetSnapshot.createMany({
+    data: iwdaPrices.map(([month, price]) => ({
+      assetId: etf2.id, value: Math.round(iwdaQty * price * 100) / 100, price,
+      capturedAt: new Date(`${month}-01T00:00:00Z`),
+    })),
+  });
+  console.log(`✅ ETF (IWDA): ${iwdaPrices.length} snapshots, ${iwdaQty} shares × €${iwdaPrices.at(-1)![1]} = €${iwdaQty * iwdaPrices.at(-1)![1]}`);
 
   // --- Crypto: Bitcoin ---
   const btc = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
       type: 'crypto', name: 'Bitcoin (BTC)', value: 0, currency: 'EUR',
-      quantity: 0.45, metadata: { symbol: 'BTC', wallet: 'Ledger' },
+      quantity: 0.45, metadata: { coinId: 'bitcoin' },
     },
   });
   // Approximate BTC/EUR prices at various months
@@ -320,7 +330,7 @@ async function main() {
     data: {
       userId: uid, householdId: hid,
       type: 'crypto', name: 'Ethereum (ETH)', value: 0, currency: 'EUR',
-      quantity: 3.2, metadata: { symbol: 'ETH', wallet: 'Ledger' },
+      quantity: 3.2, metadata: { coinId: 'ethereum' },
     },
   });
   const ethPrices: [string, number][] = [
@@ -344,7 +354,7 @@ async function main() {
     data: {
       userId: uid, householdId: hid,
       type: 'gold', name: 'Physical Gold (50g)', value: 0, currency: 'EUR',
-      quantity: 50, metadata: { purity: '999.9', form: 'bars' },
+      quantity: 50, metadata: { metal: 'gold', unit: 'g' },
     },
   });
   // Gold price per gram EUR (approx)

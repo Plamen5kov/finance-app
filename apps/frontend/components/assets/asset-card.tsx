@@ -46,7 +46,10 @@ export function AssetCard({ asset, onEdit, onDelete, onHistory }: AssetCardProps
   const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
   const ticker = asset.metadata?.ticker as string | undefined;
   const coinId = asset.metadata?.coinId as string | undefined;
-  const trackingLabel = ticker ?? coinId ?? null;
+  const isGoldTracked = asset.metadata?.metal === 'gold';
+  const trackingLabel = ticker ?? coinId ?? (isGoldTracked ? `${asset.metadata?.unit ?? 'g'}` : null);
+  const isAutoTracked = !!(ticker || coinId || isGoldTracked) && asset.quantity != null;
+  const pricePerUnit = isAutoTracked && asset.quantity ? Math.round(asset.value / asset.quantity * 100) / 100 : null;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5">
@@ -100,14 +103,25 @@ export function AssetCard({ asset, onEdit, onDelete, onHistory }: AssetCardProps
         </div>
       )}
 
-      {asset.quantity != null && (
+      {isAutoTracked && (
+        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium">
+            {trackingLabel}
+          </span>
+          <span className="text-xs text-gray-400 dark:text-gray-500">
+            {asset.quantity} × €{pricePerUnit?.toLocaleString()}
+          </span>
+        </div>
+      )}
+
+      {!isAutoTracked && asset.quantity != null && (
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Qty: {asset.quantity}</p>
       )}
 
-      {trackingLabel && (
-        <div className="flex items-center gap-1.5 mt-2">
-          <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium">
-            {trackingLabel}
+      {!isAutoTracked && (
+        <div className="mt-2">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+            {t('assets.manual' as any)}
           </span>
         </div>
       )}
