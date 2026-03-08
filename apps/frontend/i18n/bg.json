@@ -27,6 +27,8 @@
   "nav.documents": "Документи",
   "nav.account": "Акаунт",
   "nav.more": "Още",
+  "nav.tabBar": "Лента",
+  "nav.tapToReplace": "Докоснете елемент отдолу, за да го замените",
 
   "settings.title": "Настройки",
   "settings.appearance": "Изглед",

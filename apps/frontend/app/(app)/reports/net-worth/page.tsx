@@ -193,54 +193,54 @@ export default function NetWorthReportPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/reports" className="text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('netWorth.title')}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{t('netWorth.title')}</h1>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('netWorth.netWorth')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.netWorth')}</p>
           <p className={`text-2xl font-bold ${latestNetWorth >= 0 ? 'text-brand' : 'text-red-500'}`}>
             {isLoading ? '—' : formatCurrency(latestNetWorth)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('netWorth.changePeriod')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.changePeriod')}</p>
           <p className={`text-2xl font-bold ${netWorthChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
             {isLoading ? '—' : `${netWorthChange >= 0 ? '+' : ''}${formatCurrency(netWorthChange)}`}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('netWorth.totalAssets')}</p>
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.totalAssets')}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {isLoading ? '—' : formatCurrency(summary?.totalAssets ?? 0)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('netWorth.totalLiabilities')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.totalLiabilities')}</p>
           <p className="text-2xl font-bold text-red-500">
             {isLoading ? '—' : formatCurrency(summary?.totalLiabilities ?? 0)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('netWorth.mortgagePayoff')}</p>
-          <p className={`text-2xl font-bold ${payoffLabel ? 'text-green-600' : 'text-gray-400'}`}>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.mortgagePayoff')}</p>
+          <p className={`text-2xl font-bold ${payoffLabel ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'}`}>
             {isLoading ? '—' : (payoffLabel ?? 'N/A')}
           </p>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 sm:p-5 mb-6">
         <div className="flex flex-col gap-3 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="font-semibold text-gray-900">{t('netWorth.portfolioValue')}</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('netWorth.portfolioValue')}</h2>
               {hasProjection && (
-                <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">{t('netWorth.projectionNote')}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 hidden sm:block">{t('netWorth.projectionNote')}</p>
               )}
             </div>
             <div className="flex gap-1 flex-shrink-0">
@@ -251,7 +251,7 @@ export default function NetWorthReportPage() {
                   className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
                     range === r.months
                       ? 'bg-brand text-white'
-                      : 'text-gray-500 hover:bg-gray-100'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
                   {r.label}
@@ -259,7 +259,7 @@ export default function NetWorthReportPage() {
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600 border-t border-gray-100 pt-3">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 pt-3">
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -294,7 +294,7 @@ export default function NetWorthReportPage() {
                   <select
                     value={projectionEndYear ?? ''}
                     onChange={(e) => setProjectionEndYear(e.target.value === '' ? null : Number(e.target.value))}
-                    className="border border-gray-200 rounded px-1.5 py-0.5 text-xs bg-white"
+                    className="border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800"
                   >
                     <option value="">{t('netWorth.none')}</option>
                     <option value={currentYear}>{t('netWorth.thisYear')}</option>
@@ -316,9 +316,9 @@ export default function NetWorthReportPage() {
         )}
 
         {isLoading ? (
-          <div className="h-72 bg-gray-100 rounded animate-pulse" />
+          <div className="h-72 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         ) : mergedData.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-12">{t('netWorth.noHistory')}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('netWorth.noHistory')}</p>
         ) : (
           <>
             <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={280} className="sm:!h-[340px]">

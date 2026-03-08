@@ -91,10 +91,10 @@ export default function GoalComparisonPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/reports" className="text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">{t('goalTracking.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('goalTracking.title')}</h1>
       </div>
 
       {/* Summary cards */}
@@ -102,15 +102,15 @@ export default function GoalComparisonPage() {
         {activeGoals.slice(0, 4).map((g) => {
           const pct = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0;
           return (
-            <div key={g.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-              <p className="text-xs text-gray-500 mb-1 truncate">{g.name}</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(g.currentAmount)}</p>
+            <div key={g.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 truncate">{g.name}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(g.currentAmount)}</p>
               <div className="mt-2">
-                <div className="flex justify-between text-xs text-gray-400 mb-1">
+                <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mb-1">
                   <span>{pct}%</span>
                   <span>{formatCurrency(g.targetAmount)}</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                   <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
               </div>
@@ -120,9 +120,9 @@ export default function GoalComparisonPage() {
       </div>
 
       {/* Historical line chart */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">{t('goalTracking.savingsProgress')}</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('goalTracking.savingsProgress')}</h2>
           <div className="flex gap-1">
             {RANGES.map((r) => (
               <button
@@ -131,7 +131,7 @@ export default function GoalComparisonPage() {
                 className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
                   range === r.months
                     ? 'bg-brand text-white'
-                    : 'text-gray-500 hover:bg-gray-100'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 {r.label}
@@ -147,9 +147,9 @@ export default function GoalComparisonPage() {
         )}
 
         {isLoading ? (
-          <div className="h-72 bg-gray-100 rounded animate-pulse" />
+          <div className="h-72 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         ) : chartData.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-12">{t('goalTracking.noHistory')}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('goalTracking.noHistory')}</p>
         ) : (
           <>
             <ResponsiveContainer width="100%" height={320}>
@@ -207,13 +207,13 @@ export default function GoalComparisonPage() {
             </div>
           </>
         )}
-        <p className="text-xs text-gray-400 mt-2">{t('goalTracking.dashedNote')}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('goalTracking.dashedNote')}</p>
       </div>
 
       {/* Detail table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+          <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-3 text-left">{t('goalTracking.goal')}</th>
               <th className="px-4 py-3 text-right">{t('goalTracking.saved')}</th>
@@ -222,15 +222,15 @@ export default function GoalComparisonPage() {
               <th className="px-4 py-3 text-right">{t('goalTracking.monthsLeft')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t('common.loading')}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{t('common.loading')}</td></tr>
             ) : activeGoals.map((g, i) => {
               const pct = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0;
               const months = g.targetDate ? monthsUntil(g.targetDate) : null;
               return (
-                <tr key={g.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">
+                <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
                     <div className="flex items-center gap-2">
                       <span
                         className="w-3 h-3 rounded-full flex-shrink-0"
@@ -243,15 +243,15 @@ export default function GoalComparisonPage() {
                   <td className="px-4 py-3 text-right">{formatCurrency(g.targetAmount)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <div className="w-20 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="w-20 h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                         <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(pct, 100)}%` }} />
                       </div>
-                      <span className={`font-medium ${pct >= 100 ? 'text-brand' : pct >= 50 ? 'text-yellow-600' : 'text-gray-700'}`}>
+                      <span className={`font-medium ${pct >= 100 ? 'text-brand' : pct >= 50 ? 'text-yellow-600' : 'text-gray-700 dark:text-gray-300'}`}>
                         {pct}%
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-500">
+                  <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">
                     {months === null ? '—' : months <= 0 ? <span className="text-red-500">{t('goals.overdue')}</span> : `${months} mo`}
                   </td>
                 </tr>

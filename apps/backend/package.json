@@ -13,8 +13,7 @@
     "test:watch": "jest --watch",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "ts-node prisma/seed.ts",
-    "db:seed-demo": "ts-node prisma/seed-demo.ts",
+    "db:seed": "ts-node prisma/seed-demo.ts",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio"
   },
@@ -44,6 +43,9 @@
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed-demo.ts"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",

@@ -63,8 +63,8 @@ sample-data/
 
 Let's say you provide:
 1. A Revolut statement from January 2025 with 50 transactions
-2. Your 5 goals (Travel Fund €5000, Baby Fund €8000, Emergency Fund €10000, etc.)
-3. Your monthly allocation plan (€500 to travel, €400 to baby fund, etc.)
+2. Your 5 goals (Travel Fund €5000, Education Fund €8000, Emergency Fund €10000, etc.)
+3. Your monthly allocation plan (€500 to travel, €400 to education fund, etc.)
 4. Your asset list (€200k mortgage, 50 shares of VTSAX, 0.5 BTC, etc.)
 
 We can then:

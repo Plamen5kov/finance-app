@@ -47,10 +47,10 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.type')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.type')} *</label>
         <select
           {...register('type')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {ASSET_TYPES.map((tp) => (
             <option key={tp} value={tp}>{t(`assetType.${tp}` as any)}</option>
@@ -60,10 +60,10 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.name')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.name')} *</label>
         <input
           {...register('name')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="e.g. S&P 500 ETF"
         />
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
@@ -71,21 +71,21 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.currentValue')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currentValue')} *</label>
           <input
             {...register('value')}
             type="number"
             step="0.01"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="0.00"
           />
           {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.currency')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
           <select
             {...register('currency')}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           >
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>{c}</option>
@@ -96,29 +96,29 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.quantity')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.quantity')}</label>
           <input
             {...register('quantity')}
             type="number"
             step="any"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="Optional"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.costBasis')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.costBasis')}</label>
           <input
             {...register('costBasis')}
             type="number"
             step="0.01"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="Optional"
           />
         </div>
       </div>
 
       <div className="flex gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">
+        <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
           {t('common.cancel')}
         </button>
         <button type="submit" disabled={isLoading} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">

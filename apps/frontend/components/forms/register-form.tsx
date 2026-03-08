@@ -58,7 +58,7 @@ export function RegisterForm() {
         <label className="block text-sm font-medium mb-1">{t('common.name')}</label>
         <input
           {...register('name')}
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="Your name"
         />
         {errors.name && <p className="text-red-600 text-xs mt-1">{t('auth.nameMin')}</p>}
@@ -69,7 +69,7 @@ export function RegisterForm() {
         <input
           {...register('email')}
           type="text"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="your username"
         />
         {errors.email && <p className="text-red-600 text-xs mt-1">{t('auth.usernameRequired')}</p>}
@@ -80,7 +80,7 @@ export function RegisterForm() {
         <input
           {...register('password')}
           type="password"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
         />
         {errors.password && <p className="text-red-600 text-xs mt-1">{t('auth.passwordMin')}</p>}
       </div>
@@ -90,7 +90,7 @@ export function RegisterForm() {
         <input
           {...register('confirmPassword')}
           type="password"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
         />
         {errors.confirmPassword && (
           <p className="text-red-600 text-xs mt-1">{t('auth.passwordsMismatch')}</p>
@@ -105,7 +105,7 @@ export function RegisterForm() {
         {isSubmitting ? t('auth.creatingAccount') : t('auth.createAccount')}
       </button>
 
-      <p className="text-sm text-center text-gray-600">
+      <p className="text-sm text-center text-gray-600 dark:text-gray-400">
         {t('auth.haveAccount')}{' '}
         <Link
           href={inviteToken ? `/login?invite=${inviteToken}` : '/login'}

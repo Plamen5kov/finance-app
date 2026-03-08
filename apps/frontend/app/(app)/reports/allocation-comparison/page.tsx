@@ -60,22 +60,22 @@ export default function AllocationComparisonPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/reports" className="text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">{t('allocation.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('allocation.title')}</h1>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Actual */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-1">{t('allocation.actual')}</h2>
-          <p className="text-xs text-gray-400 mb-4">{t('allocation.actualDesc')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('allocation.actual')}</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">{t('allocation.actualDesc')}</p>
           {isLoading ? (
-            <div className="h-64 bg-gray-100 rounded animate-pulse" />
+            <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           ) : actualData.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-12">{t('allocation.noAssetData')}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('allocation.noAssetData')}</p>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={260}>
@@ -86,8 +86,12 @@ export default function AllocationComparisonPage() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={90}
-                    label={({ name, pct }) => `${name} ${pct}%`}
+                    outerRadius={70}
+                    label={({ name, pct, x, y, textAnchor }) => (
+                      <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fontSize={10} fill="#6B7280">
+                        {name.length > 10 ? name.slice(0, 9) + '…' : name} {pct}%
+                      </text>
+                    )}
                     labelLine={false}
                   >
                     {filteredActual.map((entry) => (
@@ -105,9 +109,9 @@ export default function AllocationComparisonPage() {
         </div>
 
         {/* Planned */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-1">{t('allocation.target')}</h2>
-          <p className="text-xs text-gray-400 mb-4">{t('allocation.targetDesc')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{t('allocation.target')}</h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">{t('allocation.targetDesc')}</p>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
@@ -116,8 +120,12 @@ export default function AllocationComparisonPage() {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={90}
-                label={({ name, value }) => `${name} ${value}%`}
+                outerRadius={70}
+                label={({ name, value, x, y, textAnchor }) => (
+                  <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fontSize={10} fill="#6B7280">
+                    {name.length > 10 ? name.slice(0, 9) + '…' : name} {value}%
+                  </text>
+                )}
                 labelLine={false}
               >
                 {filteredPlanned.map((entry) => (
@@ -134,9 +142,9 @@ export default function AllocationComparisonPage() {
       </div>
 
       {/* Comparison table */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+          <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wide">
             <tr>
               <th className="px-4 py-3 text-left">{t('allocation.assetClass')}</th>
               <th className="px-4 py-3 text-right">{t('allocation.value')}</th>
@@ -145,24 +153,24 @@ export default function AllocationComparisonPage() {
               <th className="px-4 py-3 text-right">{t('allocation.drift')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t('common.loading')}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">{t('common.loading')}</td></tr>
             ) : actualData.map((row) => {
               const target = PLANNED[row.type] ?? 0;
               const drift = row.pct - target;
               return (
-                <tr key={row.type} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900 flex items-center gap-2">
+                <tr key={row.type} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     <span
                       className="w-3 h-3 rounded-full inline-block flex-shrink-0"
                       style={{ backgroundColor: COLORS[row.type] ?? '#6B7280' }}
                     />
                     {row.name}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-700">{formatCurrency(row.value)}</td>
-                  <td className="px-4 py-3 text-right text-gray-700">{row.pct}%</td>
-                  <td className="px-4 py-3 text-right text-gray-500">{target}%</td>
+                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{formatCurrency(row.value)}</td>
+                  <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{row.pct}%</td>
+                  <td className="px-4 py-3 text-right text-gray-500 dark:text-gray-400">{target}%</td>
                   <td className={`px-4 py-3 text-right font-medium ${drift > 5 ? 'text-red-500' : drift < -5 ? 'text-yellow-600' : 'text-green-600'}`}>
                     {drift > 0 ? '+' : ''}{drift}%
                   </td>

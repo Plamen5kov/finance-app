@@ -27,6 +27,8 @@
   "nav.documents": "Documents",
   "nav.account": "Account",
   "nav.more": "More",
+  "nav.tabBar": "Tab bar",
+  "nav.tapToReplace": "Tap an item below to swap it in",
 
   "settings.title": "Settings",
   "settings.appearance": "Appearance",

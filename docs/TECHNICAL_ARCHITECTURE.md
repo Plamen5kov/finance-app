@@ -92,7 +92,7 @@ finances-app/
 │   │   │   └── config/                 # database, jwt, redis configs
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma
-│   │   │   ├── seed.ts                 # Historical data import script
+│   │   │   ├── seed-demo.ts             # Demo data seed (synthetic, no CSVs)
 │   │   │   └── migrations/
 │   │   └── package.json
 │   │
@@ -725,45 +725,19 @@ model TaxInfo {
 
 ## Seed Script
 
-**`apps/backend/prisma/seed.ts`** — run with `pnpm --filter backend db:seed`
+**`apps/backend/prisma/seed-demo.ts`** — run with `pnpm --filter backend db:seed`
 
-Imports historical data for the seed user (`plamen@finances.local`):
+Generates synthetic demo data (no CSV imports needed). Creates user `demo` / `DemoPassword123` with:
 
-| What | Source | Count |
-|------|--------|-------|
-| NN asset snapshots | `mind.csv` col [4] | 205 months (2019–2026) |
-| Crypto snapshots | `mind.csv` col [5] | per data rows |
-| ETF snapshots | `mind.csv` col [6] | per data rows |
-| Gold snapshots | `mind.csv` col [13] | per data rows |
-| Mortgage liability snapshots | `mind.csv` col [11] | per data rows |
-| Apartment asset snapshots | Hardcoded | 4 (2020-02, 2022-12, 2025-11, 2026-03) |
-| Car lease liability snapshots | `car-leasing.csv` | 24 (Apr 2024–Mar 2026) |
-| Income/expense history | `mind.csv` cols [2],[3] | 270 records |
-| Revolut transactions | `revolut-statements/statment.csv` | 472 expenses |
-| Goals | Hardcoded | Emergency Fund + Baby Fund |
-| Goal snapshots | `mind.csv` cols [14],[15] | 160 |
+| What | Count |
+|------|-------|
+| Liabilities (mortgage, car lease, personal loan) | 3 with snapshots |
+| Assets (apartment, car, 2 ETFs, BTC, ETH, gold) | 7 with snapshots |
+| Expense categories | 17 |
+| Income + expense transactions | ~520 (15 months) |
+| Goals with snapshots | 4 |
 
-**Seed idempotency**:
-- Assets/liabilities are upserted by `(userId, type, name)` — metadata preserved
-- Snapshots for CSV-managed assets are deleted and re-imported on each seed run
-- Apartment snapshots are explicitly re-seeded from hardcoded values (not wiped by CSV re-import)
-- Manually created liabilities (other than Home Mortgage / Car Lease) are untouched
-
-**CSV formats**:
-
-`mind.csv` — comma-separated, header row, dates as `MM/DD/YYYY`, amounts with `€` prefix:
-```
-[0]=row, [1]=date, [2]=income, [3]=expenses, [4]=NN, [5]=crypto,
-[6]=ETF, [7]=mortg_open, [8]=payment, [9]=principal, [10]=interest,
-[11]=mortg_end, [12]=ipr, [13]=gold, [14]=emergency, [15]=baby, [16]=total
-```
-
-`car-leasing.csv` — semicolon-separated, header spans rows 1–6, dates as `DD.MM.YYYY`, amounts with space as thousand separator:
-```
-[0]=empty, [1]=№, [2]=date, [3]=start_bgn, [4]=start_eur,
-[5]=principal_bgn, [6]=principal_eur, [7]=interest_bgn, [8]=interest_eur,
-[9]=payment_bgn, [10]=payment_eur, [11]=remaining_bgn, [12]=remaining_eur, [13]=prepayment
-```
+**Seed idempotency**: Deletes existing user by email and recreates everything from scratch.
 
 ---
 

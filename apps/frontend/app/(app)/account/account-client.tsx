@@ -17,7 +17,7 @@ export function AccountClient() {
   const { t } = useTranslation();
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('account.title')}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{t('account.title')}</h1>
       <div className="space-y-6 max-w-2xl">
         <MembersSection />
         <InvitesSection />
@@ -32,14 +32,14 @@ function MembersSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="bg-white border border-gray-200 rounded-xl p-5">
+    <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Users size={18} className="text-gray-500" />
+        <Users size={18} className="text-gray-500 dark:text-gray-400" />
         <h2 className="text-lg font-semibold">{t('account.householdMembers')}</h2>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">{t('common.loading')}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t('common.loading')}</p>
       ) : (
         <div className="space-y-2">
           {members?.map((m) => (
@@ -61,10 +61,10 @@ function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: bool
   }
 
   return (
-    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50">
+    <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800">
       <div>
-        <p className="text-sm font-medium text-gray-900">{member.name ?? member.email}</p>
-        {member.name && <p className="text-xs text-gray-500">{member.email}</p>}
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{member.name ?? member.email}</p>
+        {member.name && <p className="text-xs text-gray-500 dark:text-gray-400">{member.email}</p>}
       </div>
       <div className="flex items-center gap-2">
         {canEdit ? (
@@ -73,7 +73,7 @@ function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: bool
               value={member.role}
               onChange={(e) => handleRoleChange(e.target.value)}
               disabled={updateRole.isPending}
-              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+              className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
             >
               <option value="member">{t('account.member')}</option>
               <option value="viewer">{t('account.viewer')}</option>
@@ -81,14 +81,14 @@ function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: bool
             <button
               onClick={() => removeMember.mutate(member.id)}
               disabled={removeMember.isPending}
-              className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+              className="p-1 rounded hover:bg-red-50 text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors"
               title={t('account.removeMember')}
             >
               <Trash2 size={15} />
             </button>
           </>
         ) : (
-          <span className="text-xs text-gray-400 capitalize">{member.role}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 capitalize">{member.role}</span>
         )}
       </div>
     </div>
@@ -110,17 +110,17 @@ function InvitesSection() {
   }
 
   return (
-    <section className="bg-white border border-gray-200 rounded-xl p-5">
+    <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <UserPlus size={18} className="text-gray-500" />
+          <UserPlus size={18} className="text-gray-500 dark:text-gray-400" />
           <h2 className="text-lg font-semibold">{t('account.inviteLinks')}</h2>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={newRole}
             onChange={(e) => setNewRole(e.target.value)}
-            className="text-xs border border-gray-300 rounded px-2 py-1.5 bg-white text-gray-700"
+            className="text-xs border border-gray-300 dark:border-gray-600 rounded px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
           >
             <option value="member">{t('account.member')}</option>
             <option value="viewer">{t('account.viewer')}</option>
@@ -140,22 +140,22 @@ function InvitesSection() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">{t('common.loading')}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t('common.loading')}</p>
       ) : !invites?.length ? (
-        <p className="text-sm text-gray-400">{t('account.noInvites')}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t('account.noInvites')}</p>
       ) : (
         <div className="space-y-2">
           {invites.map((inv) => (
-            <div key={inv.id} className="flex items-center gap-2 py-2 px-3 rounded-lg bg-gray-50">
+            <div key={inv.id} className="flex items-center gap-2 py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-800">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono text-gray-600 truncate">{inv.link}</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs font-mono text-gray-600 dark:text-gray-400 truncate">{inv.link}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">
                   {t('account.role')}: <span className="capitalize">{inv.role}</span> &middot; {t('account.expires', { date: new Date(inv.expiresAt).toLocaleDateString() })}
                 </p>
               </div>
               <button
                 onClick={() => handleCopy(inv.link, inv.id)}
-                className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
+                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors"
                 title={t('account.copyLink')}
               >
                 {copiedId === inv.id ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
@@ -163,7 +163,7 @@ function InvitesSection() {
               <button
                 onClick={() => revokeInvite.mutate(inv.id)}
                 disabled={revokeInvite.isPending}
-                className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                className="p-1.5 rounded hover:bg-red-50 text-gray-400 dark:text-gray-500 hover:text-red-600 transition-colors"
                 title={t('account.revokeInvite')}
               >
                 <Trash2 size={15} />

@@ -37,16 +37,16 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
 
   return (
     <div className={`rounded-xl shadow-sm border p-5 flex flex-col gap-3 ${
-      isCompleted ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100'
+      isCompleted ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800'
     }`}>
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900 truncate">{goal.name}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{goal.name}</h3>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
               (goal.status === 'active' || goal.status === 'at_risk')
-                ? (PRIORITY_COLORS[goal.priority]?.badge ?? 'bg-gray-200')
-                : (STATUS_COLORS[goal.status] ?? 'bg-gray-200')
+                ? (PRIORITY_COLORS[goal.priority]?.badge ?? 'bg-gray-200 dark:bg-gray-700')
+                : (STATUS_COLORS[goal.status] ?? 'bg-gray-200 dark:bg-gray-700')
             }`}>
               {goal.status.replace('_', ' ')}
             </span>
@@ -57,20 +57,20 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
             )}
           </div>
           {goal.description && (
-            <p className="text-sm text-gray-500 mt-0.5 line-clamp-1">{goal.description}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-1">{goal.description}</p>
           )}
         </div>
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
           <button
             onClick={() => onEdit(goal)}
-            className="p-2 text-gray-300 hover:text-brand active:text-brand transition-colors"
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
             aria-label="Edit goal"
           >
             <Pencil size={16} />
           </button>
           <button
             onClick={() => onDelete(goal.id)}
-            className="p-2 text-gray-300 hover:text-red-500 active:text-red-500 transition-colors"
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Delete goal"
           >
             <Trash2 size={15} />
@@ -80,24 +80,24 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
 
       {/* Progress bar */}
       <div>
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
+        <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
           <span>{t('goals.saved', { amount: formatCurrency(goal.currentAmount) })}</span>
           <span>{Math.round(clampedProgress)}%</span>
         </div>
-        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${PRIORITY_COLORS[goal.priority]?.bar ?? 'bg-brand'}`}
             style={{ width: `${clampedProgress}%` }}
           />
         </div>
-        <div className="mt-1 text-xs text-gray-400">
+        <div className="mt-1 text-xs text-gray-400 dark:text-gray-500">
           {t('goals.target', { amount: formatCurrency(goal.targetAmount) })}
-          {remaining > 0 && <span className="ml-2 text-gray-400">({t('goals.toGo', { amount: formatCurrency(remaining) })})</span>}
+          {remaining > 0 && <span className="ml-2 text-gray-400 dark:text-gray-500">({t('goals.toGo', { amount: formatCurrency(remaining) })})</span>}
         </div>
       </div>
 
       {/* Meta row */}
-      <div className="flex items-center gap-4 text-xs text-gray-400">
+      <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
         {goal.targetDate && (
           <span className="flex items-center gap-1">
             <Calendar size={12} />
@@ -111,7 +111,7 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
             {goal.category}
           </span>
         )}
-        <span className="ml-auto font-medium text-gray-500">
+        <span className="ml-auto font-medium text-gray-500 dark:text-gray-400">
           P{goal.priority} {goal.priority === 1 ? t('goalForm.high') : goal.priority === 2 ? t('goalForm.med') : t('goalForm.low')}
         </span>
       </div>

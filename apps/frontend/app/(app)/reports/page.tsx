@@ -21,7 +21,7 @@ export default function ReportsPage() {
           <Link
             key={r.href}
             href={r.href}
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hover:shadow-md transition-shadow"
           >
             <p className="font-medium">{r.label}</p>
           </Link>

@@ -73,8 +73,8 @@ export function PwaInstallPrompt() {
       <div className="bg-brand/10 border border-brand/20 rounded-xl p-4 flex items-start gap-3">
         <Download size={20} className="text-brand flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">{t('pwa.installTitle')}</p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('pwa.installTitle')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {t('pwa.installDesc')}
           </p>
           <button
@@ -84,7 +84,7 @@ export function PwaInstallPrompt() {
             {t('pwa.installButton')}
           </button>
         </div>
-        <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600">
+        <button onClick={handleDismiss} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <X size={16} />
         </button>
       </div>
@@ -97,12 +97,12 @@ export function PwaInstallPrompt() {
       <div className="bg-brand/10 border border-brand/20 rounded-xl p-4 flex items-start gap-3">
         <Download size={20} className="text-brand flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">{t('pwa.installTitle')}</p>
-          <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{t('pwa.installTitle')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
             {t('pwa.iosInstructions')}
           </p>
         </div>
-        <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600">
+        <button onClick={handleDismiss} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <X size={16} />
         </button>
       </div>

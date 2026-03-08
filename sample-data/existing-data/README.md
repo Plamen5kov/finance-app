@@ -33,7 +33,7 @@ Your existing goals with targets and deadlines. Example format:
     "category": "emergency"
   },
   {
-    "name": "Baby Fund",
+    "name": "Education Fund",
     "targetAmount": 8000,
     "targetDate": "2026-09-01",
     "priority": "high",
@@ -47,7 +47,7 @@ Your existing goals with targets and deadlines. Example format:
 Goal Name,Target Amount,Target Date,Priority,Category,Start Date,Description
 Travel Fund,5000,2025-12-31,high,travel,2025-01-01,Summer vacation to Greece
 Emergency Fund,10000,2026-06-30,high,emergency,,
-Baby Fund,8000,2026-09-01,high,family,,
+Education Fund,8000,2026-09-01,high,family,,
 ```
 
 ### 2. **Assets Data** (`assets.json` or `assets.csv`)
@@ -115,7 +115,7 @@ How you've been allocating income to goals and expenses. Example format:
     "monthlyIncome": 5000,
     "allocations": [
       { "goalId": "travel-fund", "goalName": "Travel Fund", "amount": 500 },
-      { "goalId": "baby-fund", "goalName": "Baby Fund", "amount": 400 },
+      { "goalId": "education-fund", "goalName": "Education Fund", "amount": 400 },
       { "goalId": "emergency-fund", "goalName": "Emergency Fund", "amount": 300 }
     ],
     "expenses": [
@@ -132,7 +132,7 @@ How you've been allocating income to goals and expenses. Example format:
 
 **CSV**:
 ```
-Month,Monthly Income,Travel Fund,Baby Fund,Emergency Fund,Mortgage,Utilities,Groceries,Insurance,Investment,Discretionary
+Month,Monthly Income,Travel Fund,Education Fund,Emergency Fund,Mortgage,Utilities,Groceries,Insurance,Investment,Discretionary
 2025-01,5000,500,400,300,1200,150,400,200,600,750
 2025-02,5000,500,400,300,1200,150,420,200,600,750
 2025-03,5000,500,400,300,1200,160,410,200,600,750

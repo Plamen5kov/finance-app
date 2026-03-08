@@ -44,27 +44,27 @@ export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
   const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">{TYPE_ICONS[asset.type] ?? '💼'}</span>
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm">{asset.name}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[asset.type] ?? 'bg-gray-100 text-gray-600'}`}>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{asset.name}</h3>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[asset.type] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
               {t(`assetType.${asset.type}` as any)}
             </span>
           </div>
         </div>
         <button
           onClick={() => onHistory(asset.id)}
-          className="p-2 text-gray-300 hover:text-brand active:text-brand transition-colors"
+          className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
           aria-label="Asset history"
         >
           <History size={16} />
         </button>
         <button
           onClick={() => onDelete(asset.id)}
-          className="p-2 text-gray-300 hover:text-red-500 active:text-red-500 transition-colors"
+          className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
           aria-label="Delete asset"
         >
           <Trash2 size={16} />
@@ -72,9 +72,9 @@ export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
       </div>
 
       <div className="mt-2">
-        <p className="text-2xl font-bold text-gray-900">{formatCurrency(asset.value)}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(asset.value)}</p>
         {asset.currency && asset.currency !== 'BGN' && (
-          <p className="text-xs text-gray-400 mt-0.5">{asset.currency}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{asset.currency}</p>
         )}
       </div>
 
@@ -87,7 +87,7 @@ export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
       )}
 
       {asset.quantity != null && (
-        <p className="text-xs text-gray-400 mt-1">Qty: {asset.quantity}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Qty: {asset.quantity}</p>
       )}
     </div>
   );

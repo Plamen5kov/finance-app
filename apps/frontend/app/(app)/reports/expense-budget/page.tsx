@@ -115,34 +115,34 @@ export default function ExpenseBudgetPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/reports" className="text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">{t('budget.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('budget.title')}</h1>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('budget.avgIncome')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('budget.avgIncome')}</p>
           <p className="text-2xl font-bold text-green-600">
             {isLoading ? '—' : formatCurrency(avgIncome)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('budget.avgExpenses')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('budget.avgExpenses')}</p>
           <p className="text-2xl font-bold text-red-500">
             {isLoading ? '—' : formatCurrency(avgExpenses)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('budget.avgSavings')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('budget.avgSavings')}</p>
           <p className={`text-2xl font-bold ${avgSavings >= 0 ? 'text-brand' : 'text-red-500'}`}>
             {isLoading ? '—' : formatCurrency(avgSavings)}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">{t('budget.lastVsPrior')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('budget.lastVsPrior')}</p>
           <p className={`text-2xl font-bold ${momChange <= 0 ? 'text-green-600' : 'text-red-500'}`}>
             {isLoading ? '—' : `${momChange >= 0 ? '+' : ''}${formatCurrency(momChange)}`}
           </p>
@@ -150,11 +150,11 @@ export default function ExpenseBudgetPage() {
       </div>
 
       {/* Stacked bar chart: expenses by category per month */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 sm:p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
-            <h2 className="font-semibold text-gray-900">{t('budget.expensesByCategory')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">{t('budget.stackedBreakdown')}</p>
+            <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('budget.expensesByCategory')}</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 hidden sm:block">{t('budget.stackedBreakdown')}</p>
           </div>
           <div className="flex gap-1 flex-shrink-0">
             {RANGES.map((r) => (
@@ -164,7 +164,7 @@ export default function ExpenseBudgetPage() {
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   range === r.months
                     ? 'bg-brand text-white'
-                    : 'text-gray-500 hover:bg-gray-100'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
                 {r.label}
@@ -180,9 +180,9 @@ export default function ExpenseBudgetPage() {
         )}
 
         {isLoading ? (
-          <div className="h-72 bg-gray-100 rounded animate-pulse" />
+          <div className="h-72 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         ) : barData.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-12">{t('budget.noExpenseData')}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('budget.noExpenseData')}</p>
         ) : (
           <>
             <ResponsiveContainer width="100%" height={280} className="sm:!h-[340px]">
@@ -215,12 +215,12 @@ export default function ExpenseBudgetPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Pie chart: average category split */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">{t('budget.avgMonthlySplit')}</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('budget.avgMonthlySplit')}</h2>
           {isLoading ? (
-            <div className="h-64 bg-gray-100 rounded animate-pulse" />
+            <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           ) : pieData.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-12">{t('common.noData')}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('common.noData')}</p>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={280}>
@@ -231,8 +231,12 @@ export default function ExpenseBudgetPage() {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
-                    label={({ name, percent }) => percent >= 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                    outerRadius={70}
+                    label={({ name, percent, x, y, textAnchor }) => percent >= 0.05 ? (
+                      <text x={x} y={y} textAnchor={textAnchor} dominantBaseline="central" fontSize={10} fill="#6B7280">
+                        {name.length > 10 ? name.slice(0, 9) + '…' : name} {(percent * 100).toFixed(0)}%
+                      </text>
+                    ) : null}
                     labelLine={false}
                   >
                     {pieData.filter((d) => !hiddenPieKeys.has(d.name)).map((entry, i) => (
@@ -250,16 +254,16 @@ export default function ExpenseBudgetPage() {
         </div>
 
         {/* Category table */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">{t('budget.categoryBreakdown')}</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('budget.categoryBreakdown')}</h2>
           {isLoading ? (
-            <div className="h-64 bg-gray-100 rounded animate-pulse" />
+            <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
           ) : categoryAverages.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-12">{t('common.noData')}</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('common.noData')}</p>
           ) : (
             <div className="overflow-y-auto max-h-[280px]">
               <table className="w-full text-sm">
-                <thead className="text-xs text-gray-500 border-b">
+                <thead className="text-xs text-gray-500 dark:text-gray-400 border-b dark:border-gray-700">
                   <tr>
                     <th className="text-left py-2">{t('table.category')}</th>
                     <th className="text-right py-2">{t('budget.avgPerMonth')}</th>
@@ -268,13 +272,13 @@ export default function ExpenseBudgetPage() {
                 </thead>
                 <tbody>
                   {categoryAverages.map((c) => (
-                    <tr key={c.categoryId} className="border-b border-gray-50">
+                    <tr key={c.categoryId} className="border-b border-gray-50 dark:border-gray-700">
                       <td className="py-2 flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: c.color ?? '#6B7280' }} />
                         {c.name}
                       </td>
                       <td className="py-2 text-right font-medium">{formatCurrency(c.average)}</td>
-                      <td className="py-2 text-right text-gray-500">{formatCurrency(c.total)}</td>
+                      <td className="py-2 text-right text-gray-500 dark:text-gray-400">{formatCurrency(c.total)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -285,8 +289,8 @@ export default function ExpenseBudgetPage() {
       </div>
 
       {/* Income vs Expenses trend */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4">{t('budget.incomeVsExpenses')}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-3 sm:p-5 mb-6">
+        <h2 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">{t('budget.incomeVsExpenses')}</h2>
 
         {scrubTrend && (
           <div className="mb-2">
@@ -295,7 +299,7 @@ export default function ExpenseBudgetPage() {
         )}
 
         {isLoading ? (
-          <div className="h-64 bg-gray-100 rounded animate-pulse" />
+          <div className="h-64 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         ) : (
           <>
             <ResponsiveContainer width="100%" height={240} className="sm:!h-[280px]">

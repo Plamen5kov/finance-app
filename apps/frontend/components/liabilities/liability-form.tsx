@@ -139,10 +139,10 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       {/* Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.type')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.type')} *</label>
         <select
           {...register('type')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {LIABILITY_TYPES.map((tp) => (
             <option key={tp} value={tp}>{t(`liabilityType.${tp}` as any)}</option>
@@ -152,10 +152,10 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.name')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.name')} *</label>
         <input
           {...register('name')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="e.g. Home Mortgage"
         />
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
@@ -163,10 +163,10 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
       {/* Currency */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.currency')}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
         <select
           {...register('currency')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {CURRENCIES.map((c) => (
             <option key={c} value={c}>{c}</option>
@@ -176,27 +176,27 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
       {/* Leasing specific fields */}
       {showLeasingFields && (
-        <div className="border-t border-gray-100 pt-4 space-y-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('liabilityForm.leaseDetails')}</p>
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-4">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('liabilityForm.leaseDetails')}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.assetValue')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.assetValue')}</label>
               <input
                 {...register('originalValue')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="e.g. 40000"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.downPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.downPayment')}</label>
               <input
                 {...register('downPayment')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="0.00"
               />
             </div>
@@ -204,22 +204,22 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.balloonPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.balloonPayment')}</label>
               <input
                 {...register('residualValue')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="e.g. 10000"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.interestRate')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.interestRate')}</label>
               <input
                 {...register('interestRate')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="e.g. 5.5"
               />
             </div>
@@ -227,33 +227,33 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.monthlyPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.monthlyPayment')}</label>
               <input
                 {...register('monthlyPayment')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.termMonths')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.termMonths')}</label>
               <input
                 {...register('termMonths')}
                 type="number"
                 step="1"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="e.g. 48"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.startDate')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.startDate')}</label>
             <input
               {...register('startDate')}
               type="date"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </div>
         </div>
@@ -261,27 +261,27 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
       {/* Mortgage / Loan specific fields */}
       {showMortgageFields && (
-        <div className="border-t border-gray-100 pt-4 space-y-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('liabilityForm.loanDetails')}</p>
+        <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-4">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('liabilityForm.loanDetails')}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.originalAmount')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.originalAmount')}</label>
               <input
                 {...register('originalAmount')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.termMonths')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.termMonths')}</label>
               <input
                 {...register('termMonths')}
                 type="number"
                 step="1"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="e.g. 300"
               />
             </div>
@@ -289,40 +289,40 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.initialRate')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.initialRate')}</label>
               <input
                 {...register('interestRate')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="e.g. 2.5"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.initialPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.initialPayment')}</label>
               <input
                 {...register('monthlyPayment')}
                 type="number"
                 step="0.01"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                 placeholder="0.00"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('liabilityForm.startDate')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.startDate')}</label>
             <input
               {...register('startDate')}
               type="date"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </div>
 
           {/* Lifecycle Events */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700">{t('events.title')}</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('events.title')}</label>
               <button
                 type="button"
                 onClick={() => appendEvent({ id: crypto.randomUUID(), type: 'rate_change', date: '', newRate: '' as unknown as number, newMonthlyPayment: '' as unknown as number, amount: '' as unknown as number, newBalance: '' as unknown as number, notes: '' })}
@@ -332,7 +332,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
               </button>
             </div>
             {eventFields.length === 0 && (
-              <p className="text-xs text-gray-400 italic">{t('events.noEvents')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic">{t('events.noEvents')}</p>
             )}
             <div className="space-y-3">
               {eventFields.map((field, index) => {
@@ -343,11 +343,11 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                 const showBalance = eventType === 'refinance';
 
                 return (
-                  <div key={field.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                  <div key={field.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
                     <div className="flex gap-2 items-center">
                       <select
                         {...register(`events.${index}.type`)}
-                        className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                       >
                         {MORTGAGE_EVENT_TYPES.map((et) => (
                           <option key={et} value={et}>{EVENT_TYPE_LABELS[et]}</option>
@@ -356,12 +356,12 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                       <input
                         {...register(`events.${index}.date`)}
                         type="date"
-                        className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                        className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                       />
                       <button
                         type="button"
                         onClick={() => removeEvent(index)}
-                        className="p-1.5 text-gray-300 hover:text-red-500"
+                        className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -369,48 +369,48 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                     <div className="grid grid-cols-2 gap-2">
                       {showRate && (
                         <div>
-                          <label className="block text-xs text-gray-500 mb-0.5">{t('events.newRate')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.newRate')}</label>
                           <input
                             {...register(`events.${index}.newRate`)}
                             type="number"
                             step="0.01"
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                             placeholder="2.58"
                           />
                         </div>
                       )}
                       {showPayment && (
                         <div>
-                          <label className="block text-xs text-gray-500 mb-0.5">{t('events.newPayment')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.newPayment')}</label>
                           <input
                             {...register(`events.${index}.newMonthlyPayment`)}
                             type="number"
                             step="0.01"
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                             placeholder="1010.01"
                           />
                         </div>
                       )}
                       {showAmount && (
                         <div>
-                          <label className="block text-xs text-gray-500 mb-0.5">{t('events.extraAmount')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.extraAmount')}</label>
                           <input
                             {...register(`events.${index}.amount`)}
                             type="number"
                             step="0.01"
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                             placeholder="5000"
                           />
                         </div>
                       )}
                       {showBalance && (
                         <div>
-                          <label className="block text-xs text-gray-500 mb-0.5">{t('events.newBalance')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.newBalance')}</label>
                           <input
                             {...register(`events.${index}.newBalance`)}
                             type="number"
                             step="0.01"
-                            className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                             placeholder="116318.90"
                           />
                         </div>
@@ -419,7 +419,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                     <div>
                       <input
                         {...register(`events.${index}.notes`)}
-                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                         placeholder={t('events.notesPlaceholder')}
                       />
                     </div>
@@ -432,7 +432,7 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
       )}
 
       <div className="flex gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">
+        <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
           {t('common.cancel')}
         </button>
         <button type="submit" disabled={isLoading} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">

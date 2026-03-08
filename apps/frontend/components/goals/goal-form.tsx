@@ -64,10 +64,10 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.name')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.name')} *</label>
         <input
           {...register('name')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="e.g. Emergency Fund"
         />
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
@@ -75,12 +75,12 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
 
       <div className={`grid gap-3 ${goal ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.targetAmount')} *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.targetAmount')} *</label>
           <input
             {...register('targetAmount')}
             type="number"
             step="0.01"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="10000"
           />
           {errors.targetAmount && <p className="text-red-500 text-xs mt-1">{errors.targetAmount.message}</p>}
@@ -88,33 +88,33 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
 
         {goal && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.currentAmount')}</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.currentAmount')}</label>
             <input
               {...register('currentAmount')}
               type="number"
               step="0.01"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
               placeholder="0"
             />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.targetDate')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.targetDate')}</label>
           <input
             {...register('targetDate')}
             type="date"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.recurring')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.recurring')}</label>
           <select
             {...register('recurringPeriod')}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           >
             <option value="">{t('goals.filterOneTime')}</option>
             <option value="monthly">{t('goals.filterMonthly')}</option>
@@ -123,10 +123,10 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.priority')}</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.priority')}</label>
           <select
             {...register('priority')}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           >
             <option value="1">{t('goalForm.priorityHigh')}</option>
             <option value="2">{t('goalForm.priorityMedium')}</option>
@@ -136,20 +136,20 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.category')}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.category')}</label>
         <input
           {...register('category')}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="e.g. Retirement, Travel"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.description')}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.description')}</label>
         <textarea
           {...register('description')}
           rows={2}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand resize-none"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand resize-none"
           placeholder="Optional notes"
         />
       </div>
@@ -158,7 +158,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50"
+          className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           {t('common.cancel')}
         </button>

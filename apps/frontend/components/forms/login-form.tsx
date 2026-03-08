@@ -52,7 +52,7 @@ export function LoginForm() {
         <input
           {...register('email')}
           type="text"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="your username"
         />
         {errors.email && <p className="text-red-600 text-xs mt-1">{t('auth.usernameRequired')}</p>}
@@ -63,7 +63,7 @@ export function LoginForm() {
         <input
           {...register('password')}
           type="password"
-          className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 text-sm bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand"
         />
         {errors.password && <p className="text-red-600 text-xs mt-1">{t('auth.passwordRequired')}</p>}
       </div>
@@ -76,7 +76,7 @@ export function LoginForm() {
         {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
       </button>
 
-      <p className="text-sm text-center text-gray-600">
+      <p className="text-sm text-center text-gray-600 dark:text-gray-400">
         {t('auth.noAccount')}{' '}
         <Link
           href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}

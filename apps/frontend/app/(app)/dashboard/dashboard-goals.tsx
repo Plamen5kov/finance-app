@@ -14,9 +14,9 @@ export function DashboardGoals() {
   if (active.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-gray-900">{t('dashboard.activeGoals')}</h2>
+        <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('dashboard.activeGoals')}</h2>
         <Link href="/goals" className="text-sm text-brand hover:underline flex items-center gap-1">
           {t('dashboard.viewAll')} <ArrowRight size={14} />
         </Link>
@@ -27,12 +27,12 @@ export function DashboardGoals() {
           return (
             <div key={goal.id}>
               <div className="flex justify-between text-sm mb-1">
-                <span className="font-medium text-gray-800 truncate">{goal.name}</span>
-                <span className="text-gray-500 ml-2 flex-shrink-0">
+                <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{goal.name}</span>
+                <span className="text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
                   {formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                 <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${pct}%` }} />
               </div>
             </div>

@@ -19,13 +19,13 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon, href, sub, color }: StatCardProps) {
   return (
-    <Link href={href} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
+    <Link href={href} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-gray-500 font-medium">{label}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
         <span className={`p-2 rounded-lg ${color}`}>{icon}</span>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+      {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{sub}</p>}
     </Link>
   );
 }
@@ -47,10 +47,10 @@ export function DashboardStats({ name }: { name: string }) {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {t('dashboard.welcomeBack', { name })}
         </h1>
-        <p className="text-gray-500 text-sm mt-1">{t('dashboard.overview')}</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{t('dashboard.overview')}</p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         <StatCard

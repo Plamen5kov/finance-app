@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Register' };
 
 export default function RegisterPage() {
   return (
-    <div className="bg-white p-8 rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-900 p-8 rounded-lg shadow">
       <h1 className="text-2xl font-bold mb-6">Create your account</h1>
       <Suspense>
         <RegisterForm />

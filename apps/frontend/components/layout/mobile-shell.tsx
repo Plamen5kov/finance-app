@@ -65,7 +65,7 @@ export function MobileShell({ sidebar, bottomNav, children }: MobileShellProps) 
       {/* Main content */}
       <main
         ref={mainRef}
-        className="flex-1 overflow-auto bg-gray-50 min-w-0"
+        className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-800 min-w-0"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -77,7 +77,7 @@ export function MobileShell({ sidebar, bottomNav, children }: MobileShellProps) 
         >
           <RefreshCw
             size={20}
-            className={`text-gray-400 transition-transform ${refreshing ? 'animate-spin' : ''}`}
+            className={`text-gray-400 dark:text-gray-500 transition-transform ${refreshing ? 'animate-spin' : ''}`}
             style={{ transform: `rotate(${Math.min(pullDistance / PULL_THRESHOLD, 1) * 360}deg)` }}
           />
         </div>

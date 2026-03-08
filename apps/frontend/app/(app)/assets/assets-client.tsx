@@ -42,7 +42,7 @@ export function AssetsClient() {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('assets.title')}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('assets.title')}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
@@ -66,13 +66,13 @@ export function AssetsClient() {
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-36 bg-gray-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-36 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
           ))}
         </div>
       )}
 
       {!isLoading && !hasAssets && (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <p className="text-lg font-medium">{t('common.nothingYet')}</p>
           <p className="text-sm mt-1">{t('assets.addFirst')}</p>
         </div>
@@ -81,7 +81,7 @@ export function AssetsClient() {
       {!isLoading && hasAssets && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-700">{t('assets.title')}</h2>
+            <h2 className="text-base font-semibold text-gray-700 dark:text-gray-300">{t('assets.title')}</h2>
             <span className="text-sm font-semibold text-brand">{formatCurrency(totalAssets)}</span>
           </div>
           {ASSET_TYPES.map((type) => {
@@ -91,10 +91,10 @@ export function AssetsClient() {
             return (
               <section key={type} className="mb-6">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     {t(`assetType.${type}` as any)}
                   </h3>
-                  <span className="text-sm font-semibold text-gray-700">{formatCurrency(subtotal)}</span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {group.map((asset) => (

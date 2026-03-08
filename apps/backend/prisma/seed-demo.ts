@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 
 const DEMO_USER = {
   name: 'Demo User',
-  email: 'demo@finances.local',
+  email: 'demo',
   password: 'DemoPassword123',
 };
 
@@ -416,13 +416,13 @@ async function main() {
     'Subscriptions': ['Netflix', 'Spotify', 'Gym Membership', 'iCloud', 'YouTube Premium', 'ChatGPT Plus'],
     'Education': ['Udemy', 'OReilly Books', 'Coursera'],
     'Travel': ['Booking.com', 'Ryanair', 'Airbnb', 'Hertz Car Rental'],
-    'Childcare': ['Happy Kids Daycare', 'Babysitter Maria'],
+    'Childcare': ['Happy Kids Daycare', 'After School Program'],
     'Gifts & Donations': ['Gift Shop', 'Red Cross', 'Birthday Gift'],
   };
 
   // Description pools per category
   const descriptions: Record<string, string[]> = {
-    'Groceries': ['Weekly groceries', 'Fruits and vegetables', 'Bread and dairy', 'Household supplies', 'Snacks and drinks', 'Meat and fish', 'Baby food and diapers'],
+    'Groceries': ['Weekly groceries', 'Fruits and vegetables', 'Bread and dairy', 'Household supplies', 'Snacks and drinks', 'Meat and fish', 'Cleaning products'],
     'Transport': ['Tank full', 'Highway toll', 'Monthly metro pass', 'Ride to airport', 'Parking downtown', 'Fuel top-up'],
     'Dining Out': ['Lunch with colleagues', 'Friday dinner', 'Weekend brunch', 'Quick takeaway', 'Date night', 'Birthday celebration dinner'],
     'Entertainment': ['Movie tickets', 'New board game', 'Concert tickets', 'Bowling night', 'Video game purchase', 'Book order'],

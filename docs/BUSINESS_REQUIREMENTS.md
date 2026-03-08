@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This is a personal finance management PWA designed for the user and their spouse to gain complete visibility and control over their financial situation. The app consolidates all financial data (mortgages, investments, expenses, and goals) into a single, intelligent planning tool. Rather than manually managing finances, users input their monthly income, and the app intelligently allocates it across goals (travel fund, baby fund, etc.) and required expenses (mortgage, insurance, taxes) while respecting deadlines and constraints.
+This is a personal finance management PWA designed for the user and their spouse to gain complete visibility and control over their financial situation. The app consolidates all financial data (mortgages, investments, expenses, and goals) into a single, intelligent planning tool. Rather than manually managing finances, users input their monthly income, and the app intelligently allocates it across goals (travel fund, education fund, etc.) and required expenses (mortgage, insurance, taxes) while respecting deadlines and constraints.
 
 **Core Promise**: Complete financial transparency + intelligent allocation planning + zero manual data entry through automation and document parsing.
 
@@ -176,7 +176,7 @@ This is a personal finance management PWA designed for the user and their spouse
   - Groceries/food
   - Transport/gas
 - **Discretionary**: Entertainment, dining out, shopping
-- **Goals**: Specific allocations to named goals (travel fund, baby fund, etc.)
+- **Goals**: Specific allocations to named goals (travel fund, education fund, etc.)
 - **Other**: Miscellaneous
 
 **Features**:
@@ -254,7 +254,7 @@ This is a personal finance management PWA designed for the user and their spouse
 **Goal Types** (all use the same `Goal` model, differentiated by `recurringPeriod`):
 
 1. **One-time Savings Goals** (`recurringPeriod: null`)
-   - Discretionary: Travel fund, Baby fund, New car, Home renovation
+   - Discretionary: Travel fund, Education fund, New car, Home renovation
    - Growth: Real estate down payment, Investment target
    - Life goals with long horizons (5–10 years ahead)
    - Supports any deadline, near or far
@@ -474,7 +474,7 @@ Example:
 ```
 Goal Name        Target Date    Projected Date    Days Difference    Status
 Travel Fund      Dec 2025       Jan 2026          +30 days           ⚠️ At Risk
-Baby Fund        Jun 2026       Jun 2026          On time            ✅ On Track
+Education Fund   Jun 2026       Jun 2026          On time            ✅ On Track
 Emergency Fund   Sep 2025       Dec 2025          +90 days           ❌ Delayed
 ```
 
@@ -623,7 +623,7 @@ To enable this feature, the system needs to:
 
 3. **User Reviews**:
    - Views proposed allocation plan
-   - Sees breakdown: "€500 to travel fund, €300 to baby fund, €1500 to mortgage, etc."
+   - Sees breakdown: "€500 to travel fund, €300 to education fund, €1500 to mortgage, etc."
    - Can view "what-if" scenarios (what if I save 20% more?)
    - Confirms allocation plan
 

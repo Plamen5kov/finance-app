@@ -19,8 +19,8 @@ export function ChartLegendChips({ items, hiddenKeys, onToggle }: ChartLegendChi
             onClick={() => onToggle(item.dataKey)}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap shrink-0 border transition-colors ${
               hidden
-                ? 'bg-gray-50 text-gray-400 border-gray-200'
-                : 'bg-white text-gray-700 border-gray-300'
+                ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
             }`}
           >
             <span

@@ -94,14 +94,14 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
     : null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">{TYPE_ICONS[liability.type] ?? '💼'}</span>
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm">{liability.name}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[liability.type] ?? 'bg-gray-100 text-gray-600'}`}>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{liability.name}</h3>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[liability.type] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
               {t(`liabilityType.${liability.type}` as any)}
             </span>
           </div>
@@ -109,14 +109,14 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
         <div className="flex gap-1">
           <button
             onClick={() => onEdit(liability)}
-            className="p-2 text-gray-300 hover:text-brand active:text-brand transition-colors"
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
             aria-label="Edit liability"
           >
             <Pencil size={16} />
           </button>
           <button
             onClick={() => onDelete(liability.id)}
-            className="p-2 text-gray-300 hover:text-red-500 active:text-red-500 transition-colors"
+            className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Delete liability"
           >
             <Trash2 size={16} />
@@ -125,57 +125,57 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
       </div>
 
       {/* Balance */}
-      <p className="text-2xl font-bold text-gray-900">{formatCurrency(liability.value)}</p>
-      <p className="text-xs text-gray-400 mt-0.5">{t('liabilities.outstandingBalance')}</p>
+      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(liability.value)}</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{t('liabilities.outstandingBalance')}</p>
 
       {/* Leasing details */}
       {leasingMeta && (
-        <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
           {leasingMeta.monthlyPayment > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.monthlyPayment')}</span>
-              <span className="font-medium text-gray-800">{formatCurrency(leasingMeta.monthlyPayment)}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.monthlyPayment')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(leasingMeta.monthlyPayment)}</span>
             </>
           )}
           {leasingMeta.residualValue > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.balloonPayment')}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.balloonPayment')}</span>
               <span className="font-medium text-orange-600">{formatCurrency(leasingMeta.residualValue)}</span>
             </>
           )}
           {leasingMeta.interestRate > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.interestRate')}</span>
-              <span className="font-medium text-gray-800">{leasingMeta.interestRate.toFixed(2)}%</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.interestRate')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{leasingMeta.interestRate.toFixed(2)}%</span>
             </>
           )}
           {leasingMonthsRemaining != null && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.monthsRemaining')}</span>
-              <span className="font-medium text-gray-800">{leasingMonthsRemaining}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.monthsRemaining')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{leasingMonthsRemaining}</span>
             </>
           )}
           {leasingEndDate && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.leaseEnds')}</span>
-              <span className="font-medium text-gray-800">{leasingEndDate}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.leaseEnds')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{leasingEndDate}</span>
             </>
           )}
           {leasingMeta.originalValue > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.assetValue')}</span>
-              <span className="font-medium text-gray-800">{formatCurrency(leasingMeta.originalValue)}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.assetValue')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(leasingMeta.originalValue)}</span>
             </>
           )}
           {leasingMeta.downPayment > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.downPayment')}</span>
-              <span className="font-medium text-gray-800">{formatCurrency(leasingMeta.downPayment)}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.downPayment')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(leasingMeta.downPayment)}</span>
             </>
           )}
           {totalLeasingCost != null && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.totalCost')}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.totalCost')}</span>
               <span className="font-medium text-red-600">{formatCurrency(totalLeasingCost)}</span>
             </>
           )}
@@ -184,41 +184,41 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
 
       {/* Mortgage / Loan details */}
       {mortgageMeta && (
-        <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
           {latestRate != null && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.interestRate')}</span>
-              <span className="font-medium text-gray-800">{latestRate.toFixed(2)}%</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.interestRate')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{latestRate.toFixed(2)}%</span>
             </>
           )}
           {mortgageMeta.monthlyPayment > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.monthlyPayment')}</span>
-              <span className="font-medium text-gray-800">{formatCurrency(mortgageMeta.monthlyPayment)}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.monthlyPayment')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(mortgageMeta.monthlyPayment)}</span>
             </>
           )}
           {mortgageMonthsRemaining != null && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.estMonthsLeft')}</span>
-              <span className="font-medium text-gray-800">{mortgageMonthsRemaining}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.estMonthsLeft')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{mortgageMonthsRemaining}</span>
             </>
           )}
           {totalInterestRemaining != null && totalInterestRemaining > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.interestRemaining')}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.interestRemaining')}</span>
               <span className="font-medium text-red-600">{formatCurrency(totalInterestRemaining)}</span>
             </>
           )}
           {mortgageMeta.originalAmount > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.originalAmount')}</span>
-              <span className="font-medium text-gray-800">{formatCurrency(mortgageMeta.originalAmount)}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.originalAmount')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{formatCurrency(mortgageMeta.originalAmount)}</span>
             </>
           )}
           {(mortgageMeta.events?.length ?? 0) > 0 && (
             <>
-              <span className="text-gray-500">{t('liabilityCard.events')}</span>
-              <span className="font-medium text-gray-800">{mortgageMeta.events!.length}</span>
+              <span className="text-gray-500 dark:text-gray-400">{t('liabilityCard.events')}</span>
+              <span className="font-medium text-gray-800 dark:text-gray-200">{mortgageMeta.events!.length}</span>
             </>
           )}
         </div>
