@@ -1,14 +1,12 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, UseGuards, HttpCode, HttpStatus,
+  Body, Param, HttpCode, HttpStatus,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { LiabilitiesService } from './liabilities.service';
 import { CreateLiabilityDto } from './dto/create-liability.dto';
 
 @Controller({ path: 'liabilities', version: '1' })
-@UseGuards(JwtAuthGuard)
 export class LiabilitiesController {
   constructor(private liabilitiesService: LiabilitiesService) {}
 

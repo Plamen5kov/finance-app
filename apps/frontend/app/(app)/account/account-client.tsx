@@ -7,6 +7,7 @@ import {
   useHouseholdInvites,
   useCreateInvite,
   useRevokeInvite,
+  useRemoveMember,
   useUpdateMemberRole,
   type HouseholdMember,
 } from '@/hooks/use-household';
@@ -49,6 +50,7 @@ function MembersSection() {
 
 function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: boolean }) {
   const updateRole = useUpdateMemberRole();
+  const removeMember = useRemoveMember();
 
   function handleRoleChange(newRole: string) {
     updateRole.mutate({ memberId: member.id, role: newRole });
@@ -60,19 +62,31 @@ function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: bool
         <p className="text-sm font-medium text-gray-900">{member.name ?? member.email}</p>
         {member.name && <p className="text-xs text-gray-500">{member.email}</p>}
       </div>
-      {canEdit ? (
-        <select
-          value={member.role}
-          onChange={(e) => handleRoleChange(e.target.value)}
-          disabled={updateRole.isPending}
-          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
-        >
-          <option value="member">Member</option>
-          <option value="viewer">Viewer</option>
-        </select>
-      ) : (
-        <span className="text-xs text-gray-400 capitalize">{member.role}</span>
-      )}
+      <div className="flex items-center gap-2">
+        {canEdit ? (
+          <>
+            <select
+              value={member.role}
+              onChange={(e) => handleRoleChange(e.target.value)}
+              disabled={updateRole.isPending}
+              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
+            >
+              <option value="member">Member</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <button
+              onClick={() => removeMember.mutate(member.id)}
+              disabled={removeMember.isPending}
+              className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+              title="Remove member"
+            >
+              <Trash2 size={15} />
+            </button>
+          </>
+        ) : (
+          <span className="text-xs text-gray-400 capitalize">{member.role}</span>
+        )}
+      </div>
     </div>
   );
 }

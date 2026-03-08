@@ -7,18 +7,15 @@ import {
   Body,
   Param,
   Query,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Controller({ path: 'expenses', version: '1' })
-@UseGuards(JwtAuthGuard)
 export class ExpensesController {
   constructor(private expensesService: ExpensesService) {}
 

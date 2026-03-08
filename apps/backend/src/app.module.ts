@@ -15,6 +15,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { GoalsModule } from './goals/goals.module';
 import { ImportModule } from './import/import.module';
 import { HouseholdModule } from './household/household.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { WriteAccessGuard } from './auth/guards/write-access.guard';
 
 @Module({
@@ -48,6 +49,7 @@ import { WriteAccessGuard } from './auth/guards/write-access.guard';
     HouseholdModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: WriteAccessGuard },
   ],
 })

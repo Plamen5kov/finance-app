@@ -1,13 +1,11 @@
 import {
   Controller,
   Post,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   CurrentUser,
   JwtPayload,
@@ -15,7 +13,6 @@ import {
 import { ImportService } from './import.service';
 
 @Controller({ path: 'import', version: '1' })
-@UseGuards(JwtAuthGuard)
 export class ImportController {
   constructor(private importService: ImportService) {}
 

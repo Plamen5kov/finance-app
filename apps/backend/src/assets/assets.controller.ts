@@ -6,18 +6,15 @@ import {
   Delete,
   Body,
   Param,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { AssetsService } from './assets.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { CreateSnapshotDto } from './dto/create-snapshot.dto';
 
 @Controller({ path: 'assets', version: '1' })
-@UseGuards(JwtAuthGuard)
 export class AssetsController {
   constructor(private assetsService: AssetsService) {}
 

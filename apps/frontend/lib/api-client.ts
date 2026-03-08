@@ -31,7 +31,13 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    const status = error.response?.status;
     const message = error.response?.data?.error?.message ?? error.message;
+
+    if (typeof window !== 'undefined' && status === 403) {
+      window.dispatchEvent(new CustomEvent('api:forbidden', { detail: message }));
+    }
+
     return Promise.reject(new Error(message));
   },
 );

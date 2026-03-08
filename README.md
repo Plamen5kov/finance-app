@@ -28,9 +28,9 @@ The app supports multiple users in a single household — useful for couples man
 6. Both users now see the same assets, liabilities, expenses, and goals
 
 **Roles:**
-- **Owner** — Full access + can manage members and invites
+- **Owner** — Full access + can manage members (change roles, remove), create/revoke invites
 - **Member** — Full access to create, edit, and delete data
-- **Viewer** — Read-only access; can see everything but cannot modify anything
+- **Viewer** — Read-only access; can see everything but cannot modify anything. Blocked actions show a toast notification explaining the restriction.
 
 ## Tech Stack
 

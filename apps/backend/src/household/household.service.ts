@@ -213,6 +213,25 @@ export class HouseholdService {
     };
   }
 
+  async removeMember(userId: string, householdId: string, memberId: string) {
+    const callerMembership = await this.prisma.householdMember.findUnique({
+      where: { userId_householdId: { userId, householdId } },
+    });
+    if (!callerMembership || callerMembership.role !== 'owner') {
+      throw new ForbiddenException('Only the household owner can remove members');
+    }
+
+    const target = await this.prisma.householdMember.findFirst({
+      where: { id: memberId, householdId },
+    });
+    if (!target) throw new NotFoundException('Member not found');
+    if (target.role === 'owner') {
+      throw new ForbiddenException('Cannot remove the household owner');
+    }
+
+    await this.prisma.householdMember.delete({ where: { id: memberId } });
+  }
+
   async listMembers(householdId: string) {
     const members = await this.prisma.householdMember.findMany({
       where: { householdId },

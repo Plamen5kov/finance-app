@@ -66,6 +66,18 @@ export function useRevokeInvite() {
   });
 }
 
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      await apiClient.delete(`/household/members/${memberId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['household', 'members'] });
+    },
+  });
+}
+
 export function useUpdateMemberRole() {
   const queryClient = useQueryClient();
   return useMutation({
