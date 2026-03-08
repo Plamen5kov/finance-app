@@ -134,11 +134,40 @@ pnpm db:migrate       # Run database migrations
 pnpm db:seed          # Seed sample data
 ```
 
-## Production Deployment
+## Self-Hosting / Production Deployment
 
-### Docker Compose
+Everything runs via Docker Compose. You need a Linux server with Docker and Docker Compose installed.
 
-1. **Create `.env`** in the project root:
+### Prerequisites
+
+- A Linux server (Debian/Ubuntu recommended)
+- Docker Engine >= 20.10
+- Docker Compose >= 2.0
+- A domain name pointing to your server (for SSL)
+- A reverse proxy for SSL termination (nginx, Caddy, or Cloudflare Tunnel)
+
+### Step-by-step
+
+1. **Clone the repo on your server:**
+
+   ```bash
+   git clone https://github.com/Plamen5kov/finance-app.git
+   cd finance-app
+   ```
+
+2. **Create `.env`** in the project root with your secrets:
+
+   ```bash
+   cat > .env << 'EOF'
+   DB_USER=userdb
+   DB_PASSWORD=$(openssl rand -base64 32)
+   DB_NAME=finances
+   JWT_SECRET=$(openssl rand -base64 48)
+   SESSION_SECRET=$(openssl rand -base64 48)
+   EOF
+   ```
+
+   Or manually create `.env`:
 
    ```env
    DB_USER=userdb
@@ -148,31 +177,82 @@ pnpm db:seed          # Seed sample data
    SESSION_SECRET=<random-string-at-least-32-chars>
    ```
 
-   Generate secrets with: `openssl rand -base64 48`
+3. **Set your domain** in `docker-compose.prod.yml`:
 
-2. **Update `docker-compose.prod.yml`:**
+   Find and replace `https://finance.5kov.xyz` with your domain in these places:
+   - `FRONTEND_URL` in the backend service
+   - `NEXT_PUBLIC_API_URL` in the frontend service (both `args` and `environment`)
 
-   Set `FRONTEND_URL` and `NEXT_PUBLIC_API_URL` to your domain.
-
-3. **Build and start:**
+4. **Build and start everything:**
 
    ```bash
    docker compose -f docker-compose.prod.yml up -d --build
    ```
 
-4. **Run migrations:**
+   This builds the backend and frontend images, then starts all 5 services: PostgreSQL, Redis, backend, frontend, and nginx.
+
+5. **Push the schema to the database** (first deploy only):
 
    ```bash
-   docker exec <backend-container> npx prisma db push
+   docker compose -f docker-compose.prod.yml exec backend npx prisma db push
    ```
 
-5. **Seed data (optional):**
+6. **Create your account:**
+
+   Open your browser and go to `https://yourdomain.com/register`. Create your first account — it automatically becomes the household owner.
+
+7. **(Optional) Load demo data:**
+
+   If you want to see the app populated with sample data:
 
    ```bash
-   docker exec -w /app/apps/backend <backend-container> npx ts-node prisma/seed.ts
+   # You need pnpm and Node.js on the host, or use a temporary container:
+   docker run --rm -v $(pwd):/app -w /app \
+     --network finance-app_default \
+     -e DATABASE_URL=postgresql://userdb:<your-db-password>@postgres:5432/finances \
+     node:22-bookworm-slim \
+     sh -c "npm i -g pnpm@9.15.9 && pnpm --filter backend exec prisma generate && pnpm --filter backend db:seed-demo"
    ```
 
-The stack runs nginx on port 55555 by default. Put your own reverse proxy (nginx, Caddy, Cloudflare Tunnel) in front for SSL termination.
+   This creates a demo account: `demo@finances.local` / `DemoPassword123`
+
+### SSL / Reverse Proxy
+
+The built-in nginx listens on port **55555**. You need to put your own reverse proxy in front for SSL. Examples:
+
+**Caddy (simplest):**
+
+```
+yourdomain.com {
+    reverse_proxy localhost:55555
+}
+```
+
+**nginx:**
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://localhost:55555;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Cloudflare Tunnel:**
+
+```bash
+cloudflared tunnel --url http://localhost:55555
+```
 
 ### Architecture
 
@@ -180,6 +260,31 @@ The stack runs nginx on port 55555 by default. Put your own reverse proxy (nginx
 Client → Your Reverse Proxy (SSL) → nginx (:55555) → frontend (:3000)
                                                     → backend  (:3001) → PostgreSQL
                                                                        → Redis
+```
+
+### Updating
+
+To deploy new changes:
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+The database data is stored in Docker volumes (`postgres_data`, `redis_data`) and persists across rebuilds.
+
+### Backup
+
+Back up your PostgreSQL data:
+
+```bash
+docker compose -f docker-compose.prod.yml exec postgres pg_dump -U userdb finances > backup_$(date +%Y%m%d).sql
+```
+
+Restore from backup:
+
+```bash
+cat backup.sql | docker compose -f docker-compose.prod.yml exec -T postgres psql -U userdb finances
 ```
 
 ## Contributing
