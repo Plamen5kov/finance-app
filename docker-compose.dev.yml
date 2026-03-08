@@ -27,6 +27,48 @@ services:
       timeout: 3s
       retries: 5
 
+  backend:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    command: sh -c "apt-get update -qq && apt-get install -y -qq openssl > /dev/null 2>&1 && npm i -g pnpm@9.15.9 && pnpm --filter backend exec prisma generate && pnpm --filter backend dev"
+    volumes:
+      - .:/app
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://userdb:password@postgres-dev:5432/finances
+      REDIS_HOST: redis-dev
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      JWT_SECRET: dev-jwt-secret-change-me-to-a-random-string-at-least-32-chars
+      JWT_EXPIRATION: 7d
+      JWT_REFRESH_EXPIRATION: 30d
+      SESSION_SECRET: dev-session-secret-change-me-to-a-random-string-at-least-32-chars
+      NODE_ENV: development
+      PORT: 3001
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+      redis-dev:
+        condition: service_healthy
+
+  frontend:
+    image: node:22-bookworm-slim
+    working_dir: /app
+    command: sh -c "npm i -g pnpm@9.15.9 && pnpm --filter frontend dev"
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://backend:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_APP_NAME: Finances
+      SESSION_SECRET: dev-session-secret-change-me-to-a-random-string-at-least-32-chars
+    depends_on:
+      - backend
+
 volumes:
   postgres_dev_data:
   redis_dev_data:

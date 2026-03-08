@@ -10,7 +10,7 @@ import { registerAction } from '@/lib/auth/actions';
 const registerSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Enter a valid email'),
+    email: z.string().min(1, 'Username is required'),
     password: z.string().min(12, 'Password must be at least 12 characters'),
     confirmPassword: z.string(),
   })
@@ -63,12 +63,12 @@ export function RegisterForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Email</label>
+        <label className="block text-sm font-medium mb-1">Username</label>
         <input
           {...register('email')}
-          type="email"
+          type="text"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-          placeholder="you@example.com"
+          placeholder="your username"
         />
         {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>}
       </div>

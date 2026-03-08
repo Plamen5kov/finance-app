@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { loginAction } from '@/lib/auth/actions';
 
 const loginSchema = z.object({
-  email: z.string().email('Enter a valid email'),
+  email: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -46,12 +46,12 @@ export function LoginForm() {
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">Email</label>
+        <label className="block text-sm font-medium mb-1">Username</label>
         <input
           {...register('email')}
-          type="email"
+          type="text"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
-          placeholder="you@example.com"
+          placeholder="your username"
         />
         {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>}
       </div>
