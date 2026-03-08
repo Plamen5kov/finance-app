@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as Joi from 'joi';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -15,6 +16,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { GoalsModule } from './goals/goals.module';
 import { ImportModule } from './import/import.module';
 import { HouseholdModule } from './household/household.module';
+import { PriceTrackingModule } from './price-tracking/price-tracking.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { WriteAccessGuard } from './auth/guards/write-access.guard';
 
@@ -37,6 +39,7 @@ import { WriteAccessGuard } from './auth/guards/write-access.guard';
       }),
       load: [databaseConfig, jwtConfig, redisConfig],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -47,6 +50,7 @@ import { WriteAccessGuard } from './auth/guards/write-access.guard';
     GoalsModule,
     ImportModule,
     HouseholdModule,
+    PriceTrackingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAssets, useCreateAsset, useDeleteAsset, CreateAssetInput } from '@/hooks/use-assets';
+import { useAssets, useCreateAsset, useDeleteAsset, useRefreshPrices, CreateAssetInput } from '@/hooks/use-assets';
 import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
 import { AssetForm } from '@/components/assets/asset-form';
 import { AssetSnapshotModal } from '@/components/assets/asset-snapshot-modal';
 import { Modal } from '@/components/ui/modal';
 import { formatCurrency } from '@/lib/utils';
-import { Plus, TrendingUp } from 'lucide-react';
+import { Plus, TrendingUp, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
 export function AssetsClient() {
@@ -19,6 +19,7 @@ export function AssetsClient() {
   const { data: assets, isLoading } = useAssets();
   const createAsset = useCreateAsset();
   const deleteAsset = useDeleteAsset();
+  const refreshPrices = useRefreshPrices();
 
   const totalAssets = useMemo(() => (assets ?? []).reduce((s, a) => s + a.value, 0), [assets]);
 
@@ -43,13 +44,23 @@ export function AssetsClient() {
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('assets.title')}</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
-        >
-          <Plus size={16} />
-          {t('common.add')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refreshPrices.mutate()}
+            disabled={refreshPrices.isPending}
+            className="flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={refreshPrices.isPending ? 'animate-spin' : ''} />
+            {refreshPrices.isPending ? t('assets.refreshing' as any) : t('assets.refreshPrices' as any)}
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
+          >
+            <Plus size={16} />
+            {t('common.add')}
+          </button>
+        </div>
       </div>
 
       {/* Total Assets banner */}

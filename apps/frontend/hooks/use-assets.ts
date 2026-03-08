@@ -42,6 +42,27 @@ export interface CreateAssetInput {
   quantity?: number;
   costBasis?: number;
   currency?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RefreshResult {
+  updated: number;
+  errors: string[];
+  backfilled: number;
+}
+
+export function useRefreshPrices() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.post<RefreshResult>('/price-tracking/refresh');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['net-worth'] });
+    },
+  });
 }
 
 export function useCreateAsset() {

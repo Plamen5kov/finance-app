@@ -78,14 +78,14 @@ export class AssetsService {
     });
   }
 
-  async addSnapshot(householdId: string, assetId: string, value: number, month: string) {
+  async addSnapshot(householdId: string, assetId: string, value: number, month: string, price?: number) {
     await this.assertHouseholdAccess(householdId, assetId);
     const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
     const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
     if (existing) {
-      return this.prisma.assetSnapshot.update({ where: { id: existing.id }, data: { value } });
+      return this.prisma.assetSnapshot.update({ where: { id: existing.id }, data: { value, ...(price != null && { price }) } });
     }
-    return this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt } });
+    return this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt, ...(price != null && { price }) } });
   }
 
   async deleteSnapshot(householdId: string, assetId: string, snapshotId: string) {

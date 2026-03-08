@@ -11,7 +11,7 @@ export function isLiability(type: string): boolean {
   return (LIABILITY_TYPES as readonly string[]).includes(type);
 }
 
-export const CURRENCIES = ['EUR', 'USD', 'GBP'] as const;
+export const CURRENCIES = ['EUR', 'USD', 'GBP', 'BGN'] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
 export const MORTGAGE_EVENT_TYPES = ['rate_change', 'payment_change', 'extra_payment', 'refinance'] as const;
@@ -54,4 +54,35 @@ export interface LeasingMetadata {
   monthlyPayment: number;   // Fixed monthly payment
   termMonths: number;       // Total lease duration in months
   startDate: string;        // ISO date YYYY-MM-DD
+}
+
+// Asset metadata interfaces (stored in Asset.metadata JSON)
+export interface EtfMetadata {
+  ticker: string;           // e.g. "VWCE.DE"
+}
+
+export interface CryptoMetadata {
+  coinId: string;           // CoinGecko coin ID, e.g. "bitcoin"
+}
+
+export const GOLD_UNITS = ['g', 'toz'] as const;
+export type GoldUnit = (typeof GOLD_UNITS)[number];
+
+export interface GoldMetadata {
+  metal: 'gold';
+  unit: GoldUnit;           // grams or troy ounces
+}
+
+export type TrackableAssetMetadata = EtfMetadata | CryptoMetadata | GoldMetadata;
+
+export function hasTickerMetadata(metadata: unknown): metadata is EtfMetadata {
+  return !!metadata && typeof metadata === 'object' && 'ticker' in metadata && typeof (metadata as EtfMetadata).ticker === 'string';
+}
+
+export function hasCoinIdMetadata(metadata: unknown): metadata is CryptoMetadata {
+  return !!metadata && typeof metadata === 'object' && 'coinId' in metadata && typeof (metadata as CryptoMetadata).coinId === 'string';
+}
+
+export function hasGoldMetadata(metadata: unknown): metadata is GoldMetadata {
+  return !!metadata && typeof metadata === 'object' && 'metal' in metadata && (metadata as GoldMetadata).metal === 'gold';
 }

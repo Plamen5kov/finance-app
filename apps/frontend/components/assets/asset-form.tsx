@@ -1,10 +1,10 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreateAssetInput } from '@/hooks/use-assets';
-import { ASSET_TYPES, CURRENCIES } from '@finances/shared';
+import { ASSET_TYPES, CURRENCIES, GOLD_UNITS } from '@finances/shared';
 import { useTranslation } from '@/i18n';
 
 const schema = z.object({
@@ -14,6 +14,9 @@ const schema = z.object({
   quantity: z.coerce.number().min(0).optional().or(z.literal('')),
   costBasis: z.coerce.number().min(0).optional().or(z.literal('')),
   currency: z.string().max(10).optional(),
+  ticker: z.string().max(20).optional().or(z.literal('')),
+  coinId: z.string().max(50).optional().or(z.literal('')),
+  goldUnit: z.enum(GOLD_UNITS).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -28,12 +31,35 @@ interface AssetFormProps {
 
 export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submitLabel }: AssetFormProps) {
   const { t } = useTranslation();
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
+
+  // Extract metadata fields from defaultValues
+  const metaDefaults = defaultValues?.metadata as Record<string, unknown> | undefined;
+
+  const { register, handleSubmit, control, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { currency: 'EUR', type: 'etf', ...defaultValues },
+    defaultValues: {
+      currency: 'EUR',
+      type: 'etf',
+      ...defaultValues,
+      ticker: (metaDefaults?.ticker as string) ?? '',
+      coinId: (metaDefaults?.coinId as string) ?? '',
+      goldUnit: (metaDefaults?.unit as 'g' | 'toz') ?? 'g',
+    },
   });
 
+  const selectedType = useWatch({ control, name: 'type' });
+
   async function submit(values: FormValues) {
+    // Build metadata based on type
+    let metadata: Record<string, unknown> | undefined;
+    if (values.type === 'etf' && values.ticker) {
+      metadata = { ticker: values.ticker };
+    } else if (values.type === 'crypto' && values.coinId) {
+      metadata = { coinId: values.coinId };
+    } else if (values.type === 'gold' && values.goldUnit) {
+      metadata = { metal: 'gold', unit: values.goldUnit };
+    }
+
     await onSubmit({
       type: values.type,
       name: values.name,
@@ -41,17 +67,17 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
       quantity: values.quantity ? Number(values.quantity) : undefined,
       costBasis: values.costBasis ? Number(values.costBasis) : undefined,
       currency: values.currency,
+      metadata,
     });
   }
+
+  const inputClass = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand';
 
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.type')} *</label>
-        <select
-          {...register('type')}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-        >
+        <select {...register('type')} className={inputClass}>
           {ASSET_TYPES.map((tp) => (
             <option key={tp} value={tp}>{t(`assetType.${tp}` as any)}</option>
           ))}
@@ -61,32 +87,45 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.name')} *</label>
-        <input
-          {...register('name')}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-          placeholder="e.g. S&P 500 ETF"
-        />
+        <input {...register('name')} className={inputClass} placeholder="e.g. S&P 500 ETF" />
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
+
+      {/* Metadata fields — conditional on type */}
+      {selectedType === 'etf' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.ticker' as any)}</label>
+          <input {...register('ticker')} className={inputClass} placeholder={t('assetForm.tickerPlaceholder' as any)} />
+        </div>
+      )}
+
+      {selectedType === 'crypto' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.coinId' as any)}</label>
+          <input {...register('coinId')} className={inputClass} placeholder={t('assetForm.coinIdPlaceholder' as any)} />
+        </div>
+      )}
+
+      {selectedType === 'gold' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.goldUnit' as any)}</label>
+          <select {...register('goldUnit')} className={inputClass}>
+            {GOLD_UNITS.map((u) => (
+              <option key={u} value={u}>{t(`assetForm.${u === 'g' ? 'grams' : 'troyOunces'}` as any)}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currentValue')} *</label>
-          <input
-            {...register('value')}
-            type="number"
-            step="0.01"
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-            placeholder="0.00"
-          />
+          <input {...register('value')} type="number" step="0.01" className={inputClass} placeholder="0.00" />
           {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
-          <select
-            {...register('currency')}
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-          >
+          <select {...register('currency')} className={inputClass}>
             {CURRENCIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -97,23 +136,11 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.quantity')}</label>
-          <input
-            {...register('quantity')}
-            type="number"
-            step="any"
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-            placeholder="Optional"
-          />
+          <input {...register('quantity')} type="number" step="any" className={inputClass} placeholder="Optional" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.costBasis')}</label>
-          <input
-            {...register('costBasis')}
-            type="number"
-            step="0.01"
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-            placeholder="Optional"
-          />
+          <input {...register('costBasis')} type="number" step="0.01" className={inputClass} placeholder="Optional" />
         </div>
       </div>
 
