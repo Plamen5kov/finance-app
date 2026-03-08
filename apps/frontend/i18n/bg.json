@@ -107,6 +107,9 @@
   "assets.autoTrackNote": "Стойността ще се изчислява автоматично като количество × пазарна цена при обновяване.",
   "assets.addQuantityNote": "Добавете количество, за да активирате автоматичното проследяване на цената.",
   "assets.autoCalculated": "авто-изчислена при обновяване",
+  "assets.newEntry": "Нов запис",
+  "assets.viewHistory": "Виж история",
+  "assetForm.date": "Дата",
 
   "liabilities.title": "Задължения",
   "liabilities.totalLiabilities": "Общо задължения",

@@ -250,8 +250,30 @@ async function main() {
   });
   console.log(`✅ Car: ${carValues.length} snapshots, current: €27,000`);
 
-  // --- ETF: Vanguard FTSE All-World (VWCE.DE) — quantity-based with real-ish prices ---
-  // VWCE.DE approximate EUR prices per share (monthly)
+  // ── DCA helper: given prices and a monthly budget, accumulate shares ──
+  function dcaSnapshots(
+    assetId: string,
+    prices: [string, number][],
+    monthlyBudget: number,
+  ): { snapshots: { assetId: string; value: number; price: number; quantity: number; capturedAt: Date }[]; finalQty: number; totalCost: number } {
+    let runningQty = 0;
+    let totalCost = 0;
+    const snapshots = prices.map(([month, price]) => {
+      const bought = Math.floor((monthlyBudget / price) * 10000) / 10000; // fractional shares, 4 decimals
+      runningQty = Math.round((runningQty + bought) * 10000) / 10000;
+      totalCost += bought * price;
+      return {
+        assetId,
+        value: Math.round(runningQty * price * 100) / 100,
+        price,
+        quantity: runningQty,
+        capturedAt: new Date(`${month}-01T00:00:00Z`),
+      };
+    });
+    return { snapshots, finalQty: runningQty, totalCost: Math.round(totalCost * 100) / 100 };
+  }
+
+  // --- ETF: Vanguard FTSE All-World (VWCE.DE) — DCA €500/month ---
   const vwcePrices: [string, number][] = [
     ['2022-01', 102], ['2022-04', 98], ['2022-07', 91], ['2022-10', 88],
     ['2023-01', 95], ['2023-04', 98], ['2023-07', 101], ['2023-10', 97],
@@ -259,56 +281,44 @@ async function main() {
     ['2025-01', 115], ['2025-04', 118], ['2025-07', 121], ['2025-10', 119],
     ['2026-01', 124], ['2026-03', 126],
   ];
-  const vwceQty = 145; // ~145 shares accumulated via DCA
+  const vwceDca = dcaSnapshots('', vwcePrices, 500);
   const etf1 = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
-      type: 'etf', name: 'Vanguard FTSE All-World (VWCE)', value: vwceQty * vwcePrices.at(-1)![1], currency: 'EUR',
-      quantity: vwceQty, costBasis: vwceQty * 99, // avg cost ~€99/share
+      type: 'etf', name: 'Vanguard FTSE All-World (VWCE)', currency: 'EUR',
+      value: vwceDca.snapshots.at(-1)!.value,
+      quantity: vwceDca.finalQty, costBasis: vwceDca.totalCost,
       metadata: { ticker: 'VWCE.DE' },
     },
   });
   await prisma.assetSnapshot.createMany({
-    data: vwcePrices.map(([month, price]) => ({
-      assetId: etf1.id, value: Math.round(vwceQty * price * 100) / 100, price,
-      capturedAt: new Date(`${month}-01T00:00:00Z`),
-    })),
+    data: vwceDca.snapshots.map((s) => ({ ...s, assetId: etf1.id })),
   });
-  console.log(`✅ ETF (VWCE): ${vwcePrices.length} snapshots, ${vwceQty} shares × €${vwcePrices.at(-1)![1]} = €${vwceQty * vwcePrices.at(-1)![1]}`);
+  console.log(`✅ ETF (VWCE): ${vwcePrices.length} snapshots, DCA €500/mo → ${vwceDca.finalQty} shares, value €${vwceDca.snapshots.at(-1)!.value}`);
 
-  // --- ETF 2: iShares MSCI World (IWDA.AS) — quantity-based ---
+  // --- ETF 2: iShares MSCI World (IWDA.AS) — DCA €300/month ---
   const iwdaPrices: [string, number][] = [
     ['2023-03', 74], ['2023-06', 76], ['2023-09', 73], ['2023-12', 78],
     ['2024-03', 82], ['2024-06', 84], ['2024-09', 81], ['2024-12', 86],
     ['2025-03', 88], ['2025-06', 91], ['2025-09', 89], ['2025-12', 93],
     ['2026-03', 95],
   ];
-  const iwdaQty = 85; // ~85 shares
+  const iwdaDca = dcaSnapshots('', iwdaPrices, 300);
   const etf2 = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
-      type: 'etf', name: 'iShares MSCI World (IWDA)', value: iwdaQty * iwdaPrices.at(-1)![1], currency: 'EUR',
-      quantity: iwdaQty, costBasis: iwdaQty * 79,
+      type: 'etf', name: 'iShares MSCI World (IWDA)', currency: 'EUR',
+      value: iwdaDca.snapshots.at(-1)!.value,
+      quantity: iwdaDca.finalQty, costBasis: iwdaDca.totalCost,
       metadata: { ticker: 'IWDA.AS' },
     },
   });
   await prisma.assetSnapshot.createMany({
-    data: iwdaPrices.map(([month, price]) => ({
-      assetId: etf2.id, value: Math.round(iwdaQty * price * 100) / 100, price,
-      capturedAt: new Date(`${month}-01T00:00:00Z`),
-    })),
+    data: iwdaDca.snapshots.map((s) => ({ ...s, assetId: etf2.id })),
   });
-  console.log(`✅ ETF (IWDA): ${iwdaPrices.length} snapshots, ${iwdaQty} shares × €${iwdaPrices.at(-1)![1]} = €${iwdaQty * iwdaPrices.at(-1)![1]}`);
+  console.log(`✅ ETF (IWDA): ${iwdaPrices.length} snapshots, DCA €300/mo → ${iwdaDca.finalQty} shares, value €${iwdaDca.snapshots.at(-1)!.value}`);
 
-  // --- Crypto: Bitcoin ---
-  const btc = await prisma.asset.create({
-    data: {
-      userId: uid, householdId: hid,
-      type: 'crypto', name: 'Bitcoin (BTC)', value: 0, currency: 'EUR',
-      quantity: 0.45, metadata: { coinId: 'bitcoin' },
-    },
-  });
-  // Approximate BTC/EUR prices at various months
+  // --- Crypto: Bitcoin — DCA €200/month ---
   const btcPrices: [string, number][] = [
     ['2022-01', 33000], ['2022-06', 18500], ['2022-12', 15500],
     ['2023-03', 24000], ['2023-06', 27000], ['2023-09', 24500], ['2023-12', 39000],
@@ -316,23 +326,22 @@ async function main() {
     ['2025-03', 78000], ['2025-06', 82000], ['2025-09', 90000], ['2025-12', 85000],
     ['2026-03', 92000],
   ];
-  await prisma.assetSnapshot.createMany({
-    data: btcPrices.map(([month, price]) => ({
-      assetId: btc.id, value: Math.round(0.45 * price * 100) / 100, price,
-      capturedAt: new Date(`${month}-01T00:00:00Z`),
-    })),
-  });
-  await prisma.asset.update({ where: { id: btc.id }, data: { value: Math.round(0.45 * 92000 * 100) / 100 } });
-  console.log(`✅ BTC: ${btcPrices.length} snapshots, current: €${(0.45 * 92000).toFixed(0)}`);
-
-  // --- Crypto: Ethereum ---
-  const eth = await prisma.asset.create({
+  const btcDca = dcaSnapshots('', btcPrices, 200);
+  const btc = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
-      type: 'crypto', name: 'Ethereum (ETH)', value: 0, currency: 'EUR',
-      quantity: 3.2, metadata: { coinId: 'ethereum' },
+      type: 'crypto', name: 'Bitcoin (BTC)', currency: 'EUR',
+      value: btcDca.snapshots.at(-1)!.value,
+      quantity: btcDca.finalQty, costBasis: btcDca.totalCost,
+      metadata: { coinId: 'bitcoin' },
     },
   });
+  await prisma.assetSnapshot.createMany({
+    data: btcDca.snapshots.map((s) => ({ ...s, assetId: btc.id })),
+  });
+  console.log(`✅ BTC: ${btcPrices.length} snapshots, DCA €200/mo → ${btcDca.finalQty} BTC, value €${btcDca.snapshots.at(-1)!.value}`);
+
+  // --- Crypto: Ethereum — DCA €150/month ---
   const ethPrices: [string, number][] = [
     ['2022-01', 2800], ['2022-06', 1000], ['2022-12', 1100],
     ['2023-03', 1600], ['2023-06', 1700], ['2023-09', 1500], ['2023-12', 2100],
@@ -340,37 +349,41 @@ async function main() {
     ['2025-03', 2000], ['2025-06', 2200], ['2025-09', 2500], ['2025-12', 2800],
     ['2026-03', 2400],
   ];
-  await prisma.assetSnapshot.createMany({
-    data: ethPrices.map(([month, price]) => ({
-      assetId: eth.id, value: Math.round(3.2 * price * 100) / 100, price,
-      capturedAt: new Date(`${month}-01T00:00:00Z`),
-    })),
-  });
-  await prisma.asset.update({ where: { id: eth.id }, data: { value: Math.round(3.2 * 2400 * 100) / 100 } });
-  console.log(`✅ ETH: ${ethPrices.length} snapshots, current: €${(3.2 * 2400).toFixed(0)}`);
-
-  // --- Gold: physical gold ---
-  const gold = await prisma.asset.create({
+  const ethDca = dcaSnapshots('', ethPrices, 150);
+  const eth = await prisma.asset.create({
     data: {
       userId: uid, householdId: hid,
-      type: 'gold', name: 'Physical Gold (50g)', value: 0, currency: 'EUR',
-      quantity: 50, metadata: { metal: 'gold', unit: 'g' },
+      type: 'crypto', name: 'Ethereum (ETH)', currency: 'EUR',
+      value: ethDca.snapshots.at(-1)!.value,
+      quantity: ethDca.finalQty, costBasis: ethDca.totalCost,
+      metadata: { coinId: 'ethereum' },
     },
   });
-  // Gold price per gram EUR (approx)
+  await prisma.assetSnapshot.createMany({
+    data: ethDca.snapshots.map((s) => ({ ...s, assetId: eth.id })),
+  });
+  console.log(`✅ ETH: ${ethPrices.length} snapshots, DCA €150/mo → ${ethDca.finalQty} ETH, value €${ethDca.snapshots.at(-1)!.value}`);
+
+  // --- Gold: DCA €100/month (buying grams) ---
   const goldPrices: [string, number][] = [
     ['2022-06', 55], ['2022-12', 56], ['2023-06', 58], ['2023-12', 60],
     ['2024-06', 68], ['2024-12', 76], ['2025-06', 82], ['2025-12', 86],
     ['2026-03', 88],
   ];
-  await prisma.assetSnapshot.createMany({
-    data: goldPrices.map(([month, pricePerGram]) => ({
-      assetId: gold.id, value: 50 * pricePerGram, price: pricePerGram,
-      capturedAt: new Date(`${month}-01T00:00:00Z`),
-    })),
+  const goldDca = dcaSnapshots('', goldPrices, 100);
+  const gold = await prisma.asset.create({
+    data: {
+      userId: uid, householdId: hid,
+      type: 'gold', name: 'Physical Gold', currency: 'EUR',
+      value: goldDca.snapshots.at(-1)!.value,
+      quantity: goldDca.finalQty, costBasis: goldDca.totalCost,
+      metadata: { metal: 'gold', unit: 'g' },
+    },
   });
-  await prisma.asset.update({ where: { id: gold.id }, data: { value: 50 * 88 } });
-  console.log(`✅ Gold: ${goldPrices.length} snapshots, current: €${50 * 88}\n`);
+  await prisma.assetSnapshot.createMany({
+    data: goldDca.snapshots.map((s) => ({ ...s, assetId: gold.id })),
+  });
+  console.log(`✅ Gold: ${goldPrices.length} snapshots, DCA €100/mo → ${goldDca.finalQty}g, value €${goldDca.snapshots.at(-1)!.value}\n`);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EXPENSE CATEGORIES

@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: ${DB_NAME:-finances}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   redis-dev:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_dev_data:/data
     healthcheck:
@@ -27,14 +27,14 @@ services:
       timeout: 3s
       retries: 5
 
-  backend:
+  backend-dev:
     image: node:22-alpine
     working_dir: /app
     command: sh -c "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm --filter backend exec prisma generate && pnpm --filter backend dev"
     volumes:
       - .:/app
     ports:
-      - "3001:3001"
+      - "4001:3001"
     environment:
       DATABASE_URL: postgresql://${DB_USER:-userdb}:${DB_PASSWORD:-password}@postgres-dev:5432/${DB_NAME:-finances}
       REDIS_HOST: redis-dev
@@ -43,27 +43,27 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me-to-a-random-string-at-least-32-chars}
       NODE_ENV: development
       PORT: 3001
-      FRONTEND_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:4000
     depends_on:
       postgres-dev:
         condition: service_healthy
       redis-dev:
         condition: service_healthy
 
-  frontend:
+  frontend-dev:
     image: node:22-alpine
     working_dir: /app
-    command: sh -c "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm --filter frontend dev"
+    command: sh -c "corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm --filter frontend dev -- -p 4000"
     volumes:
       - .:/app
     ports:
-      - "3000:3000"
+      - "4000:4000"
     environment:
-      API_URL: http://backend:3001
-      NEXT_PUBLIC_API_URL: http://localhost:3001
+      API_URL: http://backend-dev:3001
+      NEXT_PUBLIC_API_URL: http://localhost:4001
       SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me-to-a-random-string-at-least-32-chars}
     depends_on:
-      - backend
+      - backend-dev
 
 volumes:
   postgres_dev_data:

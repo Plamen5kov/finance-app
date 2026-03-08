@@ -1,7 +1,7 @@
 'use client';
 
 import { formatCurrency } from '@/lib/utils';
-import { Trash2, TrendingUp, TrendingDown, History, Pencil } from 'lucide-react';
+import { Trash2, History, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -35,12 +35,12 @@ interface CardItem {
 
 interface AssetCardProps {
   asset: CardItem;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onClick: (id: string) => void;
   onHistory: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export function AssetCard({ asset, onEdit, onDelete, onHistory }: AssetCardProps) {
+export function AssetCard({ asset, onClick, onHistory, onDelete }: AssetCardProps) {
   const { t } = useTranslation();
   const gain = asset.costBasis != null ? asset.value - asset.costBasis : null;
   const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
@@ -52,7 +52,10 @@ export function AssetCard({ asset, onEdit, onDelete, onHistory }: AssetCardProps
   const pricePerUnit = isAutoTracked && asset.quantity ? Math.round(asset.value / asset.quantity * 100) / 100 : null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5">
+    <div
+      onClick={() => onClick(asset.id)}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 cursor-pointer hover:border-brand/40 dark:hover:border-brand/40 transition-colors"
+    >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">{TYPE_ICONS[asset.type] ?? '💼'}</span>
@@ -63,23 +66,16 @@ export function AssetCard({ asset, onEdit, onDelete, onHistory }: AssetCardProps
             </span>
           </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-0.5">
           <button
-            onClick={() => onEdit(asset.id)}
+            onClick={(e) => { e.stopPropagation(); onHistory(asset.id); }}
             className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
-            aria-label="Edit asset"
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            onClick={() => onHistory(asset.id)}
-            className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
-            aria-label="Asset history"
+            aria-label="View history"
           >
             <History size={16} />
           </button>
           <button
-            onClick={() => onDelete(asset.id)}
+            onClick={(e) => { e.stopPropagation(); onDelete(asset.id); }}
             className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Delete asset"
           >

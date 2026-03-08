@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trash2, Pencil, Check, X } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
 import { useAssetSnapshots, useAddAssetSnapshot, useDeleteAssetSnapshot } from '@/hooks/use-assets';
@@ -13,132 +13,154 @@ interface Props {
   onClose: () => void;
 }
 
-function SnapshotRow({ snapshot, assetId }: { snapshot: { id: string; value: number; capturedAt: string }; assetId: string }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(String(snapshot.value));
-  const addSnapshot = useAddAssetSnapshot(assetId);
-  const deleteSnapshot = useDeleteAssetSnapshot(assetId);
-  const month = snapshot.capturedAt.slice(0, 7);
-
-  async function handleSave() {
-    const num = Number(editValue);
-    if (isNaN(num) || num < 0) return;
-    await addSnapshot.mutateAsync({ value: num, month });
-    setEditing(false);
-  }
-
-  function handleCancel() {
-    setEditValue(String(snapshot.value));
-    setEditing(false);
-  }
-
-  if (editing) {
-    return (
-      <div className="flex items-center justify-between py-2 text-sm gap-2">
-        <span className="text-gray-500 dark:text-gray-400 shrink-0">{month}</span>
-        <input
-          type="number"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          step="0.01"
-          min={0}
-          className="flex-1 min-w-[80px] border border-brand rounded px-2 py-1 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSave();
-            if (e.key === 'Escape') handleCancel();
-          }}
-        />
-        <div className="flex items-center gap-0.5">
-          <button
-            onClick={handleSave}
-            disabled={addSnapshot.isPending}
-            className="p-1 text-green-600 hover:text-green-700 transition-colors disabled:opacity-50"
-            aria-label="Save"
-          >
-            <Check size={14} />
-          </button>
-          <button
-            onClick={handleCancel}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Cancel"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-between py-2 text-sm">
-      <span className="text-gray-500 dark:text-gray-400">{month}</span>
-      <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(snapshot.value)}</span>
-      <div className="flex items-center gap-0.5">
-        <button
-          onClick={() => setEditing(true)}
-          className="p-1 text-gray-300 dark:text-gray-600 hover:text-brand transition-colors"
-          aria-label="Edit snapshot"
-        >
-          <Pencil size={13} />
-        </button>
-        <button
-          onClick={() => deleteSnapshot.mutate(snapshot.id)}
-          className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
-          aria-label="Delete snapshot"
-        >
-          <Trash2 size={13} />
-        </button>
-      </div>
-    </div>
-  );
+interface EditingSnapshot {
+  date: string;
+  value: string;
+  quantity: string;
+  price: string;
 }
 
 export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
   const { t } = useTranslation();
   const { data: snapshots, isLoading } = useAssetSnapshots(assetId);
   const addSnapshot = useAddAssetSnapshot(assetId);
+  const deleteSnapshot = useDeleteAssetSnapshot(assetId);
 
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const [month, setMonth] = useState(currentMonth);
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Min date for new snapshots: day after last snapshot
+  const minDate = (() => {
+    if (!snapshots?.length) return null;
+    const last = [...snapshots].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt)).at(-1)!.capturedAt.slice(0, 10);
+    const d = new Date(last + 'T00:00:00');
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const [date, setDate] = useState(today);
   const [value, setValue] = useState('');
+  const [editing, setEditing] = useState<EditingSnapshot | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!value) return;
-    await addSnapshot.mutateAsync({ value: Number(value), month });
+    await addSnapshot.mutateAsync({ value: Number(value), date });
     setValue('');
-    setMonth(currentMonth);
+    setDate(today);
   }
 
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    const qty = Number(editing.quantity);
+    const prc = Number(editing.price);
+    if (isNaN(qty) || qty < 0 || isNaN(prc) || prc < 0) return;
+    const value = Math.round(qty * prc * 100) / 100;
+    await addSnapshot.mutateAsync({ value, date: editing.date, quantity: qty, price: prc });
+    setEditing(null);
+  }
+
+  function startEdit(snapshot: { value: number; quantity?: number; price?: number; capturedAt: string }) {
+    setEditing({
+      date: snapshot.capturedAt.slice(0, 10),
+      value: String(snapshot.value),
+      quantity: snapshot.quantity != null ? String(snapshot.quantity) : '',
+      price: snapshot.price != null ? String(snapshot.price) : '',
+    });
+  }
+
+  const inputClass = 'border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand';
+
   return (
-    <Modal title={`History — ${assetName}`} onClose={onClose}>
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-2 mb-5">
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-          required
-        />
-        <input
-          type="number"
-          placeholder={t('assets.valuePlaceholder')}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          min={0}
-          step="0.01"
-          className="flex-1 min-w-[120px] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-          required
-        />
-        <button
-          type="submit"
-          disabled={addSnapshot.isPending}
-          className="w-full sm:w-auto bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
-        >
-          {t('common.add')}
-        </button>
-      </form>
+    <Modal title={`${t('assets.history')} — ${assetName}`} onClose={onClose}>
+      {/* Edit form — shown when editing a snapshot */}
+      {editing ? (
+        <form onSubmit={handleEditSave} className="space-y-3 mb-5 p-3 rounded-lg bg-brand/5 dark:bg-brand/10 border border-brand/20">
+          <input
+            type="date"
+            value={editing.date}
+            disabled
+            className={`w-full ${inputClass} opacity-70 cursor-not-allowed`}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('assetForm.quantity')} *</label>
+              <input
+                type="number"
+                value={editing.quantity}
+                onChange={(e) => setEditing({ ...editing, quantity: e.target.value })}
+                min={0}
+                step="any"
+                className={`w-full ${inputClass}`}
+                required
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('assets.pricePerUnit' as any)} *</label>
+              <input
+                type="number"
+                value={editing.price}
+                onChange={(e) => setEditing({ ...editing, price: e.target.value })}
+                min={0}
+                step="0.01"
+                className={`w-full ${inputClass}`}
+                required
+              />
+            </div>
+          </div>
+          {editing.quantity && editing.price && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {t('assetForm.currentValue')}: {formatCurrency(Number(editing.quantity) * Number(editing.price))}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={addSnapshot.isPending}
+              className="flex-1 bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
+            >
+              {addSnapshot.isPending ? t('common.saving') : t('common.save')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </form>
+      ) : (
+        /* Add form — shown when not editing */
+        <form onSubmit={handleAdd} className="flex flex-wrap gap-2 mb-5">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            min={minDate ?? undefined}
+            className={inputClass}
+            required
+          />
+          <input
+            type="number"
+            placeholder={t('assets.valuePlaceholder')}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            min={0}
+            step="0.01"
+            className={`flex-1 min-w-[120px] ${inputClass}`}
+            required
+          />
+          <button
+            type="submit"
+            disabled={addSnapshot.isPending}
+            className="w-full sm:w-auto bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
+          >
+            {t('common.add')}
+          </button>
+        </form>
+      )}
 
       {isLoading ? (
         <div className="space-y-2">
@@ -148,9 +170,36 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
         <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('assets.noHistory')}</p>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {[...snapshots].reverse().map((s) => (
-            <SnapshotRow key={s.id} snapshot={s} assetId={assetId} />
-          ))}
+          {[...snapshots].reverse().map((s) => {
+            const isEditingThis = editing?.date === s.capturedAt.slice(0, 10);
+            return (
+              <div key={s.id} className={`flex items-center py-2 text-sm gap-2 ${isEditingThis ? 'bg-brand/5 dark:bg-brand/10 -mx-2 px-2 rounded' : ''}`}>
+                <span className="text-gray-500 dark:text-gray-400 shrink-0">{s.capturedAt.slice(0, 10)}</span>
+                <span className="ml-auto flex items-center gap-2">
+                  {s.quantity != null && s.price != null && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{s.quantity} x {s.price}</span>
+                  )}
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(s.value)}</span>
+                </span>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => startEdit(s)}
+                    className={`p-1 transition-colors ${isEditingThis ? 'text-brand' : 'text-gray-300 dark:text-gray-600 hover:text-brand'}`}
+                    aria-label="Edit snapshot"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => deleteSnapshot.mutate(s.id)}
+                    className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors"
+                    aria-label="Delete snapshot"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </Modal>

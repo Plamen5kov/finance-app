@@ -123,6 +123,7 @@ model AssetSnapshot {
 
   value      Float    // Total value at snapshot time
   price      Float?   // Price per unit
+  quantity   Float?   // Quantity held at snapshot time
   capturedAt DateTime @default(now())
 
   @@index([assetId])

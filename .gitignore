@@ -39,3 +39,6 @@ coverage/
 
 # Uploads
 uploads/
+
+# Personal seed scripts
+apps/backend/prisma/seed-nn.ts

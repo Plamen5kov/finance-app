@@ -110,6 +110,8 @@ export interface AssetSnapshot {
   id: string;
   assetId: string;
   value: number;
+  price?: number;
+  quantity?: number;
   capturedAt: string;
 }
 
@@ -126,7 +128,7 @@ export function useAssetSnapshots(assetId: string) {
 export function useAddAssetSnapshot(assetId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { value: number; month: string }) => {
+    mutationFn: async (input: { value: number; date: string; price?: number; quantity?: number }) => {
       const { data } = await apiClient.post<AssetSnapshot>(`/assets/${assetId}/snapshots`, input);
       return data;
     },

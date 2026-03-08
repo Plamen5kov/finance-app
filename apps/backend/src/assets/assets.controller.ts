@@ -74,7 +74,7 @@ export class AssetsController {
     @Param('id') id: string,
     @Body() dto: CreateSnapshotDto,
   ) {
-    return this.assetsService.addSnapshot(user.householdId, id, dto.value, dto.month);
+    return this.assetsService.addSnapshot(user.householdId, id, dto.value, dto.date, dto.price, dto.quantity);
   }
 
   @Delete(':id/snapshots/:sid')

@@ -155,14 +155,21 @@ export class PriceTrackingService {
     return backfilled;
   }
 
-  /** Upsert snapshot for a given month (always writes) */
+  /** Upsert snapshot for a given month (always writes, uses 1st of month) */
   private async upsertSnapshot(assetId: string, value: number, price: number, month: string) {
-    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
-    const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
+    const date = `${month}-01`;
+    const capturedAt = new Date(`${date}T00:00:00.000Z`);
+    // Find any existing snapshot in the same month (any day)
+    const monthStart = new Date(`${month}-01T00:00:00.000Z`);
+    const [y, m] = month.split('-').map(Number);
+    const monthEnd = new Date(Date.UTC(y, m, 1)); // 1st of next month
+    const existing = await this.prisma.assetSnapshot.findFirst({
+      where: { assetId, capturedAt: { gte: monthStart, lt: monthEnd } },
+    });
     if (existing) {
       return this.prisma.assetSnapshot.update({
         where: { id: existing.id },
-        data: { value, price },
+        data: { value, price, capturedAt },
       });
     }
     return this.prisma.assetSnapshot.create({
@@ -172,10 +179,15 @@ export class PriceTrackingService {
 
   /** Create snapshot only if one doesn't exist for that month (for backfill — don't overwrite manual entries) */
   private async upsertSnapshotIfNew(assetId: string, value: number, price: number, month: string): Promise<boolean> {
-    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
-    const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
+    const monthStart = new Date(`${month}-01T00:00:00.000Z`);
+    const [y, m] = month.split('-').map(Number);
+    const monthEnd = new Date(Date.UTC(y, m, 1));
+    const existing = await this.prisma.assetSnapshot.findFirst({
+      where: { assetId, capturedAt: { gte: monthStart, lt: monthEnd } },
+    });
     if (existing) return false;
 
+    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
     await this.prisma.assetSnapshot.create({
       data: { assetId, value, price, capturedAt },
     });
