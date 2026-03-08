@@ -2,14 +2,16 @@
 
 import { formatCurrency } from '@/lib/utils';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useMonthlyReport } from '@/hooks/use-expenses';
 import { useTranslation } from '@/i18n';
+import { ChartLegendChips, useChartLegend } from '@/components/charts/chart-legend-chips';
+import { ChartTooltipHeader, type TooltipEntry } from '@/components/charts/chart-tooltip-header';
 
 const RANGES = [
   { label: '6M', months: 6 },
@@ -23,10 +25,19 @@ export default function ExpenseBudgetPage() {
   const [range, setRange] = useState(12);
   const { data: report, isLoading } = useMonthlyReport(range);
 
+  const { hiddenKeys: hiddenExpenseKeys, toggle: toggleExpense, isVisible: isExpenseVisible } = useChartLegend();
+  const { hiddenKeys: hiddenPieKeys, toggle: togglePie } = useChartLegend();
+  const { hiddenKeys: hiddenTrendKeys, toggle: toggleTrend, isVisible: isTrendVisible } = useChartLegend();
+
+  // Scrub state
+  const [scrubExpense, setScrubExpense] = useState<{ month: string; entries: TooltipEntry[] } | null>(null);
+  const [scrubTrend, setScrubTrend] = useState<{ month: string; entries: TooltipEntry[] } | null>(null);
+  const scrubExpenseTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const scrubTrendTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const months = report?.months ?? [];
   const categoryAverages = report?.categoryAverages ?? [];
 
-  // Build stacked bar chart data (expenses only, by category per month)
   const expenseCategories = report?.categories.filter((c) => c.type !== 'income') ?? [];
   const barData = months.map((m) => {
     const row: Record<string, unknown> = { month: m.month, Income: m.totalIncome, 'Total Expenses': m.totalExpenses };
@@ -37,7 +48,6 @@ export default function ExpenseBudgetPage() {
     return row;
   });
 
-  // Summary stats
   const avgExpenses = months.length > 0
     ? Math.round(months.reduce((s, m) => s + m.totalExpenses, 0) / months.length)
     : 0;
@@ -52,16 +62,55 @@ export default function ExpenseBudgetPage() {
     ? lastMonth.totalExpenses - prevMonth.totalExpenses
     : 0;
 
-  // Pie chart data from category averages
   const pieData = categoryAverages.filter((c) => c.average > 0).map((c) => ({
     name: c.name, value: c.average, color: c.color ?? '#6B7280',
   }));
 
-  // Color map for bars
   const colorMap: Record<string, string> = {};
   for (const cat of report?.categories ?? []) {
     colorMap[cat.name] = cat.color ?? '#6B7280';
   }
+
+  // Legend items for expense bar chart
+  const expenseLegendItems = expenseCategories.map((cat) => ({
+    dataKey: cat.name,
+    color: cat.color ?? '#6B7280',
+  }));
+
+  // Legend items for pie chart
+  const pieLegendItems = pieData.map((d) => ({ dataKey: d.name, color: d.color }));
+
+  // Legend items for trend chart
+  const trendLegendItems = [
+    { dataKey: 'Total Expenses', color: '#EF4444' },
+    { dataKey: 'Income', color: '#10B981' },
+  ];
+
+  const handleExpenseScrub = useCallback((state: any) => {
+    if (scrubExpenseTimeout.current) clearTimeout(scrubExpenseTimeout.current);
+    if (!state?.activePayload?.length) return;
+    const entries: TooltipEntry[] = state.activePayload
+      .filter((p: any) => p.value != null && p.value > 0)
+      .map((p: any) => ({ label: p.dataKey, value: p.value as number, color: p.color ?? p.fill as string }));
+    setScrubExpense({ month: state.activeLabel, entries });
+  }, []);
+
+  const handleExpenseLeave = useCallback(() => {
+    scrubExpenseTimeout.current = setTimeout(() => setScrubExpense(null), 300);
+  }, []);
+
+  const handleTrendScrub = useCallback((state: any) => {
+    if (scrubTrendTimeout.current) clearTimeout(scrubTrendTimeout.current);
+    if (!state?.activePayload?.length) return;
+    const entries: TooltipEntry[] = state.activePayload
+      .filter((p: any) => p.value != null)
+      .map((p: any) => ({ label: p.dataKey, value: p.value as number, color: p.fill as string }));
+    setScrubTrend({ month: state.activeLabel, entries });
+  }, []);
+
+  const handleTrendLeave = useCallback(() => {
+    scrubTrendTimeout.current = setTimeout(() => setScrubTrend(null), 300);
+  }, []);
 
   return (
     <div>
@@ -123,23 +172,44 @@ export default function ExpenseBudgetPage() {
             ))}
           </div>
         </div>
+
+        {scrubExpense && (
+          <div className="mb-2">
+            <ChartTooltipHeader month={scrubExpense.month} entries={scrubExpense.entries} />
+          </div>
+        )}
+
         {isLoading ? (
           <div className="h-72 bg-gray-100 rounded animate-pulse" />
         ) : barData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">{t('budget.noExpenseData')}</p>
         ) : (
-          <ResponsiveContainer width="100%" height={280} className="sm:!h-[340px]">
-            <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
-              <Legend />
-              {expenseCategories.map((cat) => (
-                <Bar key={cat.id} dataKey={cat.name} stackId="expenses" fill={cat.color ?? '#6B7280'} />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={280} className="sm:!h-[340px]">
+              <BarChart
+                data={barData}
+                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                onMouseMove={handleExpenseScrub}
+                onMouseLeave={handleExpenseLeave}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  content={() => null}
+                  cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }}
+                />
+                {expenseCategories.map((cat) => (
+                  isExpenseVisible(cat.name) && (
+                    <Bar key={cat.id} dataKey={cat.name} stackId="expenses" fill={cat.color ?? '#6B7280'} />
+                  )
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="mt-3">
+              <ChartLegendChips items={expenseLegendItems} hiddenKeys={hiddenExpenseKeys} onToggle={toggleExpense} />
+            </div>
+          </>
         )}
       </div>
 
@@ -152,26 +222,30 @@ export default function ExpenseBudgetPage() {
           ) : pieData.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-12">{t('common.noData')}</p>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={({ name, percent }) => percent >= 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
-                  labelLine={false}
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name]} />
-                <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={pieData.filter((d) => !hiddenPieKeys.has(d.name))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label={({ name, percent }) => percent >= 0.05 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                    labelLine={false}
+                  >
+                    {pieData.filter((d) => !hiddenPieKeys.has(d.name)).map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number, name: string) => [formatCurrency(v), name]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-3">
+                <ChartLegendChips items={pieLegendItems} hiddenKeys={hiddenPieKeys} onToggle={togglePie} />
+              </div>
+            </>
           )}
         </div>
 
@@ -213,20 +287,43 @@ export default function ExpenseBudgetPage() {
       {/* Income vs Expenses trend */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
         <h2 className="font-semibold text-gray-900 mb-4">{t('budget.incomeVsExpenses')}</h2>
+
+        {scrubTrend && (
+          <div className="mb-2">
+            <ChartTooltipHeader month={scrubTrend.month} entries={scrubTrend.entries} />
+          </div>
+        )}
+
         {isLoading ? (
           <div className="h-64 bg-gray-100 rounded animate-pulse" />
         ) : (
-          <ResponsiveContainer width="100%" height={240} className="sm:!h-[280px]">
-            <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
-              <Legend />
-              <Bar dataKey="Total Expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Income" fill="#10B981" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={240} className="sm:!h-[280px]">
+              <BarChart
+                data={barData}
+                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                onMouseMove={handleTrendScrub}
+                onMouseLeave={handleTrendLeave}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
+                <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  content={() => null}
+                  cursor={{ fill: 'rgba(156, 163, 175, 0.1)' }}
+                />
+                {isTrendVisible('Total Expenses') && (
+                  <Bar dataKey="Total Expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                )}
+                {isTrendVisible('Income') && (
+                  <Bar dataKey="Income" fill="#10B981" radius={[4, 4, 0, 0]} />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="mt-3">
+              <ChartLegendChips items={trendLegendItems} hiddenKeys={hiddenTrendKeys} onToggle={toggleTrend} />
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -3,11 +3,12 @@
 import { useAssetAllocation } from '@/hooks/use-net-worth';
 import { formatCurrency } from '@/lib/utils';
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { ChartLegendChips, useChartLegend } from '@/components/charts/chart-legend-chips';
 
 const COLORS: Record<string, string> = {
   etf: '#2D6A4F',
@@ -26,6 +27,8 @@ const PLANNED: Record<string, number> = {
 export default function AllocationComparisonPage() {
   const { t } = useTranslation();
   const { data: allocation, isLoading } = useAssetAllocation();
+  const { hiddenKeys: hiddenActual, toggle: toggleActual } = useChartLegend();
+  const { hiddenKeys: hiddenPlanned, toggle: togglePlanned } = useChartLegend();
 
   const TYPE_LABELS: Record<string, string> = {
     etf: t('allocation.etfStocks'),
@@ -48,6 +51,12 @@ export default function AllocationComparisonPage() {
     pct,
   }));
 
+  const actualLegendItems = actualData.map((d) => ({ dataKey: d.name, color: COLORS[d.type] ?? '#6B7280' }));
+  const plannedLegendItems = plannedData.map((d) => ({ dataKey: d.name, color: COLORS[d.type] ?? '#6B7280' }));
+
+  const filteredActual = actualData.filter((d) => !hiddenActual.has(d.name));
+  const filteredPlanned = plannedData.filter((d) => !hiddenPlanned.has(d.name));
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -68,26 +77,30 @@ export default function AllocationComparisonPage() {
           ) : actualData.length === 0 ? (
             <p className="text-gray-400 text-sm text-center py-12">{t('allocation.noAssetData')}</p>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={actualData}
-                  dataKey="pct"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  label={({ name, pct }) => `${name} ${pct}%`}
-                  labelLine={false}
-                >
-                  {actualData.map((entry) => (
-                    <Cell key={entry.type} fill={COLORS[entry.type] ?? '#6B7280'} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number) => `${v}%`} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={filteredActual}
+                    dataKey="pct"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    label={({ name, pct }) => `${name} ${pct}%`}
+                    labelLine={false}
+                  >
+                    {filteredActual.map((entry) => (
+                      <Cell key={entry.type} fill={COLORS[entry.type] ?? '#6B7280'} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => `${v}%`} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-3">
+                <ChartLegendChips items={actualLegendItems} hiddenKeys={hiddenActual} onToggle={toggleActual} />
+              </div>
+            </>
           )}
         </div>
 
@@ -98,7 +111,7 @@ export default function AllocationComparisonPage() {
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
-                data={plannedData}
+                data={filteredPlanned}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
@@ -107,14 +120,16 @@ export default function AllocationComparisonPage() {
                 label={({ name, value }) => `${name} ${value}%`}
                 labelLine={false}
               >
-                {plannedData.map((entry) => (
+                {filteredPlanned.map((entry) => (
                   <Cell key={entry.type} fill={COLORS[entry.type] ?? '#6B7280'} />
                 ))}
               </Pie>
               <Tooltip formatter={(v: number) => `${v}%`} />
-              <Legend />
             </PieChart>
           </ResponsiveContainer>
+          <div className="mt-3">
+            <ChartLegendChips items={plannedLegendItems} hiddenKeys={hiddenPlanned} onToggle={togglePlanned} />
+          </div>
         </div>
       </div>
 

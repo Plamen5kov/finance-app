@@ -152,7 +152,7 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
           {leasingMonthsRemaining != null && (
             <>
               <span className="text-gray-500">{t('liabilityCard.monthsRemaining')}</span>
-              <span className="font-medium text-gray-800">{leasingMonthsRemaining} mo</span>
+              <span className="font-medium text-gray-800">{leasingMonthsRemaining}</span>
             </>
           )}
           {leasingEndDate && (
@@ -200,7 +200,7 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
           {mortgageMonthsRemaining != null && (
             <>
               <span className="text-gray-500">{t('liabilityCard.estMonthsLeft')}</span>
-              <span className="font-medium text-gray-800">{mortgageMonthsRemaining} mo</span>
+              <span className="font-medium text-gray-800">{mortgageMonthsRemaining}</span>
             </>
           )}
           {totalInterestRemaining != null && totalInterestRemaining > 0 && (

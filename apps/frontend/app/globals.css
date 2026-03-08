@@ -13,6 +13,15 @@
   }
 }
 
+/* Hide scrollbar for horizontal chip lists */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */
 @media screen and (max-width: 767px) {
   input, select, textarea {

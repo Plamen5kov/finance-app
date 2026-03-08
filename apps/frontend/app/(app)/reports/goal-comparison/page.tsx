@@ -4,13 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { formatCurrency, monthsUntil } from '@/lib/utils';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useTranslation } from '@/i18n';
+import { ChartLegendChips, useChartLegend } from '@/components/charts/chart-legend-chips';
+import { ChartTooltipHeader, type TooltipEntry } from '@/components/charts/chart-tooltip-header';
 
 interface GoalSnapshot { month: string; balanceAsOf: number; targetAmount: number; }
 interface Goal {
@@ -40,6 +42,11 @@ export default function GoalComparisonPage() {
   const { t } = useTranslation();
   const { data: goals, isLoading } = useGoalsHistory();
   const [range, setRange] = useState(0);
+  const { hiddenKeys, toggle, isVisible } = useChartLegend();
+
+  // Scrub state
+  const [scrubData, setScrubData] = useState<{ month: string; entries: TooltipEntry[] } | null>(null);
+  const scrubTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const activeGoals = (goals ?? []).filter((g) => g.status === 'active' || g.status === 'at_risk');
 
@@ -62,6 +69,24 @@ export default function GoalComparisonPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, values]) => ({ month, ...values }));
   })();
+
+  const legendItems = activeGoals.map((goal, i) => ({
+    dataKey: goal.name,
+    color: GOAL_COLORS[i % GOAL_COLORS.length],
+  }));
+
+  const handleScrub = useCallback((state: any) => {
+    if (scrubTimeout.current) clearTimeout(scrubTimeout.current);
+    if (!state?.activePayload?.length) return;
+    const entries: TooltipEntry[] = state.activePayload
+      .filter((p: any) => p.value != null && !hiddenKeys.has(p.dataKey))
+      .map((p: any) => ({ label: p.dataKey, value: p.value as number, color: p.color as string }));
+    setScrubData({ month: state.activeLabel, entries });
+  }, [hiddenKeys]);
+
+  const handleLeave = useCallback(() => {
+    scrubTimeout.current = setTimeout(() => setScrubData(null), 300);
+  }, []);
 
   return (
     <div>
@@ -114,50 +139,73 @@ export default function GoalComparisonPage() {
             ))}
           </div>
         </div>
+
+        {scrubData && (
+          <div className="mb-2">
+            <ChartTooltipHeader month={scrubData.month} entries={scrubData.entries} />
+          </div>
+        )}
+
         {isLoading ? (
           <div className="h-72 bg-gray-100 rounded animate-pulse" />
         ) : chartData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">{t('goalTracking.noHistory')}</p>
         ) : (
-          <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
-              <Legend />
-              {activeGoals.map((goal, i) => (
-                <Line
-                  key={goal.id}
-                  type="monotone"
-                  dataKey={goal.name}
-                  stroke={GOAL_COLORS[i % GOAL_COLORS.length]}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
+          <>
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+                onMouseMove={handleScrub}
+                onMouseLeave={handleLeave}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 10 }}
+                  tickLine={false}
+                  interval="preserveStartEnd"
                 />
-              ))}
-              {activeGoals.map((goal, i) => (
-                <ReferenceLine
-                  key={`ref-${goal.id}`}
-                  y={goal.targetAmount}
-                  stroke={GOAL_COLORS[i % GOAL_COLORS.length]}
-                  strokeDasharray="4 2"
-                  strokeOpacity={0.4}
+                <YAxis
+                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
                 />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+                <Tooltip
+                  content={() => null}
+                  cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '4 2' }}
+                />
+                {activeGoals.map((goal, i) => (
+                  isVisible(goal.name) && (
+                    <Line
+                      key={goal.id}
+                      type="monotone"
+                      dataKey={goal.name}
+                      stroke={GOAL_COLORS[i % GOAL_COLORS.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  )
+                ))}
+                {activeGoals.map((goal, i) => (
+                  isVisible(goal.name) && (
+                    <ReferenceLine
+                      key={`ref-${goal.id}`}
+                      y={goal.targetAmount}
+                      stroke={GOAL_COLORS[i % GOAL_COLORS.length]}
+                      strokeDasharray="4 2"
+                      strokeOpacity={0.4}
+                    />
+                  )
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="mt-3">
+              <ChartLegendChips items={legendItems} hiddenKeys={hiddenKeys} onToggle={toggle} />
+            </div>
+          </>
         )}
         <p className="text-xs text-gray-400 mt-2">{t('goalTracking.dashedNote')}</p>
       </div>

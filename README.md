@@ -189,6 +189,12 @@ Everything runs via Docker Compose. You need a Linux server with Docker and Dock
    docker compose -f docker-compose.prod.yml up -d --build
    ```
 
+   > **Note:** Docker Compose reads `.env` from the project root by default — the same file used by dev. If you want a separate env file for production, use `--env-file`:
+   >
+   > ```bash
+   > docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+   > ```
+
    This builds the backend and frontend images, then starts all 5 services: PostgreSQL, Redis, backend, frontend, and nginx.
 
 5. **Push the schema to the database** (first deploy only):

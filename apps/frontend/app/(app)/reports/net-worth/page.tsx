@@ -2,14 +2,16 @@
 
 import { formatCurrency } from '@/lib/utils';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNetWorthHistory, useNetWorthProjection, useNetWorthSummary } from '@/hooks/use-net-worth';
 import { useTranslation } from '@/i18n';
+import { ChartLegendChips, useChartLegend } from '@/components/charts/chart-legend-chips';
+import { ChartTooltipHeader, type TooltipEntry } from '@/components/charts/chart-tooltip-header';
 
 const TYPE_COLORS: Record<string, string> = {
   crypto: '#F59E0B',
@@ -43,6 +45,12 @@ export default function NetWorthReportPage() {
   const currentYear = new Date().getFullYear();
   const [projectionEndYear, setProjectionEndYear] = useState<number | null>(currentYear + 1);
 
+  const { hiddenKeys, toggle, isVisible } = useChartLegend();
+
+  // Scrub state for Robinhood-style header
+  const [scrubData, setScrubData] = useState<{ month: string; entries: TooltipEntry[] } | null>(null);
+  const scrubTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const isLoading = summaryLoading || historyLoading || projectionLoading;
 
   // Apply date range filter to history
@@ -53,7 +61,7 @@ export default function NetWorthReportPage() {
     return history.filter((p) => p.month >= cutoff);
   })();
 
-  // Transform history into recharts format — presentation only, values come from backend
+  // Transform history into recharts format
   const chartData = filteredHistory.map((point) => {
     const row: Record<string, unknown> = { month: point.month, 'Net Worth': point.netWorth };
     for (const item of point.items) {
@@ -74,7 +82,7 @@ export default function NetWorthReportPage() {
     return Array.from(seen.values());
   })();
 
-  // Collect unique projected liability names for rendering Lines
+  // Collect unique projected liability names
   const projectedLiabilityNames = (() => {
     const seen = new Map<string, { name: string; type: string }>();
     for (const p of projection?.points ?? []) {
@@ -85,7 +93,7 @@ export default function NetWorthReportPage() {
     return Array.from(seen.values());
   })();
 
-  // Merge projected points into chart data — starts from today forward
+  // Merge projected points into chart data
   const mergedData = (() => {
     const map = new Map<string, Record<string, unknown>>();
     for (const d of chartData) map.set(d.month as string, { ...d });
@@ -93,7 +101,6 @@ export default function NetWorthReportPage() {
       (p) => p.month <= `${projectionEndYear}-12`,
     );
 
-    // Anchor projection to the last historical net worth value so the line connects seamlessly
     const firstProjPoint = projPoints[0];
     const lastHistoricalNW = chartData.length > 0
       ? (chartData[chartData.length - 1]['Net Worth'] as number | undefined)
@@ -129,14 +136,20 @@ export default function NetWorthReportPage() {
   const hasProjection = (projection?.points.length ?? 0) > 0;
   const todayMonth = toMonthStr(new Date());
 
-  // Compute Y-axis domain from only the visible series so scale adapts to toggled lines
+  // Build legend items for chips
+  const legendItems = [
+    ...allItems.map((item) => ({ dataKey: item.name, color: TYPE_COLORS[item.type] ?? '#6B7280' })),
+    ...(showNetWorth ? [{ dataKey: 'Net Worth', color: '#2D6A4F' }] : []),
+    ...(hasProjection && showNetWorthProjection ? [{ dataKey: 'Projected Net Worth', color: '#86EFAC' }] : []),
+    ...(showLiabilityProjection ? projectedLiabilityNames.map((l) => ({
+      dataKey: `${l.name} (projected)`,
+      color: TYPE_COLORS[l.type] ?? '#F87171',
+    })) : []),
+  ];
+
+  // Compute Y-axis domain from only the visible series
   const yDomain = (() => {
-    const visibleKeys = [
-      ...allItems.map((i) => i.name),
-      ...(showNetWorth ? ['Net Worth'] : []),
-      ...(hasProjection && showNetWorthProjection ? ['Projected Net Worth'] : []),
-      ...(showLiabilityProjection ? projectedLiabilityNames.map((l) => `${l.name} (projected)`) : []),
-    ];
+    const visibleKeys = legendItems.filter((i) => isVisible(i.dataKey)).map((i) => i.dataKey);
     let min = Infinity;
     let max = -Infinity;
     for (const row of mergedData) {
@@ -160,6 +173,22 @@ export default function NetWorthReportPage() {
   const payoffLabel = projection?.payoffMonth
     ? new Date(projection.payoffMonth + '-02').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : null;
+
+  // Scrub handler for Robinhood-style header
+  const handleChartMouseMove = useCallback((state: any) => {
+    if (scrubTimeout.current) clearTimeout(scrubTimeout.current);
+    if (!state?.activePayload?.length) return;
+    const payload = state.activePayload;
+    const month = state.activeLabel as string;
+    const entries: TooltipEntry[] = payload
+      .filter((p: any) => p.value != null && !hiddenKeys.has(p.dataKey))
+      .map((p: any) => ({ label: p.dataKey, value: p.value as number, color: p.color as string }));
+    setScrubData({ month, entries });
+  }, [hiddenKeys]);
+
+  const handleChartMouseLeave = useCallback(() => {
+    scrubTimeout.current = setTimeout(() => setScrubData(null), 300);
+  }, []);
 
   return (
     <div>
@@ -278,93 +307,119 @@ export default function NetWorthReportPage() {
             )}
           </div>
         </div>
+
+        {/* Scrub tooltip header */}
+        {scrubData && (
+          <div className="mb-2">
+            <ChartTooltipHeader month={scrubData.month} entries={scrubData.entries} />
+          </div>
+        )}
+
         {isLoading ? (
           <div className="h-72 bg-gray-100 rounded animate-pulse" />
         ) : mergedData.length === 0 ? (
           <p className="text-gray-400 text-sm text-center py-12">{t('netWorth.noHistory')}</p>
         ) : (
-          <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={280} className="sm:!h-[340px]">
-            <LineChart data={mergedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-                interval="preserveStartEnd"
-                tickFormatter={range === 0 ? (v: string) => v.slice(0, 4) : undefined}
-                ticks={range === 0 ? [...new Set(mergedData.map((d) => String(d.month).slice(0, 4)).map((y) => `${y}-01`))] : undefined}
-              />
-              <YAxis
-                domain={yDomain}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
-              <Legend />
-              <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1} />
-              <ReferenceLine
-                x={todayMonth}
-                stroke="#D1D5DB"
-                strokeDasharray="4 2"
-                label={{ value: t('netWorth.today'), position: 'top', fontSize: 9, fill: '#9CA3AF' }}
-              />
-              {projection?.payoffMonth && (
+          <>
+            <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={280} className="sm:!h-[340px]">
+              <LineChart
+                data={mergedData}
+                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                onMouseMove={handleChartMouseMove}
+                onMouseLeave={handleChartMouseLeave}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 10 }}
+                  tickLine={false}
+                  interval="preserveStartEnd"
+                  tickFormatter={range === 0 ? (v: string) => v.slice(0, 4) : undefined}
+                  ticks={range === 0 ? [...new Set(mergedData.map((d) => String(d.month).slice(0, 4)).map((y) => `${y}-01`))] : undefined}
+                />
+                <YAxis
+                  domain={yDomain}
+                  tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip
+                  content={() => null}
+                  cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '4 2' }}
+                />
+                <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1} />
                 <ReferenceLine
-                  x={projection.payoffMonth}
-                  stroke="#16A34A"
+                  x={todayMonth}
+                  stroke="#D1D5DB"
                   strokeDasharray="4 2"
-                  label={{ value: t('netWorth.payoff'), position: 'top', fontSize: 9, fill: '#16A34A' }}
+                  label={{ value: t('netWorth.today'), position: 'top', fontSize: 9, fill: '#9CA3AF' }}
                 />
-              )}
-              {allItems.map((item) => (
-                <Line
-                  key={item.name}
-                  type="monotone"
-                  dataKey={item.name}
-                  stroke={TYPE_COLORS[item.type] ?? '#6B7280'}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
-                />
-              ))}
-              {showNetWorth && (
-                <Line
-                  type="monotone"
-                  dataKey="Net Worth"
-                  stroke="#2D6A4F"
-                  strokeWidth={2.5}
-                  strokeDasharray="5 3"
-                  dot={false}
-                  connectNulls
-                />
-              )}
-              {hasProjection && showNetWorthProjection && (
-                <Line
-                  type="monotone"
-                  dataKey="Projected Net Worth"
-                  stroke="#86EFAC"
-                  strokeWidth={2}
-                  strokeDasharray="6 3"
-                  dot={false}
-                  connectNulls
-                />
-              )}
-              {showLiabilityProjection && projectedLiabilityNames.map((l) => (
-                <Line
-                  key={`${l.name} (projected)`}
-                  type="monotone"
-                  dataKey={`${l.name} (projected)`}
-                  stroke={TYPE_COLORS[l.type] ?? '#F87171'}
-                  strokeWidth={1.5}
-                  strokeDasharray="4 2"
-                  dot={false}
-                  connectNulls
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+                {projection?.payoffMonth && (
+                  <ReferenceLine
+                    x={projection.payoffMonth}
+                    stroke="#16A34A"
+                    strokeDasharray="4 2"
+                    label={{ value: t('netWorth.payoff'), position: 'top', fontSize: 9, fill: '#16A34A' }}
+                  />
+                )}
+                {allItems.map((item) => (
+                  isVisible(item.name) && (
+                    <Line
+                      key={item.name}
+                      type="monotone"
+                      dataKey={item.name}
+                      stroke={TYPE_COLORS[item.type] ?? '#6B7280'}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  )
+                ))}
+                {showNetWorth && isVisible('Net Worth') && (
+                  <Line
+                    type="monotone"
+                    dataKey="Net Worth"
+                    stroke="#2D6A4F"
+                    strokeWidth={2.5}
+                    strokeDasharray="5 3"
+                    dot={false}
+                    connectNulls
+                  />
+                )}
+                {hasProjection && showNetWorthProjection && isVisible('Projected Net Worth') && (
+                  <Line
+                    type="monotone"
+                    dataKey="Projected Net Worth"
+                    stroke="#86EFAC"
+                    strokeWidth={2}
+                    strokeDasharray="6 3"
+                    dot={false}
+                    connectNulls
+                  />
+                )}
+                {showLiabilityProjection && projectedLiabilityNames.map((l) => (
+                  isVisible(`${l.name} (projected)`) && (
+                    <Line
+                      key={`${l.name} (projected)`}
+                      type="monotone"
+                      dataKey={`${l.name} (projected)`}
+                      stroke={TYPE_COLORS[l.type] ?? '#F87171'}
+                      strokeWidth={1.5}
+                      strokeDasharray="4 2"
+                      dot={false}
+                      connectNulls
+                    />
+                  )
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+
+            {/* Legend chips */}
+            <div className="mt-3">
+              <ChartLegendChips items={legendItems} hiddenKeys={hiddenKeys} onToggle={toggle} />
+            </div>
+          </>
         )}
       </div>
     </div>
