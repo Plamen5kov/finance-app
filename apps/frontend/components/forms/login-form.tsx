@@ -6,6 +6,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { loginAction } from '@/lib/auth/actions';
+import { useTranslation } from '@/i18n';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Username is required'),
@@ -15,6 +16,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite') ?? undefined;
 
@@ -41,29 +43,29 @@ export function LoginForm() {
 
       {inviteToken && (
         <div className="bg-blue-50 text-blue-700 text-sm p-3 rounded">
-          Sign in to accept the household invitation.
+          {t('auth.inviteSignIn')}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">Username</label>
+        <label className="block text-sm font-medium mb-1">{t('auth.username')}</label>
         <input
           {...register('email')}
           type="text"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="your username"
         />
-        {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>}
+        {errors.email && <p className="text-red-600 text-xs mt-1">{t('auth.usernameRequired')}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Password</label>
+        <label className="block text-sm font-medium mb-1">{t('auth.password')}</label>
         <input
           {...register('password')}
           type="password"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
-        {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-600 text-xs mt-1">{t('auth.passwordRequired')}</p>}
       </div>
 
       <button
@@ -71,16 +73,16 @@ export function LoginForm() {
         disabled={isSubmitting}
         className="w-full bg-brand text-white py-2 rounded font-medium hover:bg-brand-dark disabled:opacity-60"
       >
-        {isSubmitting ? 'Signing in...' : 'Sign in'}
+        {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
       </button>
 
       <p className="text-sm text-center text-gray-600">
-        No account?{' '}
+        {t('auth.noAccount')}{' '}
         <Link
           href={inviteToken ? `/register?invite=${inviteToken}` : '/register'}
           className="text-brand hover:underline"
         >
-          Register
+          {t('auth.register')}
         </Link>
       </p>
     </form>

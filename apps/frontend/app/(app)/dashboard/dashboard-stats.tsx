@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from '@/i18n';
 import { useNetWorth } from '@/hooks/use-assets';
 import { useGoals } from '@/hooks/use-goals';
 import { useMonthlySummary } from '@/hooks/use-expenses';
@@ -29,7 +30,8 @@ function StatCard({ label, value, icon, href, sub, color }: StatCardProps) {
   );
 }
 
-export function DashboardStats() {
+export function DashboardStats({ name }: { name: string }) {
+  const { t } = useTranslation();
   const { data: netWorth } = useNetWorth();
   const { data: goals } = useGoals();
   const { data: summary } = useMonthlySummary(getMonthStr());
@@ -43,39 +45,47 @@ export function DashboardStats() {
       : 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-      <StatCard
-        label="Net Worth"
-        value={netWorth ? formatCurrency(netWorth.total) : '—'}
-        icon={<TrendingUp size={18} className="text-brand" />}
-        href="/assets"
-        sub={`${netWorth?.assets?.length ?? 0} assets`}
-        color="bg-brand/10"
-      />
-      <StatCard
-        label="Active Goals"
-        value={String(activeGoals.length)}
-        icon={<Target size={18} className="text-blue-600" />}
-        href="/goals"
-        sub={`${Math.round(avgProgress)}% avg progress`}
-        color="bg-blue-50"
-      />
-      <StatCard
-        label="This Month"
-        value={formatCurrency(summary?.total ?? 0)}
-        icon={<Receipt size={18} className="text-orange-600" />}
-        href="/expenses"
-        sub={`${summary?.byCategory?.length ?? 0} categories`}
-        color="bg-orange-50"
-      />
-      <StatCard
-        label="Completed Goals"
-        value={String(completedGoals.length)}
-        icon={<CheckCircle size={18} className="text-green-600" />}
-        href="/goals"
-        sub="all time"
-        color="bg-green-50"
-      />
-    </div>
+    <>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {t('dashboard.welcomeBack', { name })}
+        </h1>
+        <p className="text-gray-500 text-sm mt-1">{t('dashboard.overview')}</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          label={t('dashboard.netWorth')}
+          value={netWorth ? formatCurrency(netWorth.total) : '—'}
+          icon={<TrendingUp size={18} className="text-brand" />}
+          href="/assets"
+          sub={t('dashboard.assetsCount', { count: netWorth?.assets?.length ?? 0 })}
+          color="bg-brand/10"
+        />
+        <StatCard
+          label={t('dashboard.activeGoals')}
+          value={String(activeGoals.length)}
+          icon={<Target size={18} className="text-blue-600" />}
+          href="/goals"
+          sub={t('dashboard.avgProgress', { percent: Math.round(avgProgress) })}
+          color="bg-blue-50"
+        />
+        <StatCard
+          label={t('dashboard.thisMonth')}
+          value={formatCurrency(summary?.total ?? 0)}
+          icon={<Receipt size={18} className="text-orange-600" />}
+          href="/expenses"
+          sub={t('dashboard.categories', { count: summary?.byCategory?.length ?? 0 })}
+          color="bg-orange-50"
+        />
+        <StatCard
+          label={t('dashboard.completedGoals')}
+          value={String(completedGoals.length)}
+          icon={<CheckCircle size={18} className="text-green-600" />}
+          href="/goals"
+          sub={t('dashboard.allTime')}
+          color="bg-green-50"
+        />
+      </div>
+    </>
   );
 }

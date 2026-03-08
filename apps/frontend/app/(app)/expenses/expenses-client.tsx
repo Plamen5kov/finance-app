@@ -17,8 +17,10 @@ import { ExpenseForm } from '@/components/expenses/expense-form';
 import { Modal } from '@/components/ui/modal';
 import { formatCurrency, formatDate, getMonthStr } from '@/lib/utils';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export function ExpensesClient() {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -51,7 +53,7 @@ export function ExpensesClient() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this expense?')) return;
+    if (!confirm(t('expenses.deleteConfirm'))) return;
     await deleteExpense.mutateAsync(id);
   }
 
@@ -98,20 +100,20 @@ export function ExpensesClient() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Expenses</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('expenses.title')}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowCategoryForm(true)}
             className="border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50"
           >
-            + Category
+            {t('expenses.addCategory')}
           </button>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
           >
             <Plus size={16} />
-            Add Expense
+            {t('expenses.addExpense')}
           </button>
         </div>
       </div>
@@ -134,7 +136,7 @@ export function ExpensesClient() {
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Total</p>
+          <p className="text-xs text-gray-500 mb-1">{t('common.total')}</p>
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary?.total ?? 0)}</p>
         </div>
         {(summary?.byCategory ?? []).slice(0, 3).map((cat) => (
@@ -157,8 +159,8 @@ export function ExpensesClient() {
 
       {!isLoading && expenses.length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-lg font-medium">No expenses in {monthLabel}</p>
-          <p className="text-sm mt-1">Add your first expense to start tracking</p>
+          <p className="text-lg font-medium">{t('expenses.noExpenses', { month: monthLabel })}</p>
+          <p className="text-sm mt-1">{t('expenses.addFirst')}</p>
         </div>
       )}
 
@@ -167,10 +169,10 @@ export function ExpensesClient() {
           <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3 text-left">{t('table.description')}</th>
+                <th className="px-4 py-3 text-left">{t('table.category')}</th>
+                <th className="px-4 py-3 text-left">{t('table.date')}</th>
+                <th className="px-4 py-3 text-right">{t('table.amount')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -179,7 +181,7 @@ export function ExpensesClient() {
                 <tr key={expense.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {expense.description}
-                    {expense.isRecurring && <span className="ml-2 text-xs text-brand bg-brand/10 px-1.5 py-0.5 rounded">recurring</span>}
+                    {expense.isRecurring && <span className="ml-2 text-xs text-brand bg-brand/10 px-1.5 py-0.5 rounded">{t('expenses.recurring')}</span>}
                   </td>
                   <td className="px-4 py-3">
                     <select
@@ -207,12 +209,12 @@ export function ExpensesClient() {
       )}
 
       {showForm && (
-        <Modal title="Add Expense" onClose={() => setShowForm(false)}>
+        <Modal title={t('expenses.addExpense')} onClose={() => setShowForm(false)}>
           {categories.length === 0 ? (
             <div className="text-center py-4 text-gray-500 text-sm">
-              <p>Create a category first before adding expenses.</p>
+              <p>{t('expenses.createCategoryFirst')}</p>
               <button onClick={() => { setShowForm(false); setShowCategoryForm(true); }} className="mt-3 text-brand underline">
-                Create category
+                {t('expenses.createCategory')}
               </button>
             </div>
           ) : (
@@ -227,10 +229,10 @@ export function ExpensesClient() {
       )}
 
       {showCategoryForm && (
-        <Modal title="New Category" onClose={() => setShowCategoryForm(false)}>
+        <Modal title={t('reassign.newCategory')} onClose={() => setShowCategoryForm(false)}>
           <form onSubmit={handleCreateCategory} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
               <input
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
@@ -240,10 +242,10 @@ export function ExpensesClient() {
             </div>
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowCategoryForm(false)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" disabled={createCategory.isPending} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">
-                {createCategory.isPending ? 'Saving…' : 'Create'}
+                {createCategory.isPending ? t('common.saving') : t('common.create')}
               </button>
             </div>
           </form>
@@ -251,10 +253,10 @@ export function ExpensesClient() {
       )}
 
       {reassignPrompt && (
-        <Modal title="Reassign Category" onClose={() => setReassignPrompt(null)}>
+        <Modal title={t('reassign.title')} onClose={() => setReassignPrompt(null)}>
           <div className="space-y-4">
             <p className="text-sm text-gray-700">
-              Move <strong>all</strong> expenses from <strong>&ldquo;{reassignPrompt.expense.merchant}&rdquo;</strong> to <strong>&ldquo;{reassignPrompt.newCategoryName}&rdquo;</strong>?
+              {t('reassign.prompt', { merchant: reassignPrompt.expense.merchant!, category: reassignPrompt.newCategoryName })}
             </p>
             <div className="flex gap-3">
               <button
@@ -262,14 +264,14 @@ export function ExpensesClient() {
                 disabled={updateExpense.isPending}
                 className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
               >
-                {updateExpense.isPending ? 'Saving…' : 'No, just this one'}
+                {updateExpense.isPending ? t('common.saving') : t('reassign.justThis')}
               </button>
               <button
                 onClick={handleReassignYes}
                 disabled={reassignMerchant.isPending}
                 className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
               >
-                {reassignMerchant.isPending ? 'Saving…' : 'Yes, all of them'}
+                {reassignMerchant.isPending ? t('common.saving') : t('reassign.allOfThem')}
               </button>
             </div>
           </div>

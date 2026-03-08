@@ -3,6 +3,7 @@
 import { Goal } from '@/hooks/use-goals';
 import { formatCurrency, formatDate, monthsUntil } from '@/lib/utils';
 import { Trash2, Calendar, TrendingUp, Pencil } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface GoalCardProps {
   goal: Goal;
@@ -21,12 +22,13 @@ const STATUS_COLORS: Record<string, string> = {
   archived: 'bg-gray-400 text-white',
 };
 
-const PERIOD_LABELS: Record<string, string> = {
-  monthly: 'Monthly',
-  annual: 'Annual',
-};
-
 export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
+  const { t } = useTranslation();
+
+  const PERIOD_LABELS: Record<string, string> = {
+    monthly: t('goals.filterMonthly'),
+    annual: t('goals.filterAnnual'),
+  };
   const progress = goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
   const clampedProgress = Math.min(progress, 100);
   const remaining = goal.targetAmount - goal.currentAmount;
@@ -79,7 +81,7 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
       {/* Progress bar */}
       <div>
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>{formatCurrency(goal.currentAmount)} saved</span>
+          <span>{t('goals.saved', { amount: formatCurrency(goal.currentAmount) })}</span>
           <span>{Math.round(clampedProgress)}%</span>
         </div>
         <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
@@ -89,8 +91,8 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
           />
         </div>
         <div className="mt-1 text-xs text-gray-400">
-          Target: {formatCurrency(goal.targetAmount)}
-          {remaining > 0 && <span className="ml-2 text-gray-400">({formatCurrency(remaining)} to go)</span>}
+          {t('goals.target', { amount: formatCurrency(goal.targetAmount) })}
+          {remaining > 0 && <span className="ml-2 text-gray-400">({t('goals.toGo', { amount: formatCurrency(remaining) })})</span>}
         </div>
       </div>
 
@@ -110,7 +112,7 @@ export function GoalCard({ goal, onDelete, onEdit }: GoalCardProps) {
           </span>
         )}
         <span className="ml-auto font-medium text-gray-500">
-          P{goal.priority} {goal.priority === 1 ? 'High' : goal.priority === 2 ? 'Med' : 'Low'}
+          P{goal.priority} {goal.priority === 1 ? t('goalForm.high') : goal.priority === 2 ? t('goalForm.med') : t('goalForm.low')}
         </span>
       </div>
     </div>

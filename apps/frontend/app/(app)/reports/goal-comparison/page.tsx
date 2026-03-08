@@ -10,6 +10,7 @@ import {
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from '@/i18n';
 
 interface GoalSnapshot { month: string; balanceAsOf: number; targetAmount: number; }
 interface Goal {
@@ -36,6 +37,7 @@ function useGoalsHistory() {
 }
 
 export default function GoalComparisonPage() {
+  const { t } = useTranslation();
   const { data: goals, isLoading } = useGoalsHistory();
   const [range, setRange] = useState(0);
 
@@ -67,7 +69,7 @@ export default function GoalComparisonPage() {
         <Link href="/reports" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Goal Progress Tracking</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('goalTracking.title')}</h1>
       </div>
 
       {/* Summary cards */}
@@ -95,7 +97,7 @@ export default function GoalComparisonPage() {
       {/* Historical line chart */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">Savings Progress Over Time</h2>
+          <h2 className="font-semibold text-gray-900">{t('goalTracking.savingsProgress')}</h2>
           <div className="flex gap-1">
             {RANGES.map((r) => (
               <button
@@ -115,7 +117,7 @@ export default function GoalComparisonPage() {
         {isLoading ? (
           <div className="h-72 bg-gray-100 rounded animate-pulse" />
         ) : chartData.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-12">No goal history yet</p>
+          <p className="text-gray-400 text-sm text-center py-12">{t('goalTracking.noHistory')}</p>
         ) : (
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -157,7 +159,7 @@ export default function GoalComparisonPage() {
             </LineChart>
           </ResponsiveContainer>
         )}
-        <p className="text-xs text-gray-400 mt-2">Dashed lines indicate target amounts</p>
+        <p className="text-xs text-gray-400 mt-2">{t('goalTracking.dashedNote')}</p>
       </div>
 
       {/* Detail table */}
@@ -165,16 +167,16 @@ export default function GoalComparisonPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
             <tr>
-              <th className="px-4 py-3 text-left">Goal</th>
-              <th className="px-4 py-3 text-right">Saved</th>
-              <th className="px-4 py-3 text-right">Target</th>
-              <th className="px-4 py-3 text-right">Progress</th>
-              <th className="px-4 py-3 text-right">Months Left</th>
+              <th className="px-4 py-3 text-left">{t('goalTracking.goal')}</th>
+              <th className="px-4 py-3 text-right">{t('goalTracking.saved')}</th>
+              <th className="px-4 py-3 text-right">{t('goalTracking.target')}</th>
+              <th className="px-4 py-3 text-right">{t('goalTracking.progress')}</th>
+              <th className="px-4 py-3 text-right">{t('goalTracking.monthsLeft')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t('common.loading')}</td></tr>
             ) : activeGoals.map((g, i) => {
               const pct = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0;
               const months = g.targetDate ? monthsUntil(g.targetDate) : null;
@@ -202,7 +204,7 @@ export default function GoalComparisonPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500">
-                    {months === null ? '—' : months <= 0 ? <span className="text-red-500">Overdue</span> : `${months} mo`}
+                    {months === null ? '—' : months <= 0 ? <span className="text-red-500">{t('goals.overdue')}</span> : `${months} mo`}
                   </td>
                 </tr>
               );

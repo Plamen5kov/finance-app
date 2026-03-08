@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslation } from '@/i18n';
 import { useGoals } from '@/hooks/use-goals';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 export function DashboardGoals() {
+  const { t } = useTranslation();
   const { data: goals } = useGoals();
   const active = (goals ?? []).filter((g) => g.status === 'active' || g.status === 'at_risk').slice(0, 4);
 
@@ -14,9 +16,9 @@ export function DashboardGoals() {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-gray-900">Active Goals</h2>
+        <h2 className="font-semibold text-gray-900">{t('dashboard.activeGoals')}</h2>
         <Link href="/goals" className="text-sm text-brand hover:underline flex items-center gap-1">
-          View all <ArrowRight size={14} />
+          {t('dashboard.viewAll')} <ArrowRight size={14} />
         </Link>
       </div>
       <div className="space-y-4">

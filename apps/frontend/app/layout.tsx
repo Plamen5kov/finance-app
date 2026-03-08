@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import { Providers } from '@/providers/providers';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 export const viewport: Viewport = {
   width: 'device-width',

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, RefreshCw } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface MobileShellProps {
   sidebar: React.ReactNode;
@@ -13,6 +14,7 @@ export function MobileShell({ sidebar, children }: MobileShellProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Pull-to-refresh state
   const [pulling, setPulling] = useState(false);
@@ -109,7 +111,7 @@ export function MobileShell({ sidebar, children }: MobileShellProps) {
           >
             <Menu size={22} />
           </button>
-          <span className="text-sm font-bold text-brand">Finances</span>
+          <span className="text-sm font-bold text-brand">{t('nav.finances')}</span>
         </div>
 
         {/* Pull-to-refresh indicator */}

@@ -5,12 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const LOCALE_MAP: Record<string, string> = { en: 'en-GB', bg: 'bg-BG' };
+
+function getIntlLocale(): string {
+  if (typeof document !== 'undefined') {
+    return LOCALE_MAP[document.documentElement.lang] ?? 'en-GB';
+  }
+  return 'en-GB';
+}
+
 export function formatCurrency(amount: number, currency = 'EUR') {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(amount);
+  return new Intl.NumberFormat(getIntlLocale(), { style: 'currency', currency }).format(amount);
 }
 
 export function formatDate(date: string | Date) {
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(
+  return new Intl.DateTimeFormat(getIntlLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(
     new Date(date),
   );
 }

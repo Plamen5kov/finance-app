@@ -5,6 +5,7 @@ import { Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
 import { useAssetSnapshots, useAddAssetSnapshot, useDeleteAssetSnapshot } from '@/hooks/use-assets';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   assetId: string;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
+  const { t } = useTranslation();
   const { data: snapshots, isLoading } = useAssetSnapshots(assetId);
   const addSnapshot = useAddAssetSnapshot(assetId);
   const deleteSnapshot = useDeleteAssetSnapshot(assetId);
@@ -41,7 +43,7 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
         />
         <input
           type="number"
-          placeholder="Value (€)"
+          placeholder={t('assets.valuePlaceholder')}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           min={0}
@@ -54,7 +56,7 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
           disabled={addSnapshot.isPending}
           className="w-full sm:w-auto bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
         >
-          Add
+          {t('common.add')}
         </button>
       </form>
 
@@ -63,7 +65,7 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
           {[1, 2, 3].map((i) => <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />)}
         </div>
       ) : !snapshots?.length ? (
-        <p className="text-sm text-gray-400 text-center py-4">No history yet</p>
+        <p className="text-sm text-gray-400 text-center py-4">{t('assets.noHistory')}</p>
       ) : (
         <div className="divide-y divide-gray-100">
           {[...snapshots].reverse().map((s) => (

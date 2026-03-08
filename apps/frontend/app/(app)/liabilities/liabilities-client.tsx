@@ -15,8 +15,10 @@ import { LiabilityForm } from '@/components/liabilities/liability-form';
 import { Modal } from '@/components/ui/modal';
 import { formatCurrency } from '@/lib/utils';
 import { Plus, AlertTriangle } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 function EditLiabilityModal({ liability, onClose }: { liability: Liability; onClose: () => void }) {
+  const { t } = useTranslation();
   const update = useUpdateLiability(liability.id);
 
   async function handleSubmit(input: CreateLiabilityInput) {
@@ -31,7 +33,7 @@ function EditLiabilityModal({ liability, onClose }: { liability: Liability; onCl
         onSubmit={handleSubmit}
         onCancel={onClose}
         isLoading={update.isPending}
-        submitLabel="Save Changes"
+        submitLabel={t('liabilities.saveChanges')}
       />
     </Modal>
   );
@@ -57,8 +59,10 @@ export function LiabilitiesClient() {
     setShowCreateForm(false);
   }
 
+  const { t } = useTranslation();
+
   async function handleDelete(id: string) {
-    if (!confirm('Delete this liability?')) return;
+    if (!confirm(t('liabilities.deleteConfirm'))) return;
     await deleteLiability.mutateAsync(id);
   }
 
@@ -67,13 +71,13 @@ export function LiabilitiesClient() {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Liabilities</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('liabilities.title')}</h1>
         <button
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
         >
           <Plus size={16} />
-          Add
+          {t('common.add')}
         </button>
       </div>
 
@@ -81,7 +85,7 @@ export function LiabilitiesClient() {
       <div className="bg-gradient-to-r from-red-600 to-red-400 rounded-xl p-4 sm:p-6 text-white mb-8">
         <div className="flex items-center gap-2 mb-1 text-white/80 text-sm">
           <AlertTriangle size={16} />
-          <span>Total Liabilities</span>
+          <span>{t('liabilities.totalLiabilities')}</span>
         </div>
         <p className="text-2xl sm:text-4xl font-bold">
           {isLoading ? '—' : formatCurrency(totalLiabilities)}
@@ -98,15 +102,15 @@ export function LiabilitiesClient() {
 
       {!isLoading && !hasLiabilities && (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-medium">No liabilities tracked</p>
-          <p className="text-sm mt-1">Add a mortgage or loan to track what you owe</p>
+          <p className="text-lg font-medium">{t('liabilities.noLiabilities')}</p>
+          <p className="text-sm mt-1">{t('liabilities.addFirst')}</p>
         </div>
       )}
 
       {!isLoading && hasLiabilities && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-700">Liabilities</h2>
+            <h2 className="text-base font-semibold text-gray-700">{t('liabilities.title')}</h2>
             <span className="text-sm font-semibold text-red-500">{formatCurrency(totalLiabilities)}</span>
           </div>
           {LIABILITY_TYPES.map((type) => {
@@ -117,7 +121,7 @@ export function LiabilitiesClient() {
               <section key={type} className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {t(`liabilityType.${type}` as any)}
                   </h3>
                   <span className="text-sm font-semibold text-gray-700">{formatCurrency(subtotal)}</span>
                 </div>
@@ -138,7 +142,7 @@ export function LiabilitiesClient() {
       )}
 
       {showCreateForm && (
-        <Modal title="Add Liability" onClose={() => setShowCreateForm(false)}>
+        <Modal title={t('liabilities.addLiability')} onClose={() => setShowCreateForm(false)}>
           <LiabilityForm
             onSubmit={handleCreate}
             onCancel={() => setShowCreateForm(false)}

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreateAssetInput } from '@/hooks/use-assets';
 import { ASSET_TYPES, CURRENCIES } from '@finances/shared';
+import { useTranslation } from '@/i18n';
 
 const schema = z.object({
   type: z.enum(ASSET_TYPES),
@@ -25,7 +26,8 @@ interface AssetFormProps {
   submitLabel?: string;
 }
 
-export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submitLabel = 'Add Asset' }: AssetFormProps) {
+export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submitLabel }: AssetFormProps) {
+  const { t } = useTranslation();
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { currency: 'EUR', type: 'etf', ...defaultValues },
@@ -45,20 +47,20 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.type')} *</label>
         <select
           {...register('type')}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         >
-          {ASSET_TYPES.map((t) => (
-            <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+          {ASSET_TYPES.map((tp) => (
+            <option key={tp} value={tp}>{t(`assetType.${tp}` as any)}</option>
           ))}
         </select>
         {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type.message}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.name')} *</label>
         <input
           {...register('name')}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
@@ -69,7 +71,7 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Current Value *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.currentValue')} *</label>
           <input
             {...register('value')}
             type="number"
@@ -80,7 +82,7 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
           {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.currency')}</label>
           <select
             {...register('currency')}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
@@ -94,7 +96,7 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.quantity')}</label>
           <input
             {...register('quantity')}
             type="number"
@@ -104,7 +106,7 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Cost Basis</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('assetForm.costBasis')}</label>
           <input
             {...register('costBasis')}
             type="number"
@@ -117,10 +119,10 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
 
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" disabled={isLoading} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">
-          {isLoading ? 'Saving…' : submitLabel}
+          {isLoading ? t('common.saving') : (submitLabel ?? t('assets.addAsset'))}
         </button>
       </div>
     </form>

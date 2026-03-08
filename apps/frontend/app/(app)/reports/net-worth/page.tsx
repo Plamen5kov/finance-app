@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useNetWorthHistory, useNetWorthProjection, useNetWorthSummary } from '@/hooks/use-net-worth';
+import { useTranslation } from '@/i18n';
 
 const TYPE_COLORS: Record<string, string> = {
   crypto: '#F59E0B',
@@ -31,6 +32,7 @@ function toMonthStr(date: Date) {
 }
 
 export default function NetWorthReportPage() {
+  const { t } = useTranslation();
   const { data: summary, isLoading: summaryLoading } = useNetWorthSummary();
   const { data: history, isLoading: historyLoading } = useNetWorthHistory();
   const { data: projection, isLoading: projectionLoading } = useNetWorthProjection();
@@ -165,37 +167,37 @@ export default function NetWorthReportPage() {
         <Link href="/reports" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Net Worth Over Time</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('netWorth.title')}</h1>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Net Worth</p>
+          <p className="text-xs text-gray-500 mb-1">{t('netWorth.netWorth')}</p>
           <p className={`text-2xl font-bold ${latestNetWorth >= 0 ? 'text-brand' : 'text-red-500'}`}>
             {isLoading ? '—' : formatCurrency(latestNetWorth)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Change (period)</p>
+          <p className="text-xs text-gray-500 mb-1">{t('netWorth.changePeriod')}</p>
           <p className={`text-2xl font-bold ${netWorthChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
             {isLoading ? '—' : `${netWorthChange >= 0 ? '+' : ''}${formatCurrency(netWorthChange)}`}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Assets</p>
+          <p className="text-xs text-gray-500 mb-1">{t('netWorth.totalAssets')}</p>
           <p className="text-2xl font-bold text-gray-900">
             {isLoading ? '—' : formatCurrency(summary?.totalAssets ?? 0)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Liabilities</p>
+          <p className="text-xs text-gray-500 mb-1">{t('netWorth.totalLiabilities')}</p>
           <p className="text-2xl font-bold text-red-500">
             {isLoading ? '—' : formatCurrency(summary?.totalLiabilities ?? 0)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Mortgage Payoff</p>
+          <p className="text-xs text-gray-500 mb-1">{t('netWorth.mortgagePayoff')}</p>
           <p className={`text-2xl font-bold ${payoffLabel ? 'text-green-600' : 'text-gray-400'}`}>
             {isLoading ? '—' : (payoffLabel ?? 'N/A')}
           </p>
@@ -207,9 +209,9 @@ export default function NetWorthReportPage() {
         <div className="flex flex-col gap-3 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="font-semibold text-gray-900">Portfolio Value by Asset</h2>
+              <h2 className="font-semibold text-gray-900">{t('netWorth.portfolioValue')}</h2>
               {hasProjection && (
-                <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">Dashed line shows projected net worth assuming current assets stay flat</p>
+                <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">{t('netWorth.projectionNote')}</p>
               )}
             </div>
             <div className="flex gap-1 flex-shrink-0">
@@ -236,7 +238,7 @@ export default function NetWorthReportPage() {
                 onChange={(e) => setShowNetWorth(e.target.checked)}
                 className="accent-brand"
               />
-              Net Worth
+              {t('netWorth.netWorthToggle')}
             </label>
             {hasProjection && (
               <>
@@ -247,7 +249,7 @@ export default function NetWorthReportPage() {
                     onChange={(e) => setShowNetWorthProjection(e.target.checked)}
                     className="accent-brand"
                   />
-                  Net Worth projection
+                  {t('netWorth.netWorthProjection')}
                 </label>
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
                   <input
@@ -256,17 +258,17 @@ export default function NetWorthReportPage() {
                     onChange={(e) => setShowLiabilityProjection(e.target.checked)}
                     className="accent-brand"
                   />
-                  Liability projections
+                  {t('netWorth.liabilityProjections')}
                 </label>
                 <label className="flex items-center gap-1.5 select-none">
-                  Project until
+                  {t('netWorth.projectUntil')}
                   <select
                     value={projectionEndYear ?? ''}
                     onChange={(e) => setProjectionEndYear(e.target.value === '' ? null : Number(e.target.value))}
                     className="border border-gray-200 rounded px-1.5 py-0.5 text-xs bg-white"
                   >
-                    <option value="">None</option>
-                    <option value={currentYear}>This year</option>
+                    <option value="">{t('netWorth.none')}</option>
+                    <option value={currentYear}>{t('netWorth.thisYear')}</option>
                     {Array.from({ length: 30 }, (_, i) => currentYear + 1 + i).map((yr) => (
                       <option key={yr} value={yr}>{yr}</option>
                     ))}
@@ -279,7 +281,7 @@ export default function NetWorthReportPage() {
         {isLoading ? (
           <div className="h-72 bg-gray-100 rounded animate-pulse" />
         ) : mergedData.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-12">No snapshot history</p>
+          <p className="text-gray-400 text-sm text-center py-12">{t('netWorth.noHistory')}</p>
         ) : (
           <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={280} className="sm:!h-[340px]">
             <LineChart data={mergedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -306,14 +308,14 @@ export default function NetWorthReportPage() {
                 x={todayMonth}
                 stroke="#D1D5DB"
                 strokeDasharray="4 2"
-                label={{ value: 'Today', position: 'top', fontSize: 9, fill: '#9CA3AF' }}
+                label={{ value: t('netWorth.today'), position: 'top', fontSize: 9, fill: '#9CA3AF' }}
               />
               {projection?.payoffMonth && (
                 <ReferenceLine
                   x={projection.payoffMonth}
                   stroke="#16A34A"
                   strokeDasharray="4 2"
-                  label={{ value: 'Payoff', position: 'top', fontSize: 9, fill: '#16A34A' }}
+                  label={{ value: t('netWorth.payoff'), position: 'top', fontSize: 9, fill: '#16A34A' }}
                 />
               )}
               {allItems.map((item) => (

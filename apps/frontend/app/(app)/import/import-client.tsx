@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface ImportResult {
   imported: number;
@@ -16,8 +17,8 @@ interface ImportResult {
 const IMPORT_TYPES = [
   {
     id: 'revolut',
-    name: 'Revolut Statement',
-    description: 'Import transactions from a Revolut CSV statement export',
+    nameKey: 'import.revolutName' as const,
+    descKey: 'import.revolutDesc' as const,
     accept: '.csv',
     endpoint: '/import/revolut',
   },
@@ -26,6 +27,7 @@ const IMPORT_TYPES = [
 type ImportTypeId = (typeof IMPORT_TYPES)[number]['id'];
 
 export function ImportClient() {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<ImportTypeId | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +67,8 @@ export function ImportClient() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Import</h1>
-        <p className="text-sm text-gray-500 mt-1">Import transactions from external sources</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('import.title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('import.subtitle')}</p>
       </div>
 
       {/* Import type cards */}
@@ -90,8 +92,8 @@ export function ImportClient() {
                 <FileText size={20} className="text-gray-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">{type.name}</h3>
-                <p className="text-xs text-gray-500 mt-1">{type.description}</p>
+                <h3 className="font-medium text-gray-900">{t(type.nameKey)}</h3>
+                <p className="text-xs text-gray-500 mt-1">{t(type.descKey)}</p>
               </div>
             </div>
           </button>
@@ -99,19 +101,19 @@ export function ImportClient() {
 
         {/* Placeholder for future imports */}
         <div className="p-5 rounded-xl border border-dashed border-gray-200 flex items-center justify-center">
-          <p className="text-sm text-gray-400">More import types coming soon</p>
+          <p className="text-sm text-gray-400">{t('import.moreComingSoon')}</p>
         </div>
       </div>
 
       {/* Upload area */}
       {activeType && (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="font-medium text-gray-900 mb-4">Upload {activeType.name}</h2>
+          <h2 className="font-medium text-gray-900 mb-4">{t('import.upload', { name: t(activeType.nameKey) })}</h2>
 
           <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-brand hover:bg-gray-50 transition-colors">
             <Upload size={32} className="text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 font-medium">Click to select a file</p>
-            <p className="text-xs text-gray-400 mt-1">CSV files only</p>
+            <p className="text-sm text-gray-600 font-medium">{t('import.clickToSelect')}</p>
+            <p className="text-xs text-gray-400 mt-1">{t('import.csvOnly')}</p>
             <input
               ref={fileRef}
               type="file"
@@ -124,7 +126,7 @@ export function ImportClient() {
           {importMutation.isPending && (
             <div className="mt-4 flex items-center gap-2 text-sm text-gray-500">
               <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-              Importing...
+              {t('import.importing')}
             </div>
           )}
 
@@ -132,27 +134,27 @@ export function ImportClient() {
             <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-2 text-green-700 font-medium mb-2">
                 <CheckCircle size={16} />
-                Import complete
+                {t('import.complete')}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                 <div>
-                  <p className="text-gray-500">Imported</p>
+                  <p className="text-gray-500">{t('import.imported')}</p>
                   <p className="font-semibold text-gray-900">{result.imported}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Expenses</p>
+                  <p className="text-gray-500">{t('import.expenses')}</p>
                   <p className="font-semibold text-red-600">{result.expenses}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Income</p>
+                  <p className="text-gray-500">{t('import.income')}</p>
                   <p className="font-semibold text-green-600">{result.income}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Skipped</p>
+                  <p className="text-gray-500">{t('import.skipped')}</p>
                   <p className="font-semibold text-gray-400">{result.skipped}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">New mappings</p>
+                  <p className="text-gray-500">{t('import.newMappings')}</p>
                   <p className="font-semibold text-gray-900">{result.newMappings}</p>
                 </div>
               </div>

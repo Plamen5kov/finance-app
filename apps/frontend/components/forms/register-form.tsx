@@ -6,6 +6,7 @@ import { z } from 'zod';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { registerAction } from '@/lib/auth/actions';
+import { useTranslation } from '@/i18n';
 
 const registerSchema = z
   .object({
@@ -22,6 +23,7 @@ const registerSchema = z
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get('invite') ?? undefined;
 
@@ -48,50 +50,50 @@ export function RegisterForm() {
 
       {inviteToken && (
         <div className="bg-blue-50 text-blue-700 text-sm p-3 rounded">
-          Create an account to join the household.
+          {t('auth.inviteRegister')}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">Name</label>
+        <label className="block text-sm font-medium mb-1">{t('common.name')}</label>
         <input
           {...register('name')}
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="Your name"
         />
-        {errors.name && <p className="text-red-600 text-xs mt-1">{errors.name.message}</p>}
+        {errors.name && <p className="text-red-600 text-xs mt-1">{t('auth.nameMin')}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Username</label>
+        <label className="block text-sm font-medium mb-1">{t('auth.username')}</label>
         <input
           {...register('email')}
           type="text"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           placeholder="your username"
         />
-        {errors.email && <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>}
+        {errors.email && <p className="text-red-600 text-xs mt-1">{t('auth.usernameRequired')}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Password</label>
+        <label className="block text-sm font-medium mb-1">{t('auth.password')}</label>
         <input
           {...register('password')}
           type="password"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
-        {errors.password && <p className="text-red-600 text-xs mt-1">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-600 text-xs mt-1">{t('auth.passwordMin')}</p>}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Confirm Password</label>
+        <label className="block text-sm font-medium mb-1">{t('auth.confirmPassword')}</label>
         <input
           {...register('confirmPassword')}
           type="password"
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
         />
         {errors.confirmPassword && (
-          <p className="text-red-600 text-xs mt-1">{errors.confirmPassword.message}</p>
+          <p className="text-red-600 text-xs mt-1">{t('auth.passwordsMismatch')}</p>
         )}
       </div>
 
@@ -100,16 +102,16 @@ export function RegisterForm() {
         disabled={isSubmitting}
         className="w-full bg-brand text-white py-2 rounded font-medium hover:bg-brand-dark disabled:opacity-60"
       >
-        {isSubmitting ? 'Creating account...' : 'Create account'}
+        {isSubmitting ? t('auth.creatingAccount') : t('auth.createAccount')}
       </button>
 
       <p className="text-sm text-center text-gray-600">
-        Already have an account?{' '}
+        {t('auth.haveAccount')}{' '}
         <Link
           href={inviteToken ? `/login?invite=${inviteToken}` : '/login'}
           className="text-brand hover:underline"
         >
-          Sign in
+          {t('auth.signIn')}
         </Link>
       </p>
     </form>

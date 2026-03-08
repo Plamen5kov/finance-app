@@ -7,19 +7,13 @@ import {
 } from 'recharts';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 const COLORS: Record<string, string> = {
   etf: '#2D6A4F',
   crypto: '#F59E0B',
   gold: '#D97706',
   apartment: '#8B5CF6',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  etf: 'ETF / Stocks',
-  crypto: 'Crypto',
-  gold: 'Gold',
-  apartment: 'Apartment',
 };
 
 const PLANNED: Record<string, number> = {
@@ -30,7 +24,15 @@ const PLANNED: Record<string, number> = {
 };
 
 export default function AllocationComparisonPage() {
+  const { t } = useTranslation();
   const { data: allocation, isLoading } = useAssetAllocation();
+
+  const TYPE_LABELS: Record<string, string> = {
+    etf: t('allocation.etfStocks'),
+    crypto: t('assetType.crypto'),
+    gold: t('assetType.gold'),
+    apartment: t('assetType.apartment'),
+  };
 
   const actualData = (allocation ?? []).map((item) => ({
     name: TYPE_LABELS[item.type] ?? item.type,
@@ -52,19 +54,19 @@ export default function AllocationComparisonPage() {
         <Link href="/reports" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Allocation Comparison</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('allocation.title')}</h1>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Actual */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-1">Actual Allocation</h2>
-          <p className="text-xs text-gray-400 mb-4">Based on current portfolio values</p>
+          <h2 className="font-semibold text-gray-900 mb-1">{t('allocation.actual')}</h2>
+          <p className="text-xs text-gray-400 mb-4">{t('allocation.actualDesc')}</p>
           {isLoading ? (
             <div className="h-64 bg-gray-100 rounded animate-pulse" />
           ) : actualData.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-12">No asset data</p>
+            <p className="text-gray-400 text-sm text-center py-12">{t('allocation.noAssetData')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
@@ -91,8 +93,8 @@ export default function AllocationComparisonPage() {
 
         {/* Planned */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-1">Target Allocation</h2>
-          <p className="text-xs text-gray-400 mb-4">Desired portfolio distribution</p>
+          <h2 className="font-semibold text-gray-900 mb-1">{t('allocation.target')}</h2>
+          <p className="text-xs text-gray-400 mb-4">{t('allocation.targetDesc')}</p>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
@@ -121,16 +123,16 @@ export default function AllocationComparisonPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
             <tr>
-              <th className="px-4 py-3 text-left">Asset Class</th>
-              <th className="px-4 py-3 text-right">Value</th>
-              <th className="px-4 py-3 text-right">Actual %</th>
-              <th className="px-4 py-3 text-right">Target %</th>
-              <th className="px-4 py-3 text-right">Drift</th>
+              <th className="px-4 py-3 text-left">{t('allocation.assetClass')}</th>
+              <th className="px-4 py-3 text-right">{t('allocation.value')}</th>
+              <th className="px-4 py-3 text-right">{t('allocation.actualPct')}</th>
+              <th className="px-4 py-3 text-right">{t('allocation.targetPct')}</th>
+              <th className="px-4 py-3 text-right">{t('allocation.drift')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {isLoading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{t('common.loading')}</td></tr>
             ) : actualData.map((row) => {
               const target = PLANNED[row.type] ?? 0;
               const drift = row.pct - target;

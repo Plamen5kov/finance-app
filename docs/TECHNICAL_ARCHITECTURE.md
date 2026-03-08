@@ -33,9 +33,9 @@
 ┌─────────────────────────────────────┐
 │         NestJS Backend              │
 │                                     │
-│  auth · users · assets              │
+│  auth · users · household · assets  │
 │  liabilities · expenses · goals     │
-│  net-worth                          │
+│  net-worth · import                 │
 │                                     │
 │  Prisma ORM                         │
 └──────────────┬──────────────────────┘
@@ -43,12 +43,14 @@
                ▼
 ┌─────────────────────────────────────┐
 │  PostgreSQL                         │
-│  User · Asset · AssetSnapshot       │
+│  Household · HouseholdMember        │
+│  User · HouseholdInvite             │
+│  Asset · AssetSnapshot              │
 │  Liability · LiabilitySnapshot      │
 │  Expense · ExpenseCategory          │
+│  MerchantCategoryMap                │
 │  Goal · GoalSnapshot                │
-│  AllocationPlan · AllocationPlanItem│
-│  ActualAllocation                   │
+│  AllocationPlan · ActualAllocation   │
 │  Document · Transaction · TaxInfo   │
 └─────────────────────────────────────┘
 
@@ -58,7 +60,7 @@
 ### Key Principles
 - **Monorepo** (pnpm workspaces + Turborepo): `apps/backend`, `apps/frontend`, `packages/shared`
 - **Full TypeScript** end-to-end, including shared types consumed by both apps
-- **JWT auth** — all API routes protected; user data is strictly per-user
+- **JWT auth** — all API routes protected; data scoped by `householdId` (multi-tenant)
 - **Snapshot model** — historical values stored as point-in-time snapshots; no overwriting of history
 - **Carry-forward** — net worth history uses last known snapshot value for months with no new snapshot
 
@@ -73,13 +75,15 @@ finances-app/
 │   │   ├── src/
 │   │   │   ├── app.module.ts
 │   │   │   ├── main.ts                 # Bootstrap, CORS, global pipes/filters
-│   │   │   ├── auth/                   # JWT login & register
+│   │   │   ├── auth/                   # JWT login & register (creates Household on register)
 │   │   │   ├── users/                  # User profile CRUD
+│   │   │   ├── household/              # Invite system, member management, roles
 │   │   │   ├── assets/                 # Asset CRUD + snapshot management
 │   │   │   ├── liabilities/            # Liability CRUD + snapshot management
-│   │   │   ├── expenses/               # Expense CRUD + categories
+│   │   │   ├── expenses/               # Expense CRUD + categories + merchant maps
 │   │   │   ├── goals/                  # Goal CRUD + allocation plans
 │   │   │   ├── net-worth/              # History, projection, summary
+│   │   │   ├── import/                 # Revolut CSV parsing + auto-categorization
 │   │   │   ├── common/
 │   │   │   │   ├── prisma/             # PrismaService + PrismaModule
 │   │   │   │   ├── decorators/         # @CurrentUser()
@@ -114,13 +118,16 @@ finances-app/
 │       │       ├── goals/
 │       │       │   ├── page.tsx
 │       │       │   └── goals-client.tsx
-│       │       ├── documents/page.tsx  # Stub
+│       │       ├── account/             # Household member + invite management
+│       │       ├── income/              # Income tracking
+│       │       ├── import/              # Revolut CSV upload + preview
+│       │       ├── documents/page.tsx   # Stub
 │       │       └── reports/
 │       │           ├── page.tsx        # Reports index
 │       │           ├── net-worth/page.tsx          # Full implementation
+│       │           ├── expense-budget/page.tsx    # Full implementation
 │       │           ├── allocation-comparison/page.tsx  # Stub
-│       │           ├── goal-comparison/page.tsx        # Stub
-│       │           └── deadline-status/page.tsx        # Stub
+│       │           └── goal-comparison/page.tsx        # Stub
 │       ├── components/
 │       │   ├── assets/
 │       │   │   ├── asset-card.tsx
@@ -136,14 +143,24 @@ finances-app/
 │       │   ├── forms/
 │       │   │   ├── login-form.tsx
 │       │   │   └── register-form.tsx
-│       │   ├── layout/sidebar-footer.tsx
+│       ├── invite/
+│       │   └── [token]/page.tsx          # Public invite acceptance
+│       │   ├── layout/
+│       │   │   ├── sidebar-footer.tsx    # Settings panel (theme + language picker)
+│       │   │   ├── sidebar-nav.tsx       # Nav links (client component for i18n)
+│       │   │   └── mobile-shell.tsx      # Responsive sidebar/drawer
 │       │   └── ui/modal.tsx
+│       ├── i18n/
+│       │   ├── en.json               # English translations (~200 keys)
+│       │   ├── bg.json               # Bulgarian translations
+│       │   └── index.tsx             # LanguageProvider, useTranslation(), TranslationKey type
 │       ├── hooks/
 │       │   ├── use-assets.ts
 │       │   ├── use-liabilities.ts
-│       │   ├── use-expenses.ts
+│       │   ├── use-expenses.ts          # CRUD + useMonthlyReport()
 │       │   ├── use-goals.ts
-│       │   └── use-net-worth.ts        # history · projection · summary
+│       │   ├── use-household.ts         # members, invites, roles
+│       │   └── use-net-worth.ts         # history · projection · summary
 │       ├── lib/
 │       │   ├── api-client.ts           # Axios instance + JWT interceptor
 │       │   └── utils.ts                # formatCurrency, cn(), etc.
@@ -182,6 +199,7 @@ finances-app/
 | Server state | TanStack React Query 5 | Caching, invalidation, mutations |
 | Forms | React Hook Form + Zod | Schema validation per form |
 | Charts | Recharts | LineChart for net worth, used with custom mergedData |
+| i18n | Custom React Context | ~200 keys; EN + BG; localStorage persistence |
 | Styling | Tailwind CSS 3 | Utility-first; custom `brand` color |
 | 📋 Job queue | Bull + Redis | Configured but no active jobs yet |
 
@@ -201,14 +219,28 @@ export const LIABILITY_TYPES = ['mortgage', 'loan', 'leasing'] as const;
 // Supported currencies
 export const CURRENCIES = ['EUR', 'USD', 'GBP'] as const;
 
+// Mortgage lifecycle event types
+export const MORTGAGE_EVENT_TYPES = ['rate_change', 'payment_change', 'extra_payment', 'refinance'] as const;
+
+export interface MortgageEvent {
+  id: string;
+  type: MortgageEventType;
+  date: string;              // YYYY-MM-DD
+  newRate?: number;          // for rate_change, refinance
+  newMonthlyPayment?: number; // for payment_change, refinance
+  amount?: number;           // for extra_payment
+  newBalance?: number;       // for refinance
+  notes?: string;
+}
+
 // Metadata interfaces
 export interface MortgageMetadata {
   originalAmount: number;
-  interestRate: number;     // current rate (from most recent rateHistory entry)
+  interestRate: number;      // current effective rate
   monthlyPayment: number;
   termMonths: number;
-  startDate: string;        // YYYY-MM-DD
-  rateHistory: RateChange[]; // [{date, rate}] — chronological
+  startDate: string;         // YYYY-MM-DD
+  events: MortgageEvent[];   // lifecycle events (rate changes, refinances, etc.)
 }
 
 export interface LoanMetadata {
@@ -217,6 +249,7 @@ export interface LoanMetadata {
   monthlyPayment?: number;
   termMonths?: number;
   startDate?: string;
+  events?: MortgageEvent[];  // optional lifecycle events
 }
 
 export interface LeasingMetadata {
@@ -239,12 +272,30 @@ export interface LeasingMetadata {
 #### Auth Module (`src/auth/`)
 - **Endpoints**: `POST /auth/register`, `POST /auth/login`
 - Bcrypt password hashing (10 rounds)
+- Registration creates User + Household + HouseholdMember + 14 default ExpenseCategories in a `$transaction`
+- Login looks up user's first household membership to include `householdId` in JWT
+- JWT payload: `{ sub: userId, email, householdId }`
 - Returns JWT on login; `JwtAuthGuard` protects all other routes
 - `@CurrentUser()` decorator extracts user from JWT payload
 
 #### Users Module (`src/users/`)
 - **Endpoints**: `GET /users/me`, `PATCH /users/me`
 - Profile read/update
+
+#### Household Module (`src/household/`)
+- **Endpoints**:
+  ```
+  POST   /household/invites          — create invite (owner only, 7-day expiry, max 3 active)
+  GET    /household/invites          — list active invites (owner only)
+  DELETE /household/invites/:id      — revoke invite (owner only)
+  GET    /household/invites/:token/info — public invite info (no auth)
+  POST   /household/invites/:token/accept — accept invite
+  GET    /household/members          — list household members
+  PATCH  /household/members/:id/role — update member role (owner only)
+  DELETE /household/members/:id      — remove member (owner only)
+  ```
+- Roles: `owner`, `member`, `viewer`
+- Accepting invite creates HouseholdMember and migrates user to new household
 
 #### Assets Module (`src/assets/`)
 - **Endpoints**:
@@ -301,6 +352,17 @@ export interface LeasingMetadata {
   GET /net-worth/projection — projected amortization forward to mortgage payoff
   ```
 
+#### Import Module (`src/import/`)
+- **Endpoints**:
+  ```
+  POST /import/revolut    — upload and parse Revolut CSV
+  ```
+- Parses Revolut CSV (comma-separated): validates required columns, filters COMPLETED transactions
+- Auto-categorizes via ExpenseCategory keywords + MerchantCategoryMap
+- Deduplicates by merchant + amount + date
+- Creates new MerchantCategoryMap entries for unknown merchants
+- Returns stats: `{ imported, expenses, income, skipped, newMappings }`
+
 **`getHistory` logic**:
 1. Collect all asset snapshots and liability snapshots, grouped by `YYYY-MM` month key
 2. For each month from the earliest snapshot to now, carry forward the last known value for each asset/liability (no gaps)
@@ -315,11 +377,10 @@ export interface LeasingMetadata {
 3. Liability projection lines cut off when balance ≤ 0.01 (or ≤ residual for leasing)
 4. Returns `{ points: [{month, projectedNetWorth, liabilities: [{name, type, balance}]}], payoffMonth }`
 
-**Private helpers** (avoid duplication):
-```typescript
-private amortizeMonth(balance, annualRate, monthlyPayment, floor = 0): number
-private amortizeToMonth(startBalance, annualRate, monthlyPayment, startDate, targetDate, floor = 0): number
-```
+**Private helpers**:
+- `amortizeWithEvents()` — processes MortgageEvent[] month-by-month: refinance snaps balance, rate_change/payment_change update terms, extra_payment reduces principal
+- `getEffectiveTerms()` — returns current rate/payment after applying all events up to a given date
+- `amortizeMonth(balance, annualRate, monthlyPayment, floor)` — single month amortization step
 
 **Frontend projection offset**: The first projection point is anchored to the last historical NW value so the chart line connects seamlessly:
 ```typescript
@@ -336,17 +397,21 @@ const projectionOffset = lastHistoricalNW - firstProjPoint.projectedNetWorth;
 |-------|--------|-------------|
 | `/` | ✅ | Redirects to `/dashboard` |
 | `/login`, `/register` | ✅ | Auth forms |
+| `/invite/[token]` | ✅ | Public invite acceptance page |
 | `/dashboard` | ✅ | Net worth summary, goal overview, recent expenses |
 | `/assets` | ✅ | Asset cards; create/edit/delete; manual snapshot history modal |
 | `/liabilities` | ✅ | Liability cards (type-specific); create/edit/delete |
 | `/expenses` | ✅ | Expense list with categories |
+| `/income` | ✅ | Income tracking |
 | `/goals` | ✅ | Goal cards with progress bars; allocation plans |
+| `/import` | ✅ | Revolut CSV upload with preview and auto-categorization |
+| `/account` | ✅ | Household member management and invite system |
 | `/documents` | 🚧 | Stub page |
 | `/reports` | ✅ | Index page linking to sub-reports |
 | `/reports/net-worth` | ✅ | Full implementation (see below) |
+| `/reports/expense-budget` | ✅ | Category breakdown, trends, pie charts |
 | `/reports/allocation-comparison` | 📋 | Stub |
 | `/reports/goal-comparison` | 📋 | Stub |
-| `/reports/deadline-status` | 📋 | Stub |
 
 ### Net Worth Report (`/reports/net-worth`)
 
@@ -370,6 +435,29 @@ The most complex frontend page. Key implementation details:
 - `key={projectionEndYear ?? 'none'}` on `ResponsiveContainer` forces full re-mount on year change (Recharts bug workaround)
 - Y-axis domain computed only from visible series (respects toggle state)
 
+### Internationalization (i18n)
+
+Custom lightweight i18n system — no external libraries. Infrastructure in `apps/frontend/i18n/`.
+
+**Architecture**:
+- `LanguageProvider` (React Context) wraps the app in `providers.tsx` (outermost provider)
+- `useTranslation()` hook returns `{ locale, setLocale, t }` for any client component
+- Translation keys are flat with domain prefixes: `common.save`, `nav.dashboard`, `assets.form.name`
+- `TranslationKey` type is derived from `en.json` keys — typos caught at compile time
+- `{{var}}` interpolation: `t('dashboard.greeting', { name: 'Alex' })`
+- Falls back to English for any missing key in the active locale
+
+**Locale-aware formatting** (`lib/utils.ts`):
+- `formatCurrency()` and `formatDate()` read `document.documentElement.lang` to pick the right `Intl` locale
+- `LOCALE_MAP`: `en` -> `en-GB`, `bg` -> `bg-BG`
+
+**What stays in English**:
+- Recharts `dataKey` values (used as object property keys in chart data)
+- `metadata.title` exports (server-side, browser tab only)
+- Backend API error messages
+
+**Adding languages**: See `docs/ADDING_LANGUAGES.md`
+
 ### React Query Hooks
 
 | Hook | Query Key | Endpoint |
@@ -386,6 +474,11 @@ The most complex frontend page. Key implementation details:
 | `useNetWorthSummary()` | `['net-worth', 'summary']` | `GET /net-worth/summary` |
 | `useNetWorthHistory()` | `['net-worth', 'history']` | `GET /net-worth/history` |
 | `useNetWorthProjection()` | `['net-worth', 'projection']` | `GET /net-worth/projection` |
+| `useMonthlyReport(range)` | `['expenses', 'monthly-report', range]` | `GET /expenses/monthly-report` |
+| `useHouseholdMembers()` | `['household', 'members']` | `GET /household/members` |
+| `useHouseholdInvites()` | `['household', 'invites']` | `GET /household/invites` |
+| `useCreateInvite()` | invalidates `['household', 'invites']` | `POST /household/invites` |
+| `useRevokeInvite()` | invalidates `['household', 'invites']` | `DELETE /household/invites/:id` |
 
 ---
 
@@ -404,31 +497,51 @@ model User {
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  memberships HouseholdMember[]
+}
 
-  assets            Asset[]
-  liabilities       Liability[]
-  expenses          Expense[]
-  goals             Goal[]
-  documents         Document[]
-  allocationPlans   AllocationPlan[]
-  expenseCategories ExpenseCategory[]
-  actualAllocations ActualAllocation[]
-  taxInfo           TaxInfo[]
+model Household {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  members   HouseholdMember[]
+  invites   HouseholdInvite[]
+  // ... all data-owning relations
+}
+
+model HouseholdMember {
+  id          String @id @default(cuid())
+  userId      String
+  householdId String
+  role        String @default("member") // 'owner' | 'member' | 'viewer'
+  @@unique([userId, householdId])
+}
+
+model HouseholdInvite {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  householdId String
+  createdById String
+  role        String    @default("member")
+  expiresAt   DateTime
+  usedAt      DateTime?
+  usedById    String?
 }
 
 model Asset {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // 'etf' | 'crypto' | 'gold' | 'apartment'
-  name      String
-  value     Float    // Current value
-  quantity  Float?
-  costBasis Float?
-  currency  String   @default("EUR")
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  snapshots AssetSnapshot[]
+  id          String   @id @default(cuid())
+  householdId String
+  userId      String   // audit trail
+  type        String   // 'etf' | 'crypto' | 'gold' | 'apartment'
+  name        String
+  value       Float    // Current value
+  quantity    Float?
+  costBasis   Float?
+  currency    String   @default("EUR")
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  snapshots   AssetSnapshot[]
 }
 
 model AssetSnapshot {
@@ -440,13 +553,14 @@ model AssetSnapshot {
 }
 
 model Liability {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // 'mortgage' | 'loan' | 'leasing'
+  id          String   @id @default(cuid())
+  householdId String
+  userId      String   // audit trail
+  type        String   // 'mortgage' | 'loan' | 'leasing'
   name      String
   value     Float    // Outstanding balance (what is owed)
   currency  String   @default("EUR")
-  metadata  Json?    // type-specific: rates, payments, term, dates, rateHistory, residualValue, etc.
+  metadata  Json?    // type-specific: rates, payments, term, dates, events, residualValue, etc.
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   snapshots LiabilitySnapshot[]
@@ -465,7 +579,8 @@ model LiabilitySnapshot {
 ```prisma
 model Goal {
   id              String    @id @default(cuid())
-  userId          String
+  householdId     String
+  userId          String    // audit trail
   name            String
   targetAmount    Float
   targetDate      DateTime? // null for monthly recurring
@@ -496,13 +611,13 @@ model GoalSnapshot {
 
 model AllocationPlan {
   id            String   @id @default(cuid())
-  userId        String
+  householdId   String
   month         DateTime // YYYY-MM-01
   monthlyIncome Float
   status        String   @default("proposed") // 'proposed'|'approved'|'archived'
   items         AllocationPlanItem[]
   actualAllocations ActualAllocation[]
-  @@unique([userId, month])
+  @@unique([householdId, month])
 }
 
 model AllocationPlanItem {
@@ -515,7 +630,7 @@ model AllocationPlanItem {
 model ActualAllocation {
   id               String   @id @default(cuid())
   allocationPlanId String
-  userId           String
+  householdId      String
   goalId           String?
   categoryId       String?
   type             String   // 'goal' | 'category'
@@ -523,7 +638,7 @@ model ActualAllocation {
   plannedAmount    Float
   actualAmount     Float
   variance         Float    // actual - planned
-  @@unique([userId, goalId, month])
+  @@unique([householdId, goalId, month])
 }
 ```
 
@@ -532,7 +647,8 @@ model ActualAllocation {
 ```prisma
 model Expense {
   id          String   @id @default(cuid())
-  userId      String
+  householdId String
+  userId      String   // audit trail
   amount      Float
   categoryId  String
   merchant    String?
@@ -545,12 +661,21 @@ model Expense {
 
 model ExpenseCategory {
   id         String  @id @default(cuid())
-  userId     String
+  householdId String
   name       String
   type       String  // 'income' | 'expense' | 'goal' | 'required'
   color      String?
+  keywords   String[] // for auto-classification during import
   predefined Boolean @default(false)
-  @@unique([userId, name])
+  @@unique([householdId, name])
+}
+
+model MerchantCategoryMap {
+  id          String @id @default(cuid())
+  householdId String
+  merchant    String
+  categoryId  String
+  @@unique([householdId, merchant])
 }
 ```
 
@@ -559,7 +684,8 @@ model ExpenseCategory {
 ```prisma
 model Document {
   id          String    @id @default(cuid())
-  userId      String
+  householdId String
+  userId      String    // audit trail
   fileName    String
   fileType    String    // 'csv' | 'pdf'
   fileUrl     String
@@ -575,7 +701,7 @@ model Transaction { ... }
 
 model TaxInfo {
   id                     String   @id @default(cuid())
-  userId                 String
+  householdId            String
   taxYear                Int
   country                String
   annualSalary           Float?
@@ -591,7 +717,7 @@ model TaxInfo {
   taxPaidToDate          Float?
   taxRefundDue           Float?
   status                 String   @default("draft")
-  @@unique([userId, taxYear])
+  @@unique([householdId, taxYear])
 }
 ```
 
@@ -649,7 +775,21 @@ Base URL: `http://localhost:3001/api` (dev) — configured via `NEXT_PUBLIC_API_
 ### Auth
 ```
 POST /auth/register   { name, email, password }  → { user, token }
+                      (creates User + Household + HouseholdMember + default categories)
 POST /auth/login      { email, password }         → { user, token }
+                      (JWT includes householdId from first membership)
+```
+
+### Household
+```
+POST   /household/invites              { role }              → { invite }
+GET    /household/invites                                    → [{ invite }]
+DELETE /household/invites/:id                                → void
+GET    /household/invites/:token/info                        → { invite, household } (public)
+POST   /household/invites/:token/accept                      → { member }
+GET    /household/members                                    → [{ member }]
+PATCH  /household/members/:id/role     { role }              → { member }
+DELETE /household/members/:id                                → void
 ```
 
 ### Assets
@@ -688,6 +828,12 @@ POST   /goals                 { name, targetAmount, targetDate?, recurringPeriod
 PATCH  /goals/:id
 DELETE /goals/:id
 GET    /goals/:id/snapshots
+```
+
+### Import
+```
+POST /import/revolut   (multipart CSV upload)
+  → { imported, expenses, income, skipped, newMappings }
 ```
 
 ### Net Worth

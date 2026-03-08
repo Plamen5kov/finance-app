@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreateGoalInput, Goal } from '@/hooks/use-goals';
+import { useTranslation } from '@/i18n';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -26,6 +27,7 @@ interface GoalFormProps {
 }
 
 export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -62,7 +64,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
   return (
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.name')} *</label>
         <input
           {...register('name')}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
@@ -73,7 +75,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
 
       <div className={`grid gap-3 ${goal ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.targetAmount')} *</label>
           <input
             {...register('targetAmount')}
             type="number"
@@ -86,7 +88,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
 
         {goal && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Current Amount</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.currentAmount')}</label>
             <input
               {...register('currentAmount')}
               type="number"
@@ -98,7 +100,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.targetDate')}</label>
           <input
             {...register('targetDate')}
             type="date"
@@ -109,32 +111,32 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Recurring</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.recurring')}</label>
           <select
             {...register('recurringPeriod')}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           >
-            <option value="">One-time</option>
-            <option value="monthly">Monthly</option>
-            <option value="annual">Annual</option>
+            <option value="">{t('goals.filterOneTime')}</option>
+            <option value="monthly">{t('goals.filterMonthly')}</option>
+            <option value="annual">{t('goals.filterAnnual')}</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.priority')}</label>
           <select
             {...register('priority')}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
           >
-            <option value="1">1 — High</option>
-            <option value="2">2 — Medium</option>
-            <option value="3">3 — Low</option>
+            <option value="1">{t('goalForm.priorityHigh')}</option>
+            <option value="2">{t('goalForm.priorityMedium')}</option>
+            <option value="3">{t('goalForm.priorityLow')}</option>
           </select>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.category')}</label>
         <input
           {...register('category')}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
@@ -143,7 +145,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('goalForm.description')}</label>
         <textarea
           {...register('description')}
           rows={2}
@@ -158,14 +160,14 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
           onClick={onCancel}
           className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
           className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
         >
-          {isLoading ? 'Saving…' : goal ? 'Save Changes' : 'Create Goal'}
+          {isLoading ? t('common.saving') : goal ? t('liabilities.saveChanges') : t('goals.createGoal')}
         </button>
       </div>
     </form>

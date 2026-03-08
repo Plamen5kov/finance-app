@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
+import { useTranslation } from '@/i18n';
 
 interface InviteInfo {
   householdName: string;
@@ -18,6 +19,7 @@ function isLoggedIn(): boolean {
 
 export function InviteClient({ token }: { token: string }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [info, setInfo] = useState<InviteInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
@@ -52,10 +54,10 @@ export function InviteClient({ token }: { token: string }) {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="max-w-sm w-full bg-white rounded-xl shadow p-6 text-center">
           <div className="text-4xl mb-4">:(</div>
-          <h1 className="text-lg font-semibold text-gray-900 mb-2">Invalid Invite</h1>
+          <h1 className="text-lg font-semibold text-gray-900 mb-2">{t('invite.invalid')}</h1>
           <p className="text-sm text-gray-500 mb-6">{error}</p>
           <Link href="/login" className="text-brand hover:underline text-sm">
-            Go to login
+            {t('invite.goToLogin')}
           </Link>
         </div>
       </div>
@@ -65,7 +67,7 @@ export function InviteClient({ token }: { token: string }) {
   if (!info) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500 text-sm">Loading invite...</p>
+        <p className="text-gray-500 text-sm">{t('invite.loading')}</p>
       </div>
     );
   }
@@ -75,10 +77,10 @@ export function InviteClient({ token }: { token: string }) {
       <div className="max-w-sm w-full bg-white rounded-xl shadow p-6 text-center">
         <div className="text-4xl mb-4">+</div>
         <h1 className="text-lg font-semibold text-gray-900 mb-1">
-          Join &ldquo;{info.householdName}&rdquo;
+          {t('invite.joinHousehold', { name: info.householdName })}
         </h1>
         <p className="text-sm text-gray-500 mb-6">
-          {info.invitedBy} invited you to their household.
+          {t('invite.invitedBy', { name: info.invitedBy })}
         </p>
 
         {loggedIn ? (
@@ -87,7 +89,7 @@ export function InviteClient({ token }: { token: string }) {
             disabled={accepting}
             className="w-full bg-brand text-white py-2.5 rounded-lg font-medium hover:bg-brand-dark disabled:opacity-60 transition-colors"
           >
-            {accepting ? 'Joining...' : 'Accept Invite'}
+            {accepting ? t('invite.accepting') : t('invite.accept')}
           </button>
         ) : (
           <div className="space-y-3">
@@ -95,19 +97,19 @@ export function InviteClient({ token }: { token: string }) {
               href={`/register?invite=${token}`}
               className="block w-full bg-brand text-white py-2.5 rounded-lg font-medium hover:bg-brand-dark transition-colors"
             >
-              Create account
+              {t('auth.createAccount')}
             </Link>
             <Link
               href={`/login?invite=${token}`}
               className="block w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors"
             >
-              Sign in
+              {t('auth.signIn')}
             </Link>
           </div>
         )}
 
         <p className="text-xs text-gray-400 mt-4">
-          Expires {new Date(info.expiresAt).toLocaleDateString()}
+          {t('invite.expires', { date: new Date(info.expiresAt).toLocaleDateString() })}
         </p>
       </div>
 

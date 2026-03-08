@@ -9,8 +9,10 @@ import { AssetSnapshotModal } from '@/components/assets/asset-snapshot-modal';
 import { Modal } from '@/components/ui/modal';
 import { formatCurrency } from '@/lib/utils';
 import { Plus, TrendingUp } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export function AssetsClient() {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [historyAssetId, setHistoryAssetId] = useState<string | null>(null);
 
@@ -31,7 +33,7 @@ export function AssetsClient() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this asset?')) return;
+    if (!confirm(t('assets.deleteConfirm'))) return;
     await deleteAsset.mutateAsync(id);
   }
 
@@ -40,13 +42,13 @@ export function AssetsClient() {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Assets</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('assets.title')}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
         >
           <Plus size={16} />
-          Add
+          {t('common.add')}
         </button>
       </div>
 
@@ -54,7 +56,7 @@ export function AssetsClient() {
       <div className="bg-gradient-to-r from-brand to-brand-light rounded-xl p-4 sm:p-6 text-white mb-8">
         <div className="flex items-center gap-2 mb-1 text-white/80 text-sm">
           <TrendingUp size={16} />
-          <span>Total Assets</span>
+          <span>{t('assets.totalAssets')}</span>
         </div>
         <p className="text-2xl sm:text-4xl font-bold">
           {isLoading ? '—' : formatCurrency(totalAssets)}
@@ -71,15 +73,15 @@ export function AssetsClient() {
 
       {!isLoading && !hasAssets && (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-medium">Nothing tracked yet</p>
-          <p className="text-sm mt-1">Add your first asset to track your portfolio</p>
+          <p className="text-lg font-medium">{t('common.nothingYet')}</p>
+          <p className="text-sm mt-1">{t('assets.addFirst')}</p>
         </div>
       )}
 
       {!isLoading && hasAssets && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-700">Assets</h2>
+            <h2 className="text-base font-semibold text-gray-700">{t('assets.title')}</h2>
             <span className="text-sm font-semibold text-brand">{formatCurrency(totalAssets)}</span>
           </div>
           {ASSET_TYPES.map((type) => {
@@ -90,7 +92,7 @@ export function AssetsClient() {
               <section key={type} className="mb-6">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {t(`assetType.${type}` as any)}
                   </h3>
                   <span className="text-sm font-semibold text-gray-700">{formatCurrency(subtotal)}</span>
                 </div>
@@ -106,7 +108,7 @@ export function AssetsClient() {
       )}
 
       {showForm && (
-        <Modal title="Add Asset" onClose={() => setShowForm(false)}>
+        <Modal title={t('assets.addAsset')} onClose={() => setShowForm(false)}>
           <AssetForm
             onSubmit={handleCreate}
             onCancel={() => setShowForm(false)}

@@ -11,11 +11,13 @@ import {
   useUpdateMemberRole,
   type HouseholdMember,
 } from '@/hooks/use-household';
+import { useTranslation } from '@/i18n';
 
 export function AccountClient() {
+  const { t } = useTranslation();
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Account</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('account.title')}</h1>
       <div className="space-y-6 max-w-2xl">
         <MembersSection />
         <InvitesSection />
@@ -27,16 +29,17 @@ export function AccountClient() {
 function MembersSection() {
   const { data: members, isLoading } = useHouseholdMembers();
   const isOwner = members?.some((m) => m.role === 'owner');
+  const { t } = useTranslation();
 
   return (
     <section className="bg-white border border-gray-200 rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Users size={18} className="text-gray-500" />
-        <h2 className="text-lg font-semibold">Household Members</h2>
+        <h2 className="text-lg font-semibold">{t('account.householdMembers')}</h2>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">Loading...</p>
+        <p className="text-sm text-gray-400">{t('common.loading')}</p>
       ) : (
         <div className="space-y-2">
           {members?.map((m) => (
@@ -51,6 +54,7 @@ function MembersSection() {
 function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: boolean }) {
   const updateRole = useUpdateMemberRole();
   const removeMember = useRemoveMember();
+  const { t } = useTranslation();
 
   function handleRoleChange(newRole: string) {
     updateRole.mutate({ memberId: member.id, role: newRole });
@@ -71,14 +75,14 @@ function MemberRow({ member, canEdit }: { member: HouseholdMember; canEdit: bool
               disabled={updateRole.isPending}
               className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700"
             >
-              <option value="member">Member</option>
-              <option value="viewer">Viewer</option>
+              <option value="member">{t('account.member')}</option>
+              <option value="viewer">{t('account.viewer')}</option>
             </select>
             <button
               onClick={() => removeMember.mutate(member.id)}
               disabled={removeMember.isPending}
               className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-              title="Remove member"
+              title={t('account.removeMember')}
             >
               <Trash2 size={15} />
             </button>
@@ -97,6 +101,7 @@ function InvitesSection() {
   const revokeInvite = useRevokeInvite();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [newRole, setNewRole] = useState('member');
+  const { t } = useTranslation();
 
   async function handleCopy(link: string, id: string) {
     await navigator.clipboard.writeText(link);
@@ -109,7 +114,7 @@ function InvitesSection() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <UserPlus size={18} className="text-gray-500" />
-          <h2 className="text-lg font-semibold">Invite Links</h2>
+          <h2 className="text-lg font-semibold">{t('account.inviteLinks')}</h2>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -117,15 +122,15 @@ function InvitesSection() {
             onChange={(e) => setNewRole(e.target.value)}
             className="text-xs border border-gray-300 rounded px-2 py-1.5 bg-white text-gray-700"
           >
-            <option value="member">Member</option>
-            <option value="viewer">Viewer</option>
+            <option value="member">{t('account.member')}</option>
+            <option value="viewer">{t('account.viewer')}</option>
           </select>
           <button
             onClick={() => createInvite.mutate(newRole)}
             disabled={createInvite.isPending}
             className="text-sm bg-brand text-white px-3 py-1.5 rounded-lg hover:bg-brand-dark disabled:opacity-60 transition-colors"
           >
-            {createInvite.isPending ? 'Creating...' : 'Create Invite'}
+            {createInvite.isPending ? t('account.creating') : t('account.createInvite')}
           </button>
         </div>
       </div>
@@ -135,9 +140,9 @@ function InvitesSection() {
       )}
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">Loading...</p>
+        <p className="text-sm text-gray-400">{t('common.loading')}</p>
       ) : !invites?.length ? (
-        <p className="text-sm text-gray-400">No active invites. Create one to share with your partner.</p>
+        <p className="text-sm text-gray-400">{t('account.noInvites')}</p>
       ) : (
         <div className="space-y-2">
           {invites.map((inv) => (
@@ -145,13 +150,13 @@ function InvitesSection() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-mono text-gray-600 truncate">{inv.link}</p>
                 <p className="text-xs text-gray-400">
-                  Role: <span className="capitalize">{inv.role}</span> &middot; Expires {new Date(inv.expiresAt).toLocaleDateString()}
+                  {t('account.role')}: <span className="capitalize">{inv.role}</span> &middot; {t('account.expires', { date: new Date(inv.expiresAt).toLocaleDateString() })}
                 </p>
               </div>
               <button
                 onClick={() => handleCopy(inv.link, inv.id)}
                 className="p-1.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
-                title="Copy link"
+                title={t('account.copyLink')}
               >
                 {copiedId === inv.id ? <Check size={15} className="text-green-600" /> : <Copy size={15} />}
               </button>
@@ -159,7 +164,7 @@ function InvitesSection() {
                 onClick={() => revokeInvite.mutate(inv.id)}
                 disabled={revokeInvite.isPending}
                 className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
-                title="Revoke invite"
+                title={t('account.revokeInvite')}
               >
                 <Trash2 size={15} />
               </button>

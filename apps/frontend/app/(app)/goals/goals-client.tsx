@@ -6,15 +6,17 @@ import { GoalCard } from '@/components/goals/goal-card';
 import { GoalForm } from '@/components/goals/goal-form';
 import { Modal } from '@/components/ui/modal';
 import { Plus } from 'lucide-react';
-
-const FILTER_OPTIONS = [
-  { label: 'All', value: undefined },
-  { label: 'Monthly', value: 'monthly' },
-  { label: 'Annual', value: 'annual' },
-  { label: 'One-time', value: 'null' },
-];
+import { useTranslation } from '@/i18n';
 
 export function GoalsClient() {
+  const { t } = useTranslation();
+
+  const FILTER_OPTIONS = [
+    { label: t('goals.filterAll'), value: undefined },
+    { label: t('goals.filterMonthly'), value: 'monthly' },
+    { label: t('goals.filterAnnual'), value: 'annual' },
+    { label: t('goals.filterOneTime'), value: 'null' },
+  ];
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [filter, setFilter] = useState<string | undefined>(undefined);
@@ -35,7 +37,7 @@ export function GoalsClient() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this goal?')) return;
+    if (!confirm(t('goals.deleteConfirm'))) return;
     await deleteGoal.mutateAsync(id);
   }
 
@@ -45,13 +47,13 @@ export function GoalsClient() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Goals</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('goals.title')}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
         >
           <Plus size={16} />
-          New Goal
+          {t('goals.newGoal')}
         </button>
       </div>
 
@@ -80,14 +82,14 @@ export function GoalsClient() {
 
       {!isLoading && goals?.length === 0 && (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-medium">No goals yet</p>
-          <p className="text-sm mt-1">Create your first goal to start tracking progress</p>
+          <p className="text-lg font-medium">{t('goals.noGoals')}</p>
+          <p className="text-sm mt-1">{t('goals.createFirst')}</p>
         </div>
       )}
 
       {!isLoading && activeGoals.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Active</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('goals.active')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeGoals.map((goal) => (
               <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} onEdit={setEditingGoal} />
@@ -98,7 +100,7 @@ export function GoalsClient() {
 
       {!isLoading && completedGoals.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Completed</h2>
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{t('goals.completed')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 opacity-70">
             {completedGoals.map((goal) => (
               <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} onEdit={setEditingGoal} />
@@ -108,7 +110,7 @@ export function GoalsClient() {
       )}
 
       {showForm && (
-        <Modal title="New Goal" onClose={() => setShowForm(false)}>
+        <Modal title={t('goals.newGoal')} onClose={() => setShowForm(false)}>
           <GoalForm
             onSubmit={handleCreate}
             onCancel={() => setShowForm(false)}
@@ -118,7 +120,7 @@ export function GoalsClient() {
       )}
 
       {editingGoal && (
-        <Modal title="Edit Goal" onClose={() => setEditingGoal(null)}>
+        <Modal title={t('goals.editGoal')} onClose={() => setEditingGoal(null)}>
           <GoalForm
             goal={editingGoal}
             onSubmit={handleUpdate}

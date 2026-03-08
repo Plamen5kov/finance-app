@@ -2,6 +2,7 @@
 
 import { formatCurrency } from '@/lib/utils';
 import { Trash2, TrendingUp, TrendingDown, History } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 const TYPE_COLORS: Record<string, string> = {
   etf: 'bg-blue-100 text-blue-700',
@@ -38,6 +39,7 @@ interface AssetCardProps {
 }
 
 export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
+  const { t } = useTranslation();
   const gain = asset.costBasis != null ? asset.value - asset.costBasis : null;
   const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
 
@@ -49,7 +51,7 @@ export function AssetCard({ asset, onDelete, onHistory }: AssetCardProps) {
           <div>
             <h3 className="font-semibold text-gray-900 text-sm">{asset.name}</h3>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[asset.type] ?? 'bg-gray-100 text-gray-600'}`}>
-              {asset.type}
+              {t(`assetType.${asset.type}` as any)}
             </span>
           </div>
         </div>

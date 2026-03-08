@@ -14,8 +14,10 @@ import {
 import { Modal } from '@/components/ui/modal';
 import { formatCurrency, formatDate, getMonthStr } from '@/lib/utils';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 export function IncomeClient() {
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -52,7 +54,7 @@ export function IncomeClient() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this income entry?')) return;
+    if (!confirm(t('income.deleteConfirm'))) return;
     await deleteExpense.mutateAsync(id);
   }
 
@@ -72,20 +74,20 @@ export function IncomeClient() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Income</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('income.title')}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowCategoryForm(true)}
             className="border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50"
           >
-            + Category
+            {t('expenses.addCategory')}
           </button>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark text-sm font-medium"
           >
             <Plus size={16} />
-            Add Income
+            {t('income.addIncome')}
           </button>
         </div>
       </div>
@@ -107,7 +109,7 @@ export function IncomeClient() {
 
       {/* Summary */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-8 inline-block">
-        <p className="text-xs text-gray-500 mb-1">Total Income</p>
+        <p className="text-xs text-gray-500 mb-1">{t('income.totalIncome')}</p>
         <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
       </div>
 
@@ -120,8 +122,8 @@ export function IncomeClient() {
 
       {!isLoading && incomeEntries.length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-lg font-medium">No income in {monthLabel}</p>
-          <p className="text-sm mt-1">Add your first income entry to start tracking</p>
+          <p className="text-lg font-medium">{t('income.noIncome', { month: monthLabel })}</p>
+          <p className="text-sm mt-1">{t('income.addFirst')}</p>
         </div>
       )}
 
@@ -130,10 +132,10 @@ export function IncomeClient() {
           <table className="w-full text-sm min-w-[500px]">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
               <tr>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3 text-left">{t('table.description')}</th>
+                <th className="px-4 py-3 text-left">{t('table.category')}</th>
+                <th className="px-4 py-3 text-left">{t('table.date')}</th>
+                <th className="px-4 py-3 text-right">{t('table.amount')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -167,22 +169,22 @@ export function IncomeClient() {
       )}
 
       {showForm && (
-        <Modal title="Add Income" onClose={() => setShowForm(false)}>
+        <Modal title={t('income.addIncome')} onClose={() => setShowForm(false)}>
           <form onSubmit={handleCreate} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenseForm.description')} *</label>
               <input name="description" required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand" placeholder="e.g. Monthly salary" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenseForm.amount')} *</label>
               <input name="amount" type="number" step="0.01" min="0.01" required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand" placeholder="0.00" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenseForm.date')} *</label>
               <input name="date" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('expenseForm.category')}</label>
               <select name="categoryId" required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand bg-white">
                 {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -190,9 +192,9 @@ export function IncomeClient() {
               </select>
             </div>
             <div className="flex gap-3">
-              <button type="button" onClick={() => setShowForm(false)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={() => setShowForm(false)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">{t('common.cancel')}</button>
               <button type="submit" disabled={createExpense.isPending} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">
-                {createExpense.isPending ? 'Saving...' : 'Add Income'}
+                {createExpense.isPending ? t('common.saving') : t('income.addIncome')}
               </button>
             </div>
           </form>
@@ -200,10 +202,10 @@ export function IncomeClient() {
       )}
 
       {showCategoryForm && (
-        <Modal title="New Income Category" onClose={() => setShowCategoryForm(false)}>
+        <Modal title={t('income.newCategory')} onClose={() => setShowCategoryForm(false)}>
           <form onSubmit={handleCreateCategory} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
               <input
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
@@ -213,10 +215,10 @@ export function IncomeClient() {
             </div>
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowCategoryForm(false)} className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-50">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="submit" disabled={createCategory.isPending} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">
-                {createCategory.isPending ? 'Saving...' : 'Create'}
+                {createCategory.isPending ? t('common.saving') : t('common.create')}
               </button>
             </div>
           </form>

@@ -11,9 +11,9 @@ This is a personal finance management PWA designed for the user and their spouse
 ## User Personas
 
 ### Primary Users
-- **User (Owner 1)**: Primary financial planner, sets goals, reviews allocations, uploads statements
-- **Spouse (Owner 2)**: Co-owner with full visibility and access, can review plans and upload documents
-- Both users have their own login credentials but view the same consolidated financial picture
+- **Owner**: Primary financial planner, sets goals, reviews allocations, uploads statements. Can invite members and manage household roles.
+- **Members**: Household members with full visibility and edit access to shared financial data
+- All users have their own login credentials but view the same consolidated financial picture (scoped by household)
 
 ### Key Characteristics
 - Tech-savvy enough to use a PWA app on phone and access documents
@@ -64,7 +64,7 @@ This is a personal finance management PWA designed for the user and their spouse
 **A. Mortgage**
 - Outstanding balance
 - Original amount, interest rate, monthly payment, term (months), start date
-- Rate history (multiple rate changes over time, chronologically tracked)
+- Lifecycle events (rate changes, payment changes, extra payments, refinances — chronologically tracked)
 - Projected payoff date and estimated interest remaining
 
 **B. Loan**
@@ -99,7 +99,7 @@ This is a personal finance management PWA designed for the user and their spouse
 | Monthly payment | ✅ | optional | ✅ |
 | Term (months) | ✅ | optional | ✅ |
 | Start date | ✅ | optional | ✅ |
-| Rate history | ✅ | — | — |
+| Lifecycle events | ✅ | ✅ | — |
 
 ---
 
@@ -549,31 +549,60 @@ To enable this feature, the system needs to:
 
 ---
 
-### 10. Authentication & Access Control
+### 10. Internationalization (i18n)
 
-**Primary Goal**: Secure the app for personal use by 2 users
+**Primary Goal**: Support multiple UI languages, starting with English and Bulgarian, extensible to more languages
+
+**Features**:
+- Language toggle in Settings panel (sidebar footer, alongside theme picker)
+- All UI strings translated via `t('key')` calls (~200 translation keys)
+- Language preference persists across sessions (localStorage)
+- Locale-aware number and date formatting (e.g., `bg-BG` uses space as thousands separator)
+- Missing translations fall back to English automatically
+- Adding a new language requires only a JSON file + two lines of config (see `docs/ADDING_LANGUAGES.md`)
+
+**Supported Languages**:
+- English (EN) — default
+- Bulgarian (BG) — full translation
+
+**What stays untranslated**:
+- Currency codes (EUR, USD, BGN)
+- Route paths (/dashboard, /assets)
+- Backend API error messages
+- User-entered data (asset names, descriptions)
+
+---
+
+### 11. Authentication & Multi-Tenancy
+
+**Primary Goal**: Secure the app with household-based data isolation
+
+**Multi-Tenancy Model**:
+- **Household** is the tenant unit — all data rows have `householdId` for row-level isolation
+- **HouseholdMember** join table: `userId + householdId` (unique), with `role` field (`owner`, `member`, `viewer`)
+- Registration creates User + Household + HouseholdMember + default expense categories in a single transaction
+- Login looks up user's first household membership to include `householdId` in JWT
+- JWT payload: `{ sub: userId, email, householdId }` — backend validates membership on every request
+- All services scope queries by `householdId`; `userId` retained as audit trail on creates
+
+**Household Invite System**:
+- Owner generates invite links with role selection (member/viewer) — 7-day expiry, max 3 active
+- Public invite acceptance page at `/invite/[token]` (no auth required to view)
+- Accepting an invite creates HouseholdMember record and migrates user to the new household
+- Owner can revoke invites, update member roles, or remove members from `/account` page
 
 **Features**:
 - Email + password registration/login (JWT-based)
-- Account creation for user and spouse
-- Separate login credentials
-- Access to shared financial data (both users see same data)
-- User settings (password change, profile, preferences)
-- Session management (logout, timeout)
-- Password recovery via email
+- Separate login credentials per user
+- All household members see the same consolidated financial data
+- Account management page (`/account`) for member and invite management
+- Session management (logout, token refresh)
 
 **Security**:
-- Passwords hashed with bcrypt
-- JWTs expire after 7 days (refresh tokens for longer sessions)
+- Passwords hashed with bcrypt (10 rounds)
+- JWTs with configurable expiry; Bearer header authentication
 - HTTPS required in production
-- Database encryption for sensitive fields (if needed)
 - Rate limiting on auth endpoints
-- No password reset links (secure email only)
-
-**Per-User Settings**:
-- Display preferences (currency, date format)
-- Notification preferences (goal alerts, price updates)
-- Email digest frequency
 
 ---
 
@@ -700,18 +729,28 @@ Job: Fetch & Update Prices
 ### Key Entities
 
 **User**
-- id (UUID)
+- id (cuid)
 - email (unique)
 - hashed_password
 - name
 - phone (optional)
-- profile_picture_url (optional)
 - created_at, updated_at
-- role: "owner" | "spouse" (both have equal access)
+
+**Household** (tenant container)
+- id (cuid)
+- created_at, updated_at
+
+**HouseholdMember** (join table)
+- userId + householdId (unique)
+- role: "owner" | "member" | "viewer"
+
+**HouseholdInvite**
+- id, token (unique), householdId, createdById, role
+- expiresAt, usedAt, usedById
 
 **Asset** (ETF, Crypto, Gold, Apartment)
 - id
-- user_id
+- householdId, userId (audit)
 - type: "etf" | "crypto" | "gold" | "apartment"
 - name (e.g., "ETF Portfolio", "Crypto Portfolio", "Gold (злато)", "Apartment")
 - value (current value)
@@ -730,12 +769,12 @@ Job: Fetch & Update Prices
 
 **Liability** (Mortgage, Loan, Leasing)
 - id
-- user_id
+- householdId, userId (audit)
 - type: "mortgage" | "loan" | "leasing"
 - name (e.g., "Home Mortgage", "Car Lease")
 - value (outstanding balance — what is currently owed)
 - currency
-- metadata (JSON — type-specific fields: interest rate, monthly payment, term, start date, rate history, original amount, residual value, etc.)
+- metadata (JSON — type-specific fields: interest rate, monthly payment, term, start date, lifecycle events, original amount, residual value, etc.)
 - created_at, updated_at
 
 **LiabilitySnapshot** (Historical balance tracking)
@@ -746,7 +785,7 @@ Job: Fetch & Update Prices
 
 **Expense**
 - id
-- user_id
+- householdId, userId (audit)
 - amount
 - category_id
 - merchant/description
@@ -756,15 +795,22 @@ Job: Fetch & Update Prices
 
 **ExpenseCategory**
 - id
-- user_id
+- householdId
 - name (e.g., "Utilities", "Groceries")
 - type: "income" | "expense" | "goal" | "required"
 - color (for visualization)
+- keywords (for auto-classification)
 - predefined: boolean
+- unique: [householdId, name]
+
+**MerchantCategoryMap** (auto-classification)
+- id
+- householdId, merchant, categoryId
+- unique: [householdId, merchant]
 
 **Goal**
 - id
-- user_id
+- householdId, userId (audit)
 - name (e.g., "Travel Fund 2025")
 - target_amount
 - target_date (deadline)
@@ -775,26 +821,22 @@ Job: Fetch & Update Prices
 
 **AllocationPlan**
 - id
-- user_id
+- householdId
 - month (YYYY-MM)
 - monthly_income
-- allocations[] (array of goal → amount)
-- required_expenses[] (array of category → amount)
-- surplus (remaining)
+- items: AllocationPlanItem[] (goal → amount)
 - status: "proposed" | "approved" | "archived"
-- created_at
+- unique: [householdId, month]
 
 **ActualAllocation** (For Planned vs Actual Comparison)
 - id
-- allocation_plan_id (links to planned allocation)
-- user_id
-- goal_id or category_id (what it was allocated to)
+- allocationPlanId
+- householdId
+- goalId or categoryId
 - type: "goal" | "category"
-- planned_amount (from allocation plan)
-- actual_amount (calculated from expenses for this month)
+- planned_amount, actual_amount, variance
 - month (YYYY-MM)
-- variance (actual - planned)
-- created_at, updated_at
+- unique: [householdId, goalId, month]
 
 **GoalSnapshot** (Historical Goal Balance Tracking)
 - id
@@ -811,7 +853,7 @@ Job: Fetch & Update Prices
 
 **Document**
 - id
-- user_id
+- householdId, userId (audit)
 - file_name
 - file_type: "csv" | "pdf"
 - file_url (cloud storage path)
@@ -903,11 +945,14 @@ Job: Fetch & Update Prices
 ### MVP (v1.0) — Current State
 
 **Implemented:**
-- ✅ User authentication (email/password, JWT)
+- ✅ User authentication (email/password, JWT) with household-based multi-tenancy
+- ✅ Household invite system (invite links, role management, member removal)
+- ✅ Account management page (`/account`) for members and invites
 - ✅ Dashboard with net worth summary (assets, liabilities, goals)
 - ✅ Asset tracking (ETF, crypto, gold, apartment) with manual snapshot history entry
-- ✅ Liabilities tracking (mortgage, loan, leasing) with amortization details
-- ✅ Expense tracking and categorization
+- ✅ Liabilities tracking (mortgage, loan, leasing) with amortization details and lifecycle events
+- ✅ Expense tracking and categorization (14 default categories + auto-classification)
+- ✅ Income tracking (`/income`)
 - ✅ Goal planning (one-time, annual, monthly recurring)
 - ✅ Net Worth report with historical chart, projection, and per-asset/liability breakdown
   - Historical line anchored to real snapshots (carry-forward for months with no snapshot)
@@ -915,23 +960,25 @@ Job: Fetch & Update Prices
   - Per-liability projection lines, cut off at zero/residual
   - Projection end year selector (None / This Year / up to 30 years out)
   - Horizontal reference line at y=0
+- ✅ Expense Budget report (`/reports/expense-budget`) with category breakdown, trends, and pie charts
+- ✅ Revolut CSV import (`/import`) with auto-categorization and duplicate detection
+- ✅ Internationalization (English + Bulgarian) with language toggle in settings
 - ✅ Seed script importing historical data from CSV (mind.csv, car-leasing.csv, Revolut statement)
   - 205 NN asset snapshots (2019–2026)
   - Apartment snapshots at key valuation dates
   - 24 car leasing balance snapshots (Apr 2024–Mar 2026)
 
 **Partially implemented:**
-- 🚧 Document parsing (Revolut CSV imported via seed; upload UI is a stub)
-- 🚧 Reports: Allocation comparison, goal comparison, deadline status pages exist but are stubs
+- 🚧 Document management (`/documents`) — schema + parsers directory exist, UI is a stub
+- 🚧 Reports: Allocation comparison and goal comparison pages exist but are stubs
 
 **Not yet built (planned):**
 - 📋 Monthly price update jobs (Bull queue configured but jobs not implemented)
 - 📋 Smart allocation tool (allocation plan creation/approval)
 - 📋 Planned vs Actual comparison (schema exists, UI not built)
-- 📋 Document upload + parsing UI
+- 📋 TaxInfo (schema exists, no backend/frontend implementation)
 
 ### Phase 2 (v1.1)
-- Account sharing settings (read-only vs. edit)
 - Multi-currency support (auto conversion)
 - Budget features (set monthly budgets by category)
 - More document parsers (other banks)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Share, PlusSquare, Download } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -23,6 +24,7 @@ export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Don't show if already installed or dismissed this session
@@ -71,15 +73,15 @@ export function PwaInstallPrompt() {
       <div className="bg-brand/10 border border-brand/20 rounded-xl p-4 flex items-start gap-3">
         <Download size={20} className="text-brand flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">Install Finances</p>
+          <p className="text-sm font-medium text-gray-900">{t('pwa.installTitle')}</p>
           <p className="text-xs text-gray-500 mt-0.5">
-            Add to your home screen for quick access.
+            {t('pwa.installDesc')}
           </p>
           <button
             onClick={handleInstall}
             className="mt-2 text-sm bg-brand text-white px-4 py-1.5 rounded-lg hover:bg-brand-dark transition-colors"
           >
-            Install App
+            {t('pwa.installButton')}
           </button>
         </div>
         <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600">
@@ -95,13 +97,9 @@ export function PwaInstallPrompt() {
       <div className="bg-brand/10 border border-brand/20 rounded-xl p-4 flex items-start gap-3">
         <Download size={20} className="text-brand flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900">Install Finances</p>
+          <p className="text-sm font-medium text-gray-900">{t('pwa.installTitle')}</p>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-            Tap{' '}
-            <Share size={13} className="inline -mt-0.5" />{' '}
-            <span className="font-medium">Share</span>, then{' '}
-            <PlusSquare size={13} className="inline -mt-0.5" />{' '}
-            <span className="font-medium">Add to Home Screen</span>.
+            {t('pwa.iosInstructions')}
           </p>
         </div>
         <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600">

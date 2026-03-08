@@ -3,14 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { logoutAction } from '@/lib/auth/actions';
 import { LogOut, Settings, Sun, Moon, Monitor, X } from 'lucide-react';
+import { useTranslation, LOCALES, type Locale } from '@/i18n';
 
 type Theme = 'light' | 'dark' | 'system';
-
-const THEME_OPTIONS: { value: Theme; label: string; icon: React.ReactNode }[] = [
-  { value: 'light', label: 'Light', icon: <Sun size={15} /> },
-  { value: 'dark', label: 'Dark', icon: <Moon size={15} /> },
-  { value: 'system', label: 'System', icon: <Monitor size={15} /> },
-];
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -28,10 +23,17 @@ interface SidebarFooterProps {
 }
 
 export function SidebarFooter({ name, email }: SidebarFooterProps) {
+  const { t, locale, setLocale } = useTranslation();
   const [theme, setTheme] = useState<Theme>('system');
   const [loggingOut, setLoggingOut] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const THEME_OPTIONS: { value: Theme; labelKey: 'theme.light' | 'theme.dark' | 'theme.system'; icon: React.ReactNode }[] = [
+    { value: 'light', labelKey: 'theme.light', icon: <Sun size={15} /> },
+    { value: 'dark', labelKey: 'theme.dark', icon: <Moon size={15} /> },
+    { value: 'system', labelKey: 'theme.system', icon: <Monitor size={15} /> },
+  ];
 
   useEffect(() => {
     const saved = (localStorage.getItem('theme') as Theme) ?? 'system';
@@ -50,10 +52,10 @@ export function SidebarFooter({ name, email }: SidebarFooterProps) {
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [settingsOpen]);
 
-  function handleTheme(t: Theme) {
-    setTheme(t);
-    localStorage.setItem('theme', t);
-    applyTheme(t);
+  function handleTheme(th: Theme) {
+    setTheme(th);
+    localStorage.setItem('theme', th);
+    applyTheme(th);
   }
 
   async function handleLogout() {
@@ -70,15 +72,15 @@ export function SidebarFooter({ name, email }: SidebarFooterProps) {
           className="absolute bottom-[120px] left-2 right-2 bg-gray-800 border border-gray-600 rounded-xl shadow-2xl p-4 z-50"
         >
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-semibold text-white">Settings</span>
+            <span className="text-sm font-semibold text-white">{t('settings.title')}</span>
             <button onClick={() => setSettingsOpen(false)} className="text-gray-400 hover:text-white">
               <X size={15} />
             </button>
           </div>
 
           {/* Theme */}
-          <div>
-            <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Appearance</p>
+          <div className="mb-4">
+            <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">{t('settings.appearance')}</p>
             <div className="flex rounded-lg overflow-hidden border border-gray-600">
               {THEME_OPTIONS.map((opt) => (
                 <button
@@ -91,7 +93,27 @@ export function SidebarFooter({ name, email }: SidebarFooterProps) {
                   }`}
                 >
                   {opt.icon}
-                  {opt.label}
+                  {t(opt.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Language */}
+          <div>
+            <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">{t('settings.language')}</p>
+            <div className="flex rounded-lg overflow-hidden border border-gray-600">
+              {LOCALES.map((loc) => (
+                <button
+                  key={loc.value}
+                  onClick={() => setLocale(loc.value as Locale)}
+                  className={`flex-1 flex items-center justify-center py-2 text-xs font-medium transition-colors ${
+                    locale === loc.value
+                      ? 'bg-brand text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {loc.label}
                 </button>
               ))}
             </div>
@@ -121,7 +143,7 @@ export function SidebarFooter({ name, email }: SidebarFooterProps) {
           }`}
         >
           <Settings size={15} />
-          Settings
+          {t('settings.title')}
         </button>
 
         {/* Sign out */}
@@ -131,7 +153,7 @@ export function SidebarFooter({ name, email }: SidebarFooterProps) {
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
         >
           <LogOut size={15} />
-          {loggingOut ? 'Signing out…' : 'Sign out'}
+          {loggingOut ? t('settings.signingOut') : t('settings.signOut')}
         </button>
       </div>
     </>

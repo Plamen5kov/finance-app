@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { useMonthlyReport } from '@/hooks/use-expenses';
+import { useTranslation } from '@/i18n';
 
 const RANGES = [
   { label: '6M', months: 6 },
@@ -18,6 +19,7 @@ const RANGES = [
 ];
 
 export default function ExpenseBudgetPage() {
+  const { t } = useTranslation();
   const [range, setRange] = useState(12);
   const { data: report, isLoading } = useMonthlyReport(range);
 
@@ -67,31 +69,31 @@ export default function ExpenseBudgetPage() {
         <Link href="/reports" className="text-gray-400 hover:text-gray-600">
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Monthly Budget Report</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('budget.title')}</h1>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg Monthly Income</p>
+          <p className="text-xs text-gray-500 mb-1">{t('budget.avgIncome')}</p>
           <p className="text-2xl font-bold text-green-600">
             {isLoading ? '—' : formatCurrency(avgIncome)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg Monthly Expenses</p>
+          <p className="text-xs text-gray-500 mb-1">{t('budget.avgExpenses')}</p>
           <p className="text-2xl font-bold text-red-500">
             {isLoading ? '—' : formatCurrency(avgExpenses)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Avg Monthly Savings</p>
+          <p className="text-xs text-gray-500 mb-1">{t('budget.avgSavings')}</p>
           <p className={`text-2xl font-bold ${avgSavings >= 0 ? 'text-brand' : 'text-red-500'}`}>
             {isLoading ? '—' : formatCurrency(avgSavings)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Last Month vs Prior</p>
+          <p className="text-xs text-gray-500 mb-1">{t('budget.lastVsPrior')}</p>
           <p className={`text-2xl font-bold ${momChange <= 0 ? 'text-green-600' : 'text-red-500'}`}>
             {isLoading ? '—' : `${momChange >= 0 ? '+' : ''}${formatCurrency(momChange)}`}
           </p>
@@ -102,8 +104,8 @@ export default function ExpenseBudgetPage() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <div>
-            <h2 className="font-semibold text-gray-900">Expenses by Category</h2>
-            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">Stacked monthly spending breakdown</p>
+            <h2 className="font-semibold text-gray-900">{t('budget.expensesByCategory')}</h2>
+            <p className="text-xs text-gray-400 mt-0.5 hidden sm:block">{t('budget.stackedBreakdown')}</p>
           </div>
           <div className="flex gap-1 flex-shrink-0">
             {RANGES.map((r) => (
@@ -124,7 +126,7 @@ export default function ExpenseBudgetPage() {
         {isLoading ? (
           <div className="h-72 bg-gray-100 rounded animate-pulse" />
         ) : barData.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-12">No expense data</p>
+          <p className="text-gray-400 text-sm text-center py-12">{t('budget.noExpenseData')}</p>
         ) : (
           <ResponsiveContainer width="100%" height={280} className="sm:!h-[340px]">
             <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -144,11 +146,11 @@ export default function ExpenseBudgetPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Pie chart: average category split */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Average Monthly Split</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">{t('budget.avgMonthlySplit')}</h2>
           {isLoading ? (
             <div className="h-64 bg-gray-100 rounded animate-pulse" />
           ) : pieData.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-12">No data</p>
+            <p className="text-gray-400 text-sm text-center py-12">{t('common.noData')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -175,19 +177,19 @@ export default function ExpenseBudgetPage() {
 
         {/* Category table */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Category Breakdown</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">{t('budget.categoryBreakdown')}</h2>
           {isLoading ? (
             <div className="h-64 bg-gray-100 rounded animate-pulse" />
           ) : categoryAverages.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-12">No data</p>
+            <p className="text-gray-400 text-sm text-center py-12">{t('common.noData')}</p>
           ) : (
             <div className="overflow-y-auto max-h-[280px]">
               <table className="w-full text-sm">
                 <thead className="text-xs text-gray-500 border-b">
                   <tr>
-                    <th className="text-left py-2">Category</th>
-                    <th className="text-right py-2">Avg/mo</th>
-                    <th className="text-right py-2">Total</th>
+                    <th className="text-left py-2">{t('table.category')}</th>
+                    <th className="text-right py-2">{t('budget.avgPerMonth')}</th>
+                    <th className="text-right py-2">{t('common.total')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -210,7 +212,7 @@ export default function ExpenseBudgetPage() {
 
       {/* Income vs Expenses trend */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Income vs Expenses</h2>
+        <h2 className="font-semibold text-gray-900 mb-4">{t('budget.incomeVsExpenses')}</h2>
         {isLoading ? (
           <div className="h-64 bg-gray-100 rounded animate-pulse" />
         ) : (
