@@ -15,6 +15,7 @@ export interface HouseholdMember {
 export interface HouseholdInvite {
   id: string;
   token: string;
+  role: string;
   link: string;
   expiresAt: string;
   createdAt: string;
@@ -43,8 +44,8 @@ export function useHouseholdInvites() {
 export function useCreateInvite() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const { data } = await apiClient.post<HouseholdInvite>('/household/invites');
+    mutationFn: async (role: string = 'member') => {
+      const { data } = await apiClient.post<HouseholdInvite>('/household/invites', { role });
       return data;
     },
     onSuccess: () => {
@@ -61,6 +62,19 @@ export function useRevokeInvite() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['household', 'invites'] });
+    },
+  });
+}
+
+export function useUpdateMemberRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
+      const { data } = await apiClient.patch<HouseholdMember>(`/household/members/${memberId}/role`, { role });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['household', 'members'] });
     },
   });
 }

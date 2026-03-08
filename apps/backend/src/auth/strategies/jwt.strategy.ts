@@ -27,6 +27,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
     if (!membership) throw new UnauthorizedException('Not a member of this household');
 
-    return { userId: payload.sub, email: payload.email, householdId: payload.householdId };
+    return { userId: payload.sub, email: payload.email, householdId: payload.householdId, role: membership.role };
   }
 }

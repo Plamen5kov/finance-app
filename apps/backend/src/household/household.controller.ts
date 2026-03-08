@@ -2,8 +2,10 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
+  Body,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -20,8 +22,8 @@ export class HouseholdController {
 
   @Post('invites')
   @UseGuards(JwtAuthGuard)
-  createInvite(@CurrentUser() user: JwtPayload) {
-    return this.householdService.createInvite(user.userId, user.householdId);
+  createInvite(@CurrentUser() user: JwtPayload, @Body('role') role?: string) {
+    return this.householdService.createInvite(user.userId, user.householdId, role);
   }
 
   @Get('invites')
@@ -41,6 +43,16 @@ export class HouseholdController {
   @UseGuards(JwtAuthGuard)
   listMembers(@CurrentUser() user: JwtPayload) {
     return this.householdService.listMembers(user.householdId);
+  }
+
+  @Patch('members/:memberId/role')
+  @UseGuards(JwtAuthGuard)
+  updateMemberRole(
+    @CurrentUser() user: JwtPayload,
+    @Param('memberId') memberId: string,
+    @Body('role') role: string,
+  ) {
+    return this.householdService.updateMemberRole(user.userId, user.householdId, memberId, role);
   }
 
   @Post('invites/:token/accept')

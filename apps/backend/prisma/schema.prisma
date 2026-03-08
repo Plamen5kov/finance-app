@@ -37,6 +37,7 @@ model HouseholdInvite {
   householdId String
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
   createdById String
+  role        String    @default("member") // "member" | "viewer"
   token       String    @unique @default(cuid())
   expiresAt   DateTime
   usedAt      DateTime?

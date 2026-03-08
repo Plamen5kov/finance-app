@@ -16,7 +16,12 @@ export class HouseholdService {
     private authService: AuthService,
   ) {}
 
-  async createInvite(userId: string, householdId: string) {
+  async createInvite(userId: string, householdId: string, role: string = 'member') {
+    const VALID_ROLES = ['member', 'viewer'];
+    if (!VALID_ROLES.includes(role)) {
+      throw new BadRequestException(`Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`);
+    }
+
     // Verify user is owner
     const membership = await this.prisma.householdMember.findUnique({
       where: { userId_householdId: { userId, householdId } },
@@ -37,6 +42,7 @@ export class HouseholdService {
       data: {
         householdId,
         createdById: userId,
+        role,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
     });
@@ -45,6 +51,7 @@ export class HouseholdService {
     return {
       id: invite.id,
       token: invite.token,
+      role: invite.role,
       link: `${frontendUrl}/invite/${invite.token}`,
       expiresAt: invite.expiresAt,
     };
@@ -67,6 +74,7 @@ export class HouseholdService {
     return invites.map((inv) => ({
       id: inv.id,
       token: inv.token,
+      role: inv.role,
       link: `${frontendUrl}/invite/${inv.token}`,
       expiresAt: inv.expiresAt,
       createdAt: inv.createdAt,
@@ -110,6 +118,7 @@ export class HouseholdService {
     return {
       householdName: invite.household.name,
       invitedBy: inviter?.name ?? 'Unknown',
+      role: invite.role,
       expiresAt: invite.expiresAt,
     };
   }
@@ -137,9 +146,9 @@ export class HouseholdService {
         where: { userId },
       });
 
-      // Create new membership
+      // Create new membership with the role specified in the invite
       await tx.householdMember.create({
-        data: { userId, householdId: invite.householdId, role: 'member' },
+        data: { userId, householdId: invite.householdId, role: invite.role },
       });
 
       // Mark invite as used
@@ -164,6 +173,44 @@ export class HouseholdService {
       const tokens = await this.authService.generateTokens(userId, email, invite.householdId);
       return tokens;
     });
+  }
+
+  async updateMemberRole(userId: string, householdId: string, memberId: string, role: string) {
+    const VALID_ROLES = ['member', 'viewer'];
+
+    // Verify caller is owner
+    const callerMembership = await this.prisma.householdMember.findUnique({
+      where: { userId_householdId: { userId, householdId } },
+    });
+    if (!callerMembership || callerMembership.role !== 'owner') {
+      throw new ForbiddenException('Only the household owner can change roles');
+    }
+
+    if (!VALID_ROLES.includes(role)) {
+      throw new BadRequestException(`Invalid role. Must be one of: ${VALID_ROLES.join(', ')}`);
+    }
+
+    const target = await this.prisma.householdMember.findFirst({
+      where: { id: memberId, householdId },
+    });
+    if (!target) throw new NotFoundException('Member not found');
+    if (target.role === 'owner') {
+      throw new ForbiddenException('Cannot change the owner role');
+    }
+
+    const updated = await this.prisma.householdMember.update({
+      where: { id: memberId },
+      data: { role },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+
+    return {
+      id: updated.id,
+      userId: updated.user.id,
+      name: updated.user.name,
+      email: updated.user.email,
+      role: updated.role,
+    };
   }
 
   async listMembers(householdId: string) {

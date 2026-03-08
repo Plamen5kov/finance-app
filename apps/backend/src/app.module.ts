@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 import databaseConfig from './config/database.config';
@@ -14,6 +15,7 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { GoalsModule } from './goals/goals.module';
 import { ImportModule } from './import/import.module';
 import { HouseholdModule } from './household/household.module';
+import { WriteAccessGuard } from './auth/guards/write-access.guard';
 
 @Module({
   imports: [
@@ -44,6 +46,9 @@ import { HouseholdModule } from './household/household.module';
     GoalsModule,
     ImportModule,
     HouseholdModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: WriteAccessGuard },
   ],
 })
 export class AppModule {}
