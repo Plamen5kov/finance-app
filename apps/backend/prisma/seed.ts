@@ -15,7 +15,7 @@
  *   [10] interest    – interest paid
  *   [11] ending bal  – mortgage ending balance
  *   [12] ipr         – interest/principal ratio
- *   [13] gold        – gold (злато) value
+ *   [13] gold        – gold value
  *   [14] emergency   – emergency fund
  *   [15] baby        – baby fund
  *   [16] total       – total investments
@@ -193,7 +193,7 @@ async function main() {
   const nnAsset = await upsertAsset('etf', 'NN', latestNNValue);
   const cryptoAsset = await upsertAsset('crypto', 'Crypto Portfolio', parseFloat2(latestRow[5]));
   const etfAsset = await upsertAsset('etf', 'ETF Portfolio', parseFloat2(latestRow[6]));
-  const goldAsset = await upsertAsset('gold', 'Gold (злато)', parseFloat2(latestRow[13]));
+  const goldAsset = await upsertAsset('gold', 'Gold', parseFloat2(latestRow[13]));
   const apartmentAsset = await upsertAsset('apartment', 'Apartment', 420000);
 
   // Find-or-create mortgage with lifecycle events

@@ -206,7 +206,6 @@ model ExpenseCategory {
   name       String
   type       String  // 'income' | 'expense' | 'goal' | 'required'
   color      String? // Hex color e.g. #FF6B6B
-  keywords   String[] @default([]) // Keywords for auto-classification (e.g. ["lidl", "kaufland", "billa"])
   predefined Boolean @default(false)
 
   expenses             Expense[]

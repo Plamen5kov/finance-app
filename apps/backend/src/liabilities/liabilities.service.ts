@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { CreateLiabilityDto } from './dto/create-liability.dto';
 import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 
@@ -104,10 +105,11 @@ export class LiabilitiesService {
   }
 
   async update(householdId: string, id: string, dto: Partial<CreateLiabilityDto>) {
-    await this.assertHouseholdAccess(householdId, id);
     const existing = await this.prisma.liability.findUnique({ where: { id } });
-    const type = dto.type ?? existing!.type;
-    const metadata = dto.metadata ?? existing!.metadata;
+    if (!existing) throw new NotFoundException('Liability not found');
+    if (existing.householdId !== householdId) throw new ForbiddenException();
+    const type = dto.type ?? existing.type;
+    const metadata = dto.metadata ?? existing.metadata;
     const value = this.calculateCurrentBalance(type, metadata as MortgageMetadata | LeasingMetadata);
     return this.prisma.liability.update({ where: { id }, data: { ...dto, value } });
   }
@@ -131,10 +133,7 @@ export class LiabilitiesService {
     return { total, liabilities };
   }
 
-  private async assertHouseholdAccess(householdId: string, liabilityId: string) {
-    const liability = await this.prisma.liability.findUnique({ where: { id: liabilityId } });
-    if (!liability) throw new NotFoundException('Liability not found');
-    if (liability.householdId !== householdId) throw new ForbiddenException();
-    return liability;
+  private assertHouseholdAccess(householdId: string, liabilityId: string) {
+    return assertHouseholdAccess(this.prisma.liability.findUnique.bind(this.prisma.liability), householdId, liabilityId, 'Liability');
   }
 }

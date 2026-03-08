@@ -141,26 +141,6 @@ export default function ExpenseBudgetPage() {
         )}
       </div>
 
-      {/* Income vs Expenses trend */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Income vs Expenses</h2>
-        {isLoading ? (
-          <div className="h-64 bg-gray-100 rounded animate-pulse" />
-        ) : (
-          <ResponsiveContainer width="100%" height={240} className="sm:!h-[280px]">
-            <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
-              <Legend />
-              <Bar dataKey="Income" fill="#10B981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Total Expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Pie chart: average category split */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
@@ -226,6 +206,26 @@ export default function ExpenseBudgetPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Income vs Expenses trend */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 mb-6">
+        <h2 className="font-semibold text-gray-900 mb-4">Income vs Expenses</h2>
+        {isLoading ? (
+          <div className="h-64 bg-gray-100 rounded animate-pulse" />
+        ) : (
+          <ResponsiveContainer width="100%" height={240} className="sm:!h-[280px]">
+            <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} interval="preserveStartEnd" />
+              <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+              <Tooltip formatter={(v: number, name) => [formatCurrency(v), name]} />
+              <Legend />
+              <Bar dataKey="Total Expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Income" fill="#10B981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

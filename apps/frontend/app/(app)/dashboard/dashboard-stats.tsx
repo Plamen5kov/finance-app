@@ -3,14 +3,9 @@
 import { useNetWorth } from '@/hooks/use-assets';
 import { useGoals } from '@/hooks/use-goals';
 import { useMonthlySummary } from '@/hooks/use-expenses';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getMonthStr } from '@/lib/utils';
 import { TrendingUp, Target, Receipt, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
-
-function getMonthStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
 
 interface StatCardProps {
   label: string;

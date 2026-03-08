@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api-client';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 interface InviteInfo {
   householdName: string;
@@ -13,11 +12,8 @@ interface InviteInfo {
   expiresAt: string;
 }
 
-function getAccessToken(): string | undefined {
-  return document.cookie
-    .split('; ')
-    .find((c) => c.startsWith('access_token='))
-    ?.split('=')[1];
+function isLoggedIn(): boolean {
+  return document.cookie.split('; ').some((c) => c.startsWith('access_token='));
 }
 
 export function InviteClient({ token }: { token: string }) {
@@ -25,38 +21,25 @@ export function InviteClient({ token }: { token: string }) {
   const [info, setInfo] = useState<InviteInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
-    setIsLoggedIn(!!getAccessToken());
+    setLoggedIn(isLoggedIn());
 
-    fetch(`${API_URL}/api/v1/household/invites/${token}/info`)
-      .then(async (res) => {
-        const body = await res.json();
-        if (!res.ok) throw new Error(body?.error?.message ?? 'Invalid invite');
-        setInfo(body.data);
-      })
+    apiClient
+      .get<InviteInfo>(`/household/invites/${token}/info`)
+      .then((res) => setInfo(res.data))
       .catch((err) => setError(err.message));
   }, [token]);
 
   async function handleAccept() {
     setAccepting(true);
     try {
-      const accessToken = getAccessToken();
-      const res = await fetch(`${API_URL}/api/v1/household/invites/${token}/accept`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error?.message ?? 'Failed to accept invite');
+      const { data } = await apiClient.post<{ accessToken: string }>(
+        `/household/invites/${token}/accept`,
+      );
 
-      // Store new tokens
-      const data = body.data;
       document.cookie = `access_token=${data.accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`;
-
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept invite');
@@ -98,7 +81,7 @@ export function InviteClient({ token }: { token: string }) {
           {info.invitedBy} invited you to their household.
         </p>
 
-        {isLoggedIn ? (
+        {loggedIn ? (
           <button
             onClick={handleAccept}
             disabled={accepting}

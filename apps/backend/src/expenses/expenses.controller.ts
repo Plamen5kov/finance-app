@@ -14,6 +14,7 @@ import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decor
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { ReassignMerchantDto } from './dto/reassign-merchant.dto';
 
 @Controller({ path: 'expenses', version: '1' })
 export class ExpensesController {
@@ -56,9 +57,9 @@ export class ExpensesController {
   @Patch('merchant/reassign')
   reassignMerchant(
     @CurrentUser() user: JwtPayload,
-    @Body() body: { merchant: string; categoryId: string },
+    @Body() dto: ReassignMerchantDto,
   ) {
-    return this.expensesService.reassignMerchant(user.householdId, user.userId, body.merchant, body.categoryId);
+    return this.expensesService.reassignMerchant(user.householdId, user.userId, dto.merchant, dto.categoryId);
   }
 
   @Patch(':id')

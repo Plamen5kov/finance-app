@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAssets, useCreateAsset, useDeleteAsset, CreateAssetInput } from '@/hooks/use-assets';
 import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
@@ -18,7 +18,12 @@ export function AssetsClient() {
   const createAsset = useCreateAsset();
   const deleteAsset = useDeleteAsset();
 
-  const totalAssets = (assets ?? []).reduce((s, a) => s + a.value, 0);
+  const totalAssets = useMemo(() => (assets ?? []).reduce((s, a) => s + a.value, 0), [assets]);
+
+  const assetsByType = useMemo(() => (assets ?? []).reduce<Record<string, typeof assets>>((acc, a) => {
+    const group = acc[a.type] ?? [];
+    return { ...acc, [a.type]: [...group, a] };
+  }, {}), [assets]);
 
   async function handleCreate(input: CreateAssetInput) {
     await createAsset.mutateAsync(input);
@@ -29,11 +34,6 @@ export function AssetsClient() {
     if (!confirm('Delete this asset?')) return;
     await deleteAsset.mutateAsync(id);
   }
-
-  const assetsByType = (assets ?? []).reduce<Record<string, typeof assets>>((acc, a) => {
-    const group = acc[a.type] ?? [];
-    return { ...acc, [a.type]: [...group, a] };
-  }, {});
 
   const hasAssets = (assets?.length ?? 0) > 0;
 

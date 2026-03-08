@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto, UpdateGoalStatusDto } from './dto/update-goal.dto';
 
@@ -84,10 +85,7 @@ export class GoalsService {
     await this.prisma.goal.delete({ where: { id } });
   }
 
-  private async assertHouseholdAccess(householdId: string, goalId: string) {
-    const goal = await this.prisma.goal.findUnique({ where: { id: goalId } });
-    if (!goal) throw new NotFoundException('Goal not found');
-    if (goal.householdId !== householdId) throw new ForbiddenException();
-    return goal;
+  private assertHouseholdAccess(householdId: string, goalId: string) {
+    return assertHouseholdAccess(this.prisma.goal.findUnique.bind(this.prisma.goal), householdId, goalId, 'Goal');
   }
 }

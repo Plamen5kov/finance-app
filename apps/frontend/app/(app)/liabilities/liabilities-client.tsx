@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useLiabilities,
   useCreateLiability,
@@ -45,7 +45,12 @@ export function LiabilitiesClient() {
   const createLiability = useCreateLiability();
   const deleteLiability = useDeleteLiability();
 
-  const totalLiabilities = (liabilities ?? []).reduce((s, l) => s + l.value, 0);
+  const totalLiabilities = useMemo(() => (liabilities ?? []).reduce((s, l) => s + l.value, 0), [liabilities]);
+
+  const liabilitiesByType = useMemo(() => (liabilities ?? []).reduce<Record<string, typeof liabilities>>((acc, l) => {
+    const group = acc[l.type] ?? [];
+    return { ...acc, [l.type]: [...group, l] };
+  }, {}), [liabilities]);
 
   async function handleCreate(input: CreateLiabilityInput) {
     await createLiability.mutateAsync(input);
@@ -56,11 +61,6 @@ export function LiabilitiesClient() {
     if (!confirm('Delete this liability?')) return;
     await deleteLiability.mutateAsync(id);
   }
-
-  const liabilitiesByType = (liabilities ?? []).reduce<Record<string, typeof liabilities>>((acc, l) => {
-    const group = acc[l.type] ?? [];
-    return { ...acc, [l.type]: [...group, l] };
-  }, {});
 
   const hasLiabilities = (liabilities?.length ?? 0) > 0;
 

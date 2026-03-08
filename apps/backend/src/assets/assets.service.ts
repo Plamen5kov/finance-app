@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { isLiability } from '@finances/shared';
 
@@ -92,10 +93,7 @@ export class AssetsService {
     await this.prisma.assetSnapshot.delete({ where: { id: snapshotId } });
   }
 
-  private async assertHouseholdAccess(householdId: string, assetId: string) {
-    const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
-    if (!asset) throw new NotFoundException('Asset not found');
-    if (asset.householdId !== householdId) throw new ForbiddenException();
-    return asset;
+  private assertHouseholdAccess(householdId: string, assetId: string) {
+    return assertHouseholdAccess(this.prisma.asset.findUnique.bind(this.prisma.asset), householdId, assetId, 'Asset');
   }
 }

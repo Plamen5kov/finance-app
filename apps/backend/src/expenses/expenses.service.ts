@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
@@ -204,10 +205,7 @@ export class ExpensesService {
     return { updated: result.count };
   }
 
-  private async assertHouseholdAccess(householdId: string, expenseId: string) {
-    const expense = await this.prisma.expense.findUnique({ where: { id: expenseId } });
-    if (!expense) throw new NotFoundException('Expense not found');
-    if (expense.householdId !== householdId) throw new ForbiddenException();
-    return expense;
+  private assertHouseholdAccess(householdId: string, expenseId: string) {
+    return assertHouseholdAccess(this.prisma.expense.findUnique.bind(this.prisma.expense), householdId, expenseId, 'Expense');
   }
 }

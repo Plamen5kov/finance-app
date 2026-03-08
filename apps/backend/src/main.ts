@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { VersioningType, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
@@ -36,7 +36,7 @@ async function bootstrap() {
   );
 
   // Global exception filter — standardised error shape
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Global response wrapper — adds success/timestamp/path
   app.useGlobalInterceptors(new ResponseInterceptor());

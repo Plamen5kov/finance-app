@@ -15,14 +15,8 @@ import {
 } from '@/hooks/use-expenses';
 import { ExpenseForm } from '@/components/expenses/expense-form';
 import { Modal } from '@/components/ui/modal';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, getMonthStr } from '@/lib/utils';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-
-function getMonthStr(offset = 0): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + offset);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
 
 export function ExpensesClient() {
   const [showForm, setShowForm] = useState(false);

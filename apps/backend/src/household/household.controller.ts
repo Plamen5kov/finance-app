@@ -12,14 +12,16 @@ import {
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { HouseholdService } from './household.service';
+import { CreateInviteDto } from './dto/create-invite.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 @Controller({ path: 'household', version: '1' })
 export class HouseholdController {
   constructor(private householdService: HouseholdService) {}
 
   @Post('invites')
-  createInvite(@CurrentUser() user: JwtPayload, @Body('role') role?: string) {
-    return this.householdService.createInvite(user.userId, user.householdId, role);
+  createInvite(@CurrentUser() user: JwtPayload, @Body() dto: CreateInviteDto) {
+    return this.householdService.createInvite(user.userId, user.householdId, dto.role);
   }
 
   @Get('invites')
@@ -51,9 +53,9 @@ export class HouseholdController {
   updateMemberRole(
     @CurrentUser() user: JwtPayload,
     @Param('memberId') memberId: string,
-    @Body('role') role: string,
+    @Body() dto: UpdateRoleDto,
   ) {
-    return this.householdService.updateMemberRole(user.userId, user.householdId, memberId, role);
+    return this.householdService.updateMemberRole(user.userId, user.householdId, memberId, dto.role);
   }
 
   @Post('invites/:token/accept')

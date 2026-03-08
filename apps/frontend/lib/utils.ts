@@ -15,6 +15,12 @@ export function formatDate(date: string | Date) {
   );
 }
 
+export function getMonthStr(offset = 0): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function monthsUntil(targetDate: string | Date): number {
   const now = new Date();
   const target = new Date(targetDate);
