@@ -5,17 +5,15 @@ import { useAssets, useCreateAsset, useDeleteAsset, useRefreshPrices, Asset, Cre
 import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
 import { AssetForm } from '@/components/assets/asset-form';
-import { AssetEntryForm } from '@/components/assets/asset-entry-form';
 import { AssetSnapshotModal } from '@/components/assets/asset-snapshot-modal';
 import { Modal } from '@/components/ui/modal';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, toEur } from '@/lib/utils';
 import { Plus, TrendingUp, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
 export function AssetsClient() {
   const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
-  const [entryAsset, setEntryAsset] = useState<Asset | null>(null);
   const [historyAsset, setHistoryAsset] = useState<Asset | null>(null);
 
   const { data: assets, isLoading } = useAssets();
@@ -23,7 +21,7 @@ export function AssetsClient() {
   const deleteAsset = useDeleteAsset();
   const refreshPrices = useRefreshPrices();
 
-  const totalAssets = useMemo(() => (assets ?? []).reduce((s, a) => s + a.value, 0), [assets]);
+  const totalAssets = useMemo(() => (assets ?? []).reduce((s, a) => s + toEur(a.value, a.currency), 0), [assets]);
 
   const assetsByType = useMemo(() => (assets ?? []).reduce<Record<string, typeof assets>>((acc, a) => {
     const group = acc[a.type] ?? [];
@@ -37,12 +35,11 @@ export function AssetsClient() {
 
   function handleCardClick(id: string) {
     const asset = assets?.find((a) => a.id === id);
-    if (asset) setEntryAsset(asset);
+    if (asset) setHistoryAsset(asset);
   }
 
   function handleHistory(id: string) {
-    const asset = assets?.find((a) => a.id === id);
-    if (asset) setHistoryAsset(asset);
+    handleCardClick(id);
   }
 
   async function handleDelete(id: string) {
@@ -110,7 +107,7 @@ export function AssetsClient() {
           {ASSET_TYPES.map((type) => {
             const group = assetsByType[type];
             if (!group?.length) return null;
-            const subtotal = group.reduce((s, a) => s + a.value, 0);
+            const subtotal = group.reduce((s, a) => s + toEur(a.value, a.currency), 0);
             return (
               <section key={type} className="mb-6">
                 <div className="flex items-center justify-between mb-3">
@@ -140,18 +137,11 @@ export function AssetsClient() {
         </Modal>
       )}
 
-      {entryAsset && (
-        <Modal title={`${t('assets.newEntry' as any)} — ${entryAsset.name}`} onClose={() => setEntryAsset(null)}>
-          <AssetEntryForm
-            asset={entryAsset}
-            onDone={() => setEntryAsset(null)}
-          />
-        </Modal>
-      )}
       {historyAsset && (
         <AssetSnapshotModal
           assetId={historyAsset.id}
           assetName={historyAsset.name}
+          currency={historyAsset.currency}
           onClose={() => setHistoryAsset(null)}
         />
       )}

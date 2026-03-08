@@ -5,13 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CreateAssetInput } from '@/hooks/use-assets';
 import { ASSET_TYPES, CURRENCIES, GOLD_UNITS } from '@finances/shared';
+import { formatCurrency } from '@/lib/utils';
 import { useTranslation } from '@/i18n';
 
 const schema = z.object({
   type: z.enum(ASSET_TYPES),
   name: z.string().min(1, 'Name is required').max(100),
-  value: z.coerce.number().min(0, 'Must be 0 or more'),
+  value: z.coerce.number().min(0, 'Must be 0 or more').optional().or(z.literal('')),
   quantity: z.coerce.number().min(0).optional().or(z.literal('')),
+  price: z.coerce.number().min(0).optional().or(z.literal('')),
   costBasis: z.coerce.number().min(0).optional().or(z.literal('')),
   currency: z.string().max(10).optional(),
   ticker: z.string().max(20).optional().or(z.literal('')),
@@ -51,6 +53,13 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
   const watchedTicker = useWatch({ control, name: 'ticker' });
   const watchedCoinId = useWatch({ control, name: 'coinId' });
   const watchedQuantity = useWatch({ control, name: 'quantity' });
+  const watchedPrice = useWatch({ control, name: 'price' });
+  const watchedCurrency = useWatch({ control, name: 'currency' });
+
+  const isQuantityBased = selectedType !== 'apartment';
+  const computedValue = watchedQuantity && watchedPrice
+    ? Math.round(Number(watchedQuantity) * Number(watchedPrice) * 100) / 100
+    : null;
 
   const hasTrackingId = !!(
     (selectedType === 'etf' && watchedTicker) ||
@@ -70,11 +79,17 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
       metadata = { metal: 'gold', unit: values.goldUnit };
     }
 
+    const qty = values.quantity ? Number(values.quantity) : undefined;
+    const prc = values.price ? Number(values.price) : undefined;
+    const finalValue = (qty && prc)
+      ? Math.round(qty * prc * 100) / 100
+      : (values.value ? Number(values.value) : 0);
+
     await onSubmit({
       type: values.type,
       name: values.name,
-      value: values.value,
-      quantity: values.quantity ? Number(values.quantity) : undefined,
+      value: finalValue,
+      quantity: qty,
       costBasis: values.costBasis ? Number(values.costBasis) : undefined,
       currency: values.currency,
       metadata,
@@ -144,35 +159,57 @@ export function AssetForm({ defaultValues, onSubmit, onCancel, isLoading, submit
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {t('assetForm.currentValue')} *
-            {isAutoMode && <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">({t('assets.autoCalculated' as any)})</span>}
-          </label>
-          <input {...register('value')} type="number" step="0.01" className={inputClass} placeholder="0.00" />
-          {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
-          <select {...register('currency')} className={inputClass}>
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.quantity')}</label>
-          <input {...register('quantity')} type="number" step="any" className={inputClass} placeholder="Optional" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.costBasis')}</label>
-          <input {...register('costBasis')} type="number" step="0.01" className={inputClass} placeholder="Optional" />
-        </div>
-      </div>
+      {isQuantityBased ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.quantity')} *</label>
+              <input {...register('quantity')} type="number" step="any" className={inputClass} placeholder="0" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assets.pricePerUnit' as any)} *</label>
+              <input {...register('price')} type="number" step="0.01" className={inputClass} placeholder="0.00" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
+              <select {...register('currency')} className={inputClass}>
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {computedValue != null && (
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-3 py-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {t('assetForm.currentValue')}: <span className="font-semibold">{formatCurrency(computedValue, watchedCurrency ?? 'EUR')}</span>
+              </p>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.costBasis')}</label>
+            <input {...register('costBasis')} type="number" step="0.01" className={inputClass} placeholder={t('common.optional')} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currentValue')} *</label>
+              <input {...register('value')} type="number" step="0.01" className={inputClass} placeholder="0.00" />
+              {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
+              <select {...register('currency')} className={inputClass}>
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">

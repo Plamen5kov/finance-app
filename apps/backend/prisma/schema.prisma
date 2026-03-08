@@ -101,8 +101,9 @@ model Asset {
   name      String
   value     Float   // Current value in EUR
   quantity  Float?  // For ETF, crypto, gold
-  costBasis Float?  // Average cost
-  currency  String  @default("EUR")
+  costBasis    Float?  // Average cost
+  currency     String  @default("EUR")
+  latestPrice  Float?  // Last fetched price per unit (from API, in asset's native currency)
 
   metadata  Json?   // ticker, symbol, purity, etc.
 
@@ -207,6 +208,7 @@ model ExpenseCategory {
   name       String
   type       String  // 'income' | 'expense' | 'goal' | 'required'
   color      String? // Hex color e.g. #FF6B6B
+  keywords   String[] @default([])
   predefined Boolean @default(false)
 
   expenses             Expense[]

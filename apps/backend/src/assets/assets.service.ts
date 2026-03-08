@@ -9,9 +9,32 @@ export class AssetsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(householdId: string) {
-    return this.prisma.asset.findMany({
+    const assets = await this.prisma.asset.findMany({
       where: { householdId },
       orderBy: { createdAt: 'asc' },
+      include: {
+        snapshots: {
+          select: { quantity: true, price: true },
+          orderBy: { capturedAt: 'desc' },
+        },
+      },
+    });
+
+    return assets.map(({ snapshots, ...asset }) => {
+      if (!snapshots.length) return asset;
+      // Total quantity = sum of all snapshot quantities (each snapshot is a purchase)
+      const totalQty = snapshots.reduce((s, sn) => s + (sn.quantity ?? 0), 0);
+      if (totalQty <= 0) return asset;
+      // Use latestPrice from asset record (API-fetched) if available, else fall back to most recent snapshot price
+      const price = (asset as any).latestPrice ?? snapshots[0]?.price ?? null;
+      const computedValue = price != null
+        ? Math.round(totalQty * price * 100) / 100
+        : asset.value;
+      return {
+        ...asset,
+        quantity: Math.round(totalQty * 10000) / 10000,
+        value: computedValue,
+      };
     });
   }
 

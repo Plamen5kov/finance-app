@@ -18,6 +18,19 @@ export function formatCurrency(amount: number, currency = 'EUR') {
   return new Intl.NumberFormat(getIntlLocale(), { style: 'currency', currency }).format(amount);
 }
 
+// Approximate EUR conversion rates (BGN is fixed peg)
+const TO_EUR: Record<string, number> = {
+  EUR: 1,
+  BGN: 1 / 1.95583,  // fixed peg
+  USD: 0.92,
+  GBP: 1.17,
+};
+
+export function toEur(amount: number, currency?: string): number {
+  if (!currency || currency === 'EUR') return amount;
+  return Math.round(amount * (TO_EUR[currency] ?? 1) * 100) / 100;
+}
+
 export function formatDate(date: string | Date) {
   return new Intl.DateTimeFormat(getIntlLocale(), { day: '2-digit', month: 'short', year: 'numeric' }).format(
     new Date(date),

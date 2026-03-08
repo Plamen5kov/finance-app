@@ -63,10 +63,10 @@ export class PriceTrackingService {
         // Upsert snapshot for current month
         await this.upsertSnapshot(asset.id, totalValue, priceEur, monthKey);
 
-        // Update asset's current value
+        // Update asset's current value and store latest API price
         await this.prisma.asset.update({
           where: { id: asset.id },
-          data: { value: totalValue },
+          data: { value: totalValue, latestPrice: priceEur },
         });
 
         result.updated++;
@@ -155,23 +155,16 @@ export class PriceTrackingService {
     return backfilled;
   }
 
-  /** Upsert snapshot for a given month (always writes, uses 1st of month) */
+  /** Create snapshot for a given month only if none exists (never overwrites manual entries) */
   private async upsertSnapshot(assetId: string, value: number, price: number, month: string) {
-    const date = `${month}-01`;
-    const capturedAt = new Date(`${date}T00:00:00.000Z`);
-    // Find any existing snapshot in the same month (any day)
     const monthStart = new Date(`${month}-01T00:00:00.000Z`);
     const [y, m] = month.split('-').map(Number);
     const monthEnd = new Date(Date.UTC(y, m, 1)); // 1st of next month
     const existing = await this.prisma.assetSnapshot.findFirst({
       where: { assetId, capturedAt: { gte: monthStart, lt: monthEnd } },
     });
-    if (existing) {
-      return this.prisma.assetSnapshot.update({
-        where: { id: existing.id },
-        data: { value, price, capturedAt },
-      });
-    }
+    if (existing) return existing; // never overwrite
+    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
     return this.prisma.assetSnapshot.create({
       data: { assetId, value, price, capturedAt },
     });

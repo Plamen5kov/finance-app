@@ -11,6 +11,7 @@ export interface Asset {
   quantity?: number;
   costBasis?: number;
   currency: string;
+  latestPrice?: number;
   metadata?: Record<string, unknown>;
   createdAt: string;
 }

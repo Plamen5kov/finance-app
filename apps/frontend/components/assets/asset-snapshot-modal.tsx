@@ -10,6 +10,7 @@ import { useTranslation } from '@/i18n';
 interface Props {
   assetId: string;
   assetName: string;
+  currency?: string;
   onClose: () => void;
 }
 
@@ -20,7 +21,7 @@ interface EditingSnapshot {
   price: string;
 }
 
-export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
+export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClose }: Props) {
   const { t } = useTranslation();
   const { data: snapshots, isLoading } = useAssetSnapshots(assetId);
   const addSnapshot = useAddAssetSnapshot(assetId);
@@ -38,14 +39,19 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
   })();
 
   const [date, setDate] = useState(today);
-  const [value, setValue] = useState('');
+  const [addQty, setAddQty] = useState('');
+  const [addPrice, setAddPrice] = useState('');
   const [editing, setEditing] = useState<EditingSnapshot | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!value) return;
-    await addSnapshot.mutateAsync({ value: Number(value), date });
-    setValue('');
+    const qty = Number(addQty);
+    const prc = Number(addPrice);
+    if (isNaN(qty) || qty < 0 || isNaN(prc) || prc < 0) return;
+    const value = Math.round(qty * prc * 100) / 100;
+    await addSnapshot.mutateAsync({ value, date, quantity: qty, price: prc });
+    setAddQty('');
+    setAddPrice('');
     setDate(today);
   }
 
@@ -111,7 +117,7 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
           </div>
           {editing.quantity && editing.price && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('assetForm.currentValue')}: {formatCurrency(Number(editing.quantity) * Number(editing.price))}
+              {t('assetForm.currentValue')}: {formatCurrency(Number(editing.quantity) * Number(editing.price), currency)}
             </p>
           )}
           <div className="flex gap-2">
@@ -133,29 +139,46 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
         </form>
       ) : (
         /* Add form — shown when not editing */
-        <form onSubmit={handleAdd} className="flex flex-wrap gap-2 mb-5">
+        <form onSubmit={handleAdd} className="space-y-2 mb-5">
           <input
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             min={minDate ?? undefined}
-            className={inputClass}
+            className={`w-full ${inputClass}`}
             required
           />
-          <input
-            type="number"
-            placeholder={t('assets.valuePlaceholder')}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            min={0}
-            step="0.01"
-            className={`flex-1 min-w-[120px] ${inputClass}`}
-            required
-          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder={t('assetForm.quantity')}
+              value={addQty}
+              onChange={(e) => setAddQty(e.target.value)}
+              min={0}
+              step="any"
+              className={inputClass}
+              required
+            />
+            <input
+              type="number"
+              placeholder={t('assets.pricePerUnit' as any)}
+              value={addPrice}
+              onChange={(e) => setAddPrice(e.target.value)}
+              min={0}
+              step="0.01"
+              className={inputClass}
+              required
+            />
+          </div>
+          {addQty && addPrice && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {t('assetForm.currentValue')}: {formatCurrency(Number(addQty) * Number(addPrice), currency)}
+            </p>
+          )}
           <button
             type="submit"
             disabled={addSnapshot.isPending}
-            className="w-full sm:w-auto bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
+            className="w-full bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
           >
             {t('common.add')}
           </button>
@@ -179,7 +202,7 @@ export function AssetSnapshotModal({ assetId, assetName, onClose }: Props) {
                   {s.quantity != null && s.price != null && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">{s.quantity} x {s.price}</span>
                   )}
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(s.value)}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(s.value, currency)}</span>
                 </span>
                 <div className="flex items-center gap-0.5 shrink-0">
                   <button

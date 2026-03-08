@@ -1,6 +1,6 @@
 'use client';
 
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, toEur } from '@/lib/utils';
 import { Trash2, History, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
@@ -42,14 +42,16 @@ interface AssetCardProps {
 
 export function AssetCard({ asset, onClick, onHistory, onDelete }: AssetCardProps) {
   const { t } = useTranslation();
-  const gain = asset.costBasis != null ? asset.value - asset.costBasis : null;
-  const gainPct = gain != null && asset.costBasis ? (gain / asset.costBasis) * 100 : null;
+  const eurValue = toEur(asset.value, asset.currency);
+  const eurCostBasis = asset.costBasis != null ? toEur(asset.costBasis, asset.currency) : null;
+  const gain = eurCostBasis != null ? eurValue - eurCostBasis : null;
+  const gainPct = gain != null && eurCostBasis ? (gain / eurCostBasis) * 100 : null;
   const ticker = asset.metadata?.ticker as string | undefined;
   const coinId = asset.metadata?.coinId as string | undefined;
   const isGoldTracked = asset.metadata?.metal === 'gold';
   const trackingLabel = ticker ?? coinId ?? (isGoldTracked ? `${asset.metadata?.unit ?? 'g'}` : null);
   const isAutoTracked = !!(ticker || coinId || isGoldTracked) && asset.quantity != null;
-  const pricePerUnit = isAutoTracked && asset.quantity ? Math.round(asset.value / asset.quantity * 100) / 100 : null;
+  const nativePricePerUnit = asset.quantity ? Math.round(asset.value / asset.quantity * 100) / 100 : null;
 
   return (
     <div
@@ -85,9 +87,9 @@ export function AssetCard({ asset, onClick, onHistory, onDelete }: AssetCardProp
       </div>
 
       <div className="mt-2">
-        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(asset.value)}</p>
-        {asset.currency && asset.currency !== 'BGN' && (
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{asset.currency}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{formatCurrency(eurValue)}</p>
+        {asset.currency && asset.currency !== 'EUR' && (
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formatCurrency(asset.value, asset.currency)}</p>
         )}
       </div>
 
@@ -105,7 +107,7 @@ export function AssetCard({ asset, onClick, onHistory, onDelete }: AssetCardProp
             {trackingLabel}
           </span>
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {asset.quantity} × €{pricePerUnit?.toLocaleString()}
+            {asset.quantity} × {formatCurrency(nativePricePerUnit ?? 0, asset.currency ?? 'EUR')}
           </span>
         </div>
       )}
