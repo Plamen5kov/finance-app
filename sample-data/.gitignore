@@ -9,6 +9,7 @@ revolut-statements/*.xls
 existing-data/*.json
 existing-data/*.csv
 existing-data/*.xlsx
+existing-data/*.pdf
 
 # Keep README files for documentation
 !**/README.md

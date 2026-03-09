@@ -72,12 +72,9 @@ export class PriceTrackingService {
         result.updated++;
         this.logger.log(`Updated ${asset.name}: ${quantity} × €${priceEur} = €${totalValue}`);
 
-        // Check if backfill is needed (asset has ticker but few snapshots)
-        const snapshotCount = await this.prisma.assetSnapshot.count({ where: { assetId: asset.id } });
-        if (snapshotCount <= 2) {
-          const backfilled = await this.backfillHistory(asset.id, asset.type, asset.metadata, quantity);
-          result.backfilled += backfilled;
-        }
+        // Backfill missing monthly price snapshots (never overwrites existing)
+        const backfilled = await this.backfillHistory(asset.id, asset.type, asset.metadata, quantity);
+        result.backfilled += backfilled;
       } catch (err) {
         const msg = `Failed to update ${asset.name}: ${err instanceof Error ? err.message : String(err)}`;
         this.logger.error(msg);
@@ -110,13 +107,30 @@ export class PriceTrackingService {
     return null;
   }
 
-  /** Backfill historical monthly snapshots for an asset */
+  /** Backfill historical monthly snapshots for an asset.
+   *  Skips API calls if coverage is already good (snapshots exist for most months). */
   private async backfillHistory(
     assetId: string,
     type: string,
     metadata: unknown,
     quantity: number,
   ): Promise<number> {
+    // Check coverage: count snapshots vs months since first snapshot
+    const firstSnap = await this.prisma.assetSnapshot.findFirst({
+      where: { assetId },
+      orderBy: { capturedAt: 'asc' },
+    });
+    if (firstSnap) {
+      const firstMonth = firstSnap.capturedAt;
+      const monthsSinceFirst = Math.max(1,
+        (new Date().getFullYear() - firstMonth.getFullYear()) * 12 +
+        (new Date().getMonth() - firstMonth.getMonth()),
+      );
+      const snapshotCount = await this.prisma.assetSnapshot.count({ where: { assetId } });
+      // If we have snapshots for most months, skip API calls
+      if (snapshotCount >= monthsSinceFirst * 0.8) return 0;
+    }
+
     let backfilled = 0;
 
     try {
@@ -135,9 +149,26 @@ export class PriceTrackingService {
       }
 
       if (type === 'crypto' && hasCoinIdMetadata(metadata)) {
+        // Find which months are missing so we only fetch those
+        const existingSnaps = await this.prisma.assetSnapshot.findMany({
+          where: { assetId },
+          select: { capturedAt: true },
+        });
+        const existingMonths = new Set(existingSnaps.map(s => s.capturedAt.toISOString().slice(0, 7)));
+
+        const fromDate = firstSnap?.capturedAt ?? new Date();
+        const history = await this.coinGecko.fetchHistory(metadata.coinId, fromDate, new Date(), existingMonths);
+        for (const point of history) {
+          const value = Math.round(quantity * point.priceEur * 100) / 100;
+          const created = await this.upsertSnapshotIfNew(assetId, value, point.priceEur, point.date);
+          if (created) backfilled++;
+        }
+      }
+
+      if (type === 'gold' && hasGoldMetadata(metadata)) {
         const fromDate = new Date();
         fromDate.setFullYear(fromDate.getFullYear() - 5);
-        const history = await this.coinGecko.fetchHistory(metadata.coinId, fromDate, new Date());
+        const history = await this.metals.fetchGoldPriceHistory(metadata.unit as GoldUnit, fromDate, new Date());
         for (const point of history) {
           const value = Math.round(quantity * point.priceEur * 100) / 100;
           const created = await this.upsertSnapshotIfNew(assetId, value, point.priceEur, point.date);

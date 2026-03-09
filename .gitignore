@@ -43,3 +43,6 @@ uploads/
 # Personal seed scripts
 apps/backend/prisma/seed-nn.ts
 apps/backend/prisma/seed-etf.ts
+apps/backend/prisma/seed-crypto.ts
+apps/backend/prisma/seed-gold.ts
+apps/backend/prisma/seed-apartment.ts

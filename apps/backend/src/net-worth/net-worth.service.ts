@@ -180,12 +180,11 @@ export class NetWorthService {
       : null;
 
     return sortedMonths.map((month) => {
+      // items: only real data points (for individual chart lines)
+      // netWorthValue: always includes carry-forward (for continuous Net Worth line)
       const items: Array<{ name: string; type: string; value: number; isLiability: boolean }> = [];
+      let netWorthValue = 0;
 
-      // Assets: carry forward the most recent snapshot value for each asset.
-      // Assets with no snapshots are included from the earlier of (createdAt, firstLiabilityMonth)
-      // using their current value, so that manually-tracked assets (e.g. apartment) offset a
-      // paired liability (e.g. mortgage) without causing phantom net-worth drops.
       for (const a of assets) {
         if (!a.snapshots.length) {
           const createdAtMonth = a.createdAt.toISOString().slice(0, 7);
@@ -194,21 +193,48 @@ export class NetWorthService {
             : createdAtMonth;
           if (month >= effectiveStart) {
             items.push({ name: a.name, type: a.type, value: a.value, isLiability: false });
+            netWorthValue += a.value;
           }
           continue;
         }
         const firstMonth = a.snapshots[0].capturedAt.toISOString().slice(0, 7);
         if (month < firstMonth) continue;
-        const snap = [...a.snapshots].reverse().find(
-          (s) => s.capturedAt.toISOString().slice(0, 7) <= month,
-        );
-        if (snap) items.push({ name: a.name, type: a.type, value: snap.value, isLiability: false });
+
+        const isDca = a.snapshots.some((s) => s.quantity != null && s.quantity > 0);
+        if (isDca) {
+          // Cumulative qty from purchase snapshots (those with quantity)
+          // Price from the snapshot at this month (purchase or backfilled price-only)
+          const snapsUpToMonth = a.snapshots.filter(
+            (s) => s.capturedAt.toISOString().slice(0, 7) <= month,
+          );
+          const totalQty = snapsUpToMonth.reduce((s, sn) => s + (sn.quantity ?? 0), 0);
+          const latestPriceSnap = [...snapsUpToMonth].reverse().find((s) => s.price != null);
+          const price = latestPriceSnap?.price ?? 0;
+          const value = Math.round(totalQty * price * 100) / 100;
+
+          if (totalQty > 0) {
+            items.push({ name: a.name, type: a.type, value, isLiability: false });
+            netWorthValue += value;
+          }
+        } else {
+          // Manual asset: carry forward most recent snapshot value
+          const snap = [...a.snapshots].reverse().find(
+            (s) => s.capturedAt.toISOString().slice(0, 7) <= month,
+          );
+          if (snap) {
+            items.push({ name: a.name, type: a.type, value: snap.value, isLiability: false });
+            netWorthValue += snap.value;
+          }
+        }
       }
 
       // Liabilities: for non-amortized ones, carry forward too
       const liabEntries = liabByMonth.get(month);
       if (liabEntries) {
-        for (const e of liabEntries) items.push({ ...e, isLiability: true });
+        for (const e of liabEntries) {
+          items.push({ ...e, isLiability: true });
+          netWorthValue -= e.value;
+        }
       } else {
         // Carry forward last known liability value for non-amortized liabilities
         for (const l of liabilities) {
@@ -218,13 +244,16 @@ export class NetWorthService {
           const snap = [...l.snapshots].reverse().find(
             (s) => s.capturedAt.toISOString().slice(0, 7) <= month,
           );
-          if (snap) items.push({ name: l.name, type: l.type, value: snap.value, isLiability: true });
+          if (snap) {
+            items.push({ name: l.name, type: l.type, value: snap.value, isLiability: true });
+            netWorthValue -= snap.value;
+          }
         }
       }
 
       return {
         month,
-        netWorth: items.reduce((s, i) => s + (i.isLiability ? -i.value : i.value), 0),
+        netWorth: netWorthValue,
         items,
       };
     });

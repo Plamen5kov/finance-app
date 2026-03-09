@@ -1,8 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import { formatCurrency, toEur } from '@/lib/utils';
 import { Trash2, History, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+
+const CRYPTO_ICON_CDN = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/32/color';
+
+function CryptoIcon({ name, coinId }: { name: string; coinId?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className="text-xl">₿</span>;
+  // Try symbol from asset name (e.g. "ADA", "BTC"), then coinId
+  const symbol = name.split(/[\s(]/)[0].toLowerCase();
+  return (
+    <img
+      src={`${CRYPTO_ICON_CDN}/${symbol}.png`}
+      alt={name}
+      width={24}
+      height={24}
+      className="rounded-full"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 const TYPE_COLORS: Record<string, string> = {
   etf: 'bg-blue-100 text-blue-700',
@@ -60,7 +80,11 @@ export function AssetCard({ asset, onClick, onHistory, onDelete }: AssetCardProp
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl">{TYPE_ICONS[asset.type] ?? '💼'}</span>
+          {asset.type === 'crypto' ? (
+            <CryptoIcon name={asset.name} coinId={asset.metadata?.coinId as string | undefined} />
+          ) : (
+            <span className="text-xl">{TYPE_ICONS[asset.type] ?? '💼'}</span>
+          )}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{asset.name}</h3>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[asset.type] ?? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>

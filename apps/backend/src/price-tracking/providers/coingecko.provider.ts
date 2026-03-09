@@ -31,27 +31,43 @@ export class CoinGeckoProvider {
     return { priceEur };
   }
 
-  /** Fetch historical monthly prices. Returns one price per month. */
-  async fetchHistory(coinId: string, fromDate: Date, toDate: Date): Promise<HistoricalCoinPrice[]> {
-    const from = Math.floor(fromDate.getTime() / 1000);
-    const to = Math.floor(toDate.getTime() / 1000);
+  /** Fetch historical monthly prices via CryptoCompare (free, no key needed, 5yr+ history).
+   *  Uses the symbol derived from coinId mapping. */
+  async fetchHistory(coinId: string, fromDate: Date, toDate: Date, skipMonths?: Set<string>): Promise<HistoricalCoinPrice[]> {
+    // Map CoinGecko coin IDs to ticker symbols
+    const COIN_SYMBOLS: Record<string, string> = {
+      bitcoin: 'BTC', ethereum: 'ETH', cardano: 'ADA',
+      solana: 'SOL', polkadot: 'DOT', ripple: 'XRP',
+      'world-mobile-token': 'WMT',
+    };
+    const symbol = COIN_SYMBOLS[coinId] ?? coinId.toUpperCase();
 
-    const { data } = await firstValueFrom(
-      this.http.get<{ prices: [number, number][] }>(
-        `${this.BASE}/coins/${coinId}/market_chart/range?vs_currency=eur&from=${from}&to=${to}`,
-      ),
-    );
+    try {
+      const daysBetween = Math.ceil((toDate.getTime() - fromDate.getTime()) / (86400000));
+      const { data } = await firstValueFrom(
+        this.http.get<{ Data?: { Data?: { time: number; close: number }[] } }>(
+          `https://min-api.cryptocompare.com/data/v2/histoday?fsym=${symbol}&tsym=EUR&limit=${Math.min(daysBetween, 2000)}`,
+        ),
+      );
 
-    // Group by month and take the first price of each month
-    const byMonth = new Map<string, number>();
-    for (const [timestamp, price] of data.prices) {
-      const d = new Date(timestamp);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (!byMonth.has(key)) {
-        byMonth.set(key, price);
+      const points = data.Data?.Data ?? [];
+      // Group by month, take first price per month
+      const byMonth = new Map<string, number>();
+      for (const p of points) {
+        if (p.close <= 0) continue;
+        const d = new Date(p.time * 1000);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key < fromDate.toISOString().slice(0, 7)) continue;
+        if (skipMonths?.has(key)) continue;
+        if (!byMonth.has(key)) byMonth.set(key, p.close);
       }
-    }
 
-    return Array.from(byMonth.entries()).map(([date, priceEur]) => ({ date, priceEur }));
+      const results = Array.from(byMonth.entries()).map(([date, priceEur]) => ({ date, priceEur }));
+      this.logger.log(`CryptoCompare history ${symbol}: ${results.length} monthly prices`);
+      return results;
+    } catch (err) {
+      this.logger.error(`CryptoCompare history ${symbol} failed: ${err instanceof Error ? err.message : String(err)}`);
+      return [];
+    }
   }
 }
