@@ -343,5 +343,21 @@
   "pwa.installButton": "Install App",
   "pwa.iosInstructions": "Tap Share, then Add to Home Screen.",
 
-  "permission.denied": "You do not have permission to perform this action"
+  "permission.denied": "You do not have permission to perform this action",
+
+  "emergencyFund.goalName": "Emergency Fund",
+  "emergencyFund.goalDescription": "{{months}} months of essential household expenses",
+  "emergencyFund.bannerCreate": "Based on your expenses, we recommend an emergency fund of {{amount}} ({{months}} months). Expand to customize.",
+  "emergencyFund.bannerUpdate": "Your emergency fund covers {{covered}} of {{target}} recommended months of essential expenses.",
+  "emergencyFund.showMore": "Customize",
+  "emergencyFund.showLess": "Show less",
+  "emergencyFund.coverageMonths": "Coverage months",
+  "emergencyFund.months": "mo",
+  "emergencyFund.mo": "mo",
+  "emergencyFund.includeCategories": "Include in monthly expenses",
+  "emergencyFund.recommended": "Recommended target",
+  "emergencyFund.dismiss": "Dismiss",
+  "emergencyFund.createGoal": "Create Goal",
+  "emergencyFund.updateTarget": "Update Target",
+  "emergencyFund.coversBadge": "Covers {{covered}} of {{target}} months"
 }

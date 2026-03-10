@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/i18n';
-import { useNetWorth } from '@/hooks/use-assets';
+import { useNetWorthSummary } from '@/hooks/use-net-worth';
 import { useGoals } from '@/hooks/use-goals';
 import { useMonthlySummary } from '@/hooks/use-expenses';
 import { formatCurrency, getMonthStr } from '@/lib/utils';
@@ -32,7 +32,7 @@ function StatCard({ label, value, icon, href, sub, color }: StatCardProps) {
 
 export function DashboardStats({ name }: { name: string }) {
   const { t } = useTranslation();
-  const { data: netWorth } = useNetWorth();
+  const { data: netWorth } = useNetWorthSummary();
   const { data: goals } = useGoals();
   const { data: summary } = useMonthlySummary(getMonthStr());
 
@@ -55,10 +55,10 @@ export function DashboardStats({ name }: { name: string }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         <StatCard
           label={t('dashboard.netWorth')}
-          value={netWorth ? formatCurrency(netWorth.total) : '—'}
+          value={netWorth ? formatCurrency(netWorth.netWorth) : '—'}
           icon={<TrendingUp size={18} className="text-brand" />}
-          href="/assets"
-          sub={t('dashboard.assetsCount', { count: netWorth?.assets?.length ?? 0 })}
+          href="/reports/net-worth"
+          sub={netWorth ? `${formatCurrency(netWorth.totalAssets)} - ${formatCurrency(netWorth.totalLiabilities)}` : ''}
           color="bg-brand/10"
         />
         <StatCard

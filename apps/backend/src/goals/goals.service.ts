@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { ExpensesService } from '../expenses/expenses.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto, UpdateGoalStatusDto } from './dto/update-goal.dto';
 
 @Injectable()
 export class GoalsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private expensesService: ExpensesService,
+  ) {}
 
   async findAll(householdId: string, recurringPeriod?: string | null) {
     const where: Record<string, unknown> = { householdId };
@@ -83,6 +87,27 @@ export class GoalsService {
   async remove(householdId: string, id: string) {
     await this.assertHouseholdAccess(householdId, id);
     await this.prisma.goal.delete({ where: { id } });
+  }
+
+  async getEmergencyFundAdvice(householdId: string) {
+    const [report, existingGoal] = await Promise.all([
+      this.expensesService.getMonthlyReport(householdId, 12),
+      this.prisma.goal.findFirst({
+        where: { householdId, category: 'emergency' },
+      }),
+    ]);
+
+    // Return non-income categories with their monthly averages
+    const categories = report.categoryAverages
+      .filter((c) => c.type !== 'income')
+      .map((c) => ({
+        id: c.categoryId,
+        name: c.name,
+        avgMonthly: c.average,
+        type: c.type,
+      }));
+
+    return { categories, existingGoal };
   }
 
   private assertHouseholdAccess(householdId: string, goalId: string) {

@@ -4,11 +4,35 @@ import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { isLiability } from '@finances/shared';
 
+/** Approximate conversion to EUR for summary display */
+const TO_EUR: Record<string, number> = { BGN: 1 / 1.95583, USD: 0.92, GBP: 1.17 };
+
+export function toEur(amount: number, currency?: string | null): number {
+  if (!currency || currency === 'EUR') return amount;
+  return Math.round(amount * (TO_EUR[currency] ?? 1) * 100) / 100;
+}
+
+/** Compute real asset value from snapshots (DCA: sum(qty) × latestPrice) */
+export function computeAssetValue(
+  asset: { value: number; latestPrice?: number | null },
+  snapshots: { quantity?: number | null; price?: number | null }[],
+): { value: number; quantity?: number } {
+  if (!snapshots.length) return { value: asset.value };
+  const totalQty = snapshots.reduce((s, sn) => s + (sn.quantity ?? 0), 0);
+  if (totalQty <= 0) return { value: asset.value };
+  const price = asset.latestPrice ?? snapshots[0]?.price ?? null;
+  const value = price != null
+    ? Math.round(totalQty * price * 100) / 100
+    : asset.value;
+  return { value, quantity: Math.round(totalQty * 10000) / 10000 };
+}
+
 @Injectable()
 export class AssetsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(householdId: string) {
+  /** Fetch assets with snapshots and compute real DCA values */
+  async findAllWithValues(householdId: string) {
     const assets = await this.prisma.asset.findMany({
       where: { householdId },
       orderBy: { createdAt: 'asc' },
@@ -21,21 +45,13 @@ export class AssetsService {
     });
 
     return assets.map(({ snapshots, ...asset }) => {
-      if (!snapshots.length) return asset;
-      // Total quantity = sum of all snapshot quantities (each snapshot is a purchase)
-      const totalQty = snapshots.reduce((s, sn) => s + (sn.quantity ?? 0), 0);
-      if (totalQty <= 0) return asset;
-      // Use latestPrice from asset record (API-fetched) if available, else fall back to most recent snapshot price
-      const price = (asset as any).latestPrice ?? snapshots[0]?.price ?? null;
-      const computedValue = price != null
-        ? Math.round(totalQty * price * 100) / 100
-        : asset.value;
-      return {
-        ...asset,
-        quantity: Math.round(totalQty * 10000) / 10000,
-        value: computedValue,
-      };
+      const computed = computeAssetValue(asset, snapshots);
+      return { ...asset, ...computed };
     });
+  }
+
+  async findAll(householdId: string) {
+    return this.findAllWithValues(householdId);
   }
 
   async findOne(householdId: string, id: string) {
@@ -71,20 +87,22 @@ export class AssetsService {
   }
 
   async getNetWorth(householdId: string) {
-    const assets = await this.prisma.asset.findMany({ where: { householdId } });
+    const assets = await this.findAllWithValues(householdId);
     const total = assets.reduce((sum, a) => {
-      return isLiability(a.type) ? sum - a.value : sum + a.value;
+      const eurValue = toEur(a.value, a.currency);
+      return isLiability(a.type) ? sum - eurValue : sum + eurValue;
     }, 0);
     return { total, assets };
   }
 
   async getAllocation(householdId: string) {
-    const assets = await this.prisma.asset.findMany({ where: { householdId } });
+    const assets = await this.findAllWithValues(householdId);
     const byType: Record<string, number> = {};
     let total = 0;
     for (const asset of assets) {
-      byType[asset.type] = (byType[asset.type] ?? 0) + asset.value;
-      total += asset.value;
+      const eurValue = toEur(asset.value, asset.currency);
+      byType[asset.type] = (byType[asset.type] ?? 0) + eurValue;
+      total += eurValue;
     }
     return Object.entries(byType).map(([type, value]) => ({
       type,

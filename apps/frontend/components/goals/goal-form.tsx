@@ -73,7 +73,7 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
       </div>
 
-      <div className={`grid gap-3 ${goal ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.targetAmount')} *</label>
           <input
@@ -99,12 +99,12 @@ export function GoalForm({ onSubmit, onCancel, isLoading, goal }: GoalFormProps)
           </div>
         )}
 
-        <div>
+        <div className="min-w-0 overflow-hidden">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goalForm.targetDate')}</label>
           <input
             {...register('targetDate')}
             type="date"
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
+            className="w-full min-w-0 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
           />
         </div>
       </div>

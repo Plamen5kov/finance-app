@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, CreateGoalInput, Goal } from '@/hooks/use-goals';
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useEmergencyFundAdvice, CreateGoalInput, Goal } from '@/hooks/use-goals';
 import { GoalCard } from '@/components/goals/goal-card';
 import { GoalForm } from '@/components/goals/goal-form';
+import { EmergencyFundAdvisor } from '@/components/goals/emergency-fund-advisor';
 import { Modal } from '@/components/ui/modal';
 import { Plus } from 'lucide-react';
 import { useTranslation } from '@/i18n';
@@ -22,6 +23,7 @@ export function GoalsClient() {
   const [filter, setFilter] = useState<string | undefined>(undefined);
 
   const { data: goals, isLoading } = useGoals(filter !== undefined ? { recurringPeriod: filter } : undefined);
+  const { data: advice } = useEmergencyFundAdvice();
   const createGoal = useCreateGoal();
   const updateGoal = useUpdateGoal(editingGoal?.id ?? '');
   const deleteGoal = useDeleteGoal();
@@ -56,6 +58,9 @@ export function GoalsClient() {
           {t('goals.newGoal')}
         </button>
       </div>
+
+      {/* Emergency fund advisor */}
+      {advice && <EmergencyFundAdvisor advice={advice} />}
 
       {/* Filter tabs */}
       <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-fit overflow-x-auto">
@@ -92,7 +97,13 @@ export function GoalsClient() {
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t('goals.active')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeGoals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} onEdit={setEditingGoal} />
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onDelete={handleDelete}
+                onEdit={setEditingGoal}
+                emergencyAdvice={goal.category === 'emergency' ? advice : undefined}
+              />
             ))}
           </div>
         </section>
@@ -103,7 +114,13 @@ export function GoalsClient() {
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t('goals.completed')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 opacity-70">
             {completedGoals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} onEdit={setEditingGoal} />
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onDelete={handleDelete}
+                onEdit={setEditingGoal}
+                emergencyAdvice={goal.category === 'emergency' ? advice : undefined}
+              />
             ))}
           </div>
         </section>

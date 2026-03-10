@@ -343,5 +343,21 @@
   "pwa.installButton": "Инсталирай",
   "pwa.iosInstructions": "Натиснете Сподели, след това Добави на начален екран.",
 
-  "permission.denied": "Нямате разрешение да извършите това действие"
+  "permission.denied": "Нямате разрешение да извършите това действие",
+
+  "emergencyFund.goalName": "Авариен фонд",
+  "emergencyFund.goalDescription": "{{months}} месеца основни разходи на домакинството",
+  "emergencyFund.bannerCreate": "На база разходите ви препоръчваме авариен фонд от {{amount}} ({{months}} месеца). Разгънете за настройки.",
+  "emergencyFund.bannerUpdate": "Аварийният ви фонд покрива {{covered}} от {{target}} препоръчани месеца основни разходи.",
+  "emergencyFund.showMore": "Настрой",
+  "emergencyFund.showLess": "Скрий",
+  "emergencyFund.coverageMonths": "Месеци покритие",
+  "emergencyFund.months": "мес.",
+  "emergencyFund.mo": "мес.",
+  "emergencyFund.includeCategories": "Включи в месечните разходи",
+  "emergencyFund.recommended": "Препоръчана цел",
+  "emergencyFund.dismiss": "Скрий",
+  "emergencyFund.createGoal": "Създай цел",
+  "emergencyFund.updateTarget": "Обнови целта",
+  "emergencyFund.coversBadge": "Покрива {{covered}} от {{target}} месеца"
 }

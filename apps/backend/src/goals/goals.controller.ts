@@ -29,6 +29,11 @@ export class GoalsController {
     return this.goalsService.getHistory(user.householdId);
   }
 
+  @Get('emergency-fund/advice')
+  getEmergencyFundAdvice(@CurrentUser() user: JwtPayload) {
+    return this.goalsService.getEmergencyFundAdvice(user.householdId);
+  }
+
   @Get(':id')
   findOne(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.goalsService.findOne(user.householdId, id);

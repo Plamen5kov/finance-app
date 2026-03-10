@@ -80,3 +80,25 @@ export function useDeleteGoal() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
 }
+
+export interface EmergencyFundCategory {
+  id: string;
+  name: string;
+  avgMonthly: number;
+  type: string;
+}
+
+export interface EmergencyFundAdvice {
+  categories: EmergencyFundCategory[];
+  existingGoal: Goal | null;
+}
+
+export function useEmergencyFundAdvice() {
+  return useQuery({
+    queryKey: ['goals', 'emergency-fund-advice'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<EmergencyFundAdvice>('/goals/emergency-fund/advice');
+      return data;
+    },
+  });
+}

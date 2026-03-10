@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
+import { AssetsService, toEur } from '../assets/assets.service';
 
 @Injectable()
 export class NetWorthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private assetsService: AssetsService,
+  ) {}
 
   /** Run amortization with lifecycle events, returning balance per month. */
   private amortizeWithEvents(
@@ -78,11 +82,12 @@ export class NetWorthService {
 
   async getSummary(householdId: string) {
     const [assets, liabilities] = await Promise.all([
-      this.prisma.asset.findMany({ where: { householdId } }),
+      this.assetsService.findAllWithValues(householdId),
       this.prisma.liability.findMany({ where: { householdId } }),
     ]);
-    const totalAssets = assets.reduce((s, a) => s + a.value, 0);
-    const totalLiabilities = liabilities.reduce((s, l) => s + l.value, 0);
+
+    const totalAssets = assets.reduce((s, a) => s + toEur(a.value, a.currency), 0);
+    const totalLiabilities = liabilities.reduce((s, l) => s + toEur(l.value, l.currency), 0);
     return { netWorth: totalAssets - totalLiabilities, totalAssets, totalLiabilities };
   }
 
