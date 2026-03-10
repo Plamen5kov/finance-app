@@ -178,7 +178,10 @@ export function EmergencyFundAdvisor({ advice }: EmergencyFundAdvisorProps) {
   return (
     <div className="mb-6 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-start gap-3 flex-1 min-w-0 text-left cursor-pointer"
+        >
           <ShieldCheck className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" size={20} />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -187,15 +190,12 @@ export function EmergencyFundAdvisor({ advice }: EmergencyFundAdvisorProps) {
                 months: 6,
               })}
             </p>
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="mt-1 text-xs text-amber-700 dark:text-amber-400 hover:underline flex items-center gap-1"
-            >
+            <span className="mt-1 text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
               {expanded ? t('emergencyFund.showLess') : t('emergencyFund.showMore')}
               {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            </button>
+            </span>
           </div>
-        </div>
+        </button>
         <button
           onClick={() => setDismissed(true)}
           className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"

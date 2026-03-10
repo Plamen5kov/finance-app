@@ -359,5 +359,23 @@
   "emergencyFund.dismiss": "Скрий",
   "emergencyFund.createGoal": "Създай цел",
   "emergencyFund.updateTarget": "Обнови целта",
-  "emergencyFund.coversBadge": "Покрива {{covered}} от {{target}} месеца"
+  "emergencyFund.coversBadge": "Покрива {{covered}} от {{target}} месеца",
+
+  "budgetAdvice.title": "Бюджетен съветник",
+  "budgetAdvice.summary": "~{{amount}}/мес. свободни — разпределени между {{count}} цели",
+  "budgetAdvice.noIncome": "Добавете приходи, за да получите бюджетни предложения.",
+  "budgetAdvice.negativeIncome": "Разходите надвишават приходите. Прегледайте бюджета си, преди да разпределяте към цели.",
+  "budgetAdvice.putAside": "Заделете {{amount}}/мес.",
+  "budgetAdvice.idealMonthly": "Нужни {{amount}}/мес. за да сте в план",
+  "budgetAdvice.onTrack": "В план",
+  "budgetAdvice.behind": "Изостава",
+  "budgetAdvice.ahead": "Напред",
+  "budgetAdvice.overdue": "Просрочена",
+  "budgetAdvice.completedSoon": "Почти готово",
+  "budgetAdvice.showMore": "Виж предложения",
+  "budgetAdvice.showLess": "Скрий предложения",
+  "budgetAdvice.dashboardTip": "Заделете {{amount}} за {{goalName}}",
+  "budgetAdvice.monthsLeft": "{{count}} мес. остават",
+  "budgetAdvice.noDeadline": "Без краен срок",
+  "budgetAdvice.perMonth": "/мес."
 }

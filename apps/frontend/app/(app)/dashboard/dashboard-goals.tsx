@@ -1,15 +1,19 @@
 'use client';
 
 import { useTranslation } from '@/i18n';
-import { useGoals } from '@/hooks/use-goals';
+import { useGoals, useGoalBudgetAdvice } from '@/hooks/use-goals';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Lightbulb } from 'lucide-react';
 
 export function DashboardGoals() {
   const { t } = useTranslation();
   const { data: goals } = useGoals();
+  const { data: budgetAdvice } = useGoalBudgetAdvice();
   const active = (goals ?? []).filter((g) => g.status === 'active' || g.status === 'at_risk').slice(0, 4);
+  // Pick most urgent suggestion (behind/overdue first, then highest priority)
+  const topSuggestion = budgetAdvice?.suggestions.find((s) => s.type === 'behind' || s.type === 'overdue')
+    ?? budgetAdvice?.suggestions[0];
 
   if (active.length === 0) return null;
 
@@ -39,6 +43,12 @@ export function DashboardGoals() {
           );
         })}
       </div>
+      {topSuggestion && topSuggestion.suggestedAmount > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <Lightbulb size={13} className="text-indigo-500 flex-shrink-0" />
+          <span>{t('budgetAdvice.dashboardTip', { amount: formatCurrency(topSuggestion.suggestedAmount), goalName: topSuggestion.goalName })}</span>
+        </div>
+      )}
     </div>
   );
 }

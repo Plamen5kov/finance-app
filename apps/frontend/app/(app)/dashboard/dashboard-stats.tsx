@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@/i18n';
 import { useNetWorthSummary } from '@/hooks/use-net-worth';
-import { useGoals } from '@/hooks/use-goals';
+import { useGoalSummary } from '@/hooks/use-goals';
 import { useMonthlySummary } from '@/hooks/use-expenses';
 import { formatCurrency, getMonthStr } from '@/lib/utils';
 import { TrendingUp, Target, Receipt, CheckCircle } from 'lucide-react';
@@ -33,16 +33,8 @@ function StatCard({ label, value, icon, href, sub, color }: StatCardProps) {
 export function DashboardStats({ name }: { name: string }) {
   const { t } = useTranslation();
   const { data: netWorth } = useNetWorthSummary();
-  const { data: goals } = useGoals();
+  const { data: goalSummary } = useGoalSummary();
   const { data: summary } = useMonthlySummary(getMonthStr());
-
-  const completedGoals = goals?.filter((g) => g.status === 'completed' || g.currentAmount >= g.targetAmount) ?? [];
-  const activeGoals = goals?.filter((g) => !completedGoals.includes(g) && (g.status === 'active' || g.status === 'at_risk')) ?? [];
-
-  const avgProgress =
-    activeGoals.length > 0
-      ? activeGoals.reduce((s, g) => s + (g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0), 0) / activeGoals.length
-      : 0;
 
   return (
     <>
@@ -63,10 +55,10 @@ export function DashboardStats({ name }: { name: string }) {
         />
         <StatCard
           label={t('dashboard.activeGoals')}
-          value={String(activeGoals.length)}
+          value={String(goalSummary?.activeCount ?? 0)}
           icon={<Target size={18} className="text-blue-600" />}
           href="/goals"
-          sub={t('dashboard.avgProgress', { percent: Math.round(avgProgress) })}
+          sub={t('dashboard.avgProgress', { percent: goalSummary?.avgProgress ?? 0 })}
           color="bg-blue-50"
         />
         <StatCard
@@ -79,7 +71,7 @@ export function DashboardStats({ name }: { name: string }) {
         />
         <StatCard
           label={t('dashboard.completedGoals')}
-          value={String(completedGoals.length)}
+          value={String(goalSummary?.completedCount ?? 0)}
           icon={<CheckCircle size={18} className="text-green-600" />}
           href="/goals"
           sub={t('dashboard.allTime')}

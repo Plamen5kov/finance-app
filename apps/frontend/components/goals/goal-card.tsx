@@ -4,31 +4,26 @@ import { useState } from 'react';
 import { Goal, EmergencyFundAdvice } from '@/hooks/use-goals';
 import { formatCurrency, formatDate, monthsUntil } from '@/lib/utils';
 import { Trash2, Calendar, TrendingUp, Pencil, ShieldCheck } from 'lucide-react';
-import { useTranslation } from '@/i18n';
+import { useTranslation, TranslationKey } from '@/i18n';
 import { Modal } from '@/components/ui/modal';
 import { EmergencyFundControls } from './emergency-fund-advisor';
+
+type BudgetType = 'on_track' | 'behind' | 'ahead' | 'overdue' | 'completed_soon';
+
+const BUDGET_TYPE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  on_track: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', label: 'budgetAdvice.onTrack' },
+  ahead: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'budgetAdvice.ahead' },
+  behind: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', label: 'budgetAdvice.behind' },
+  overdue: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', label: 'budgetAdvice.overdue' },
+  completed_soon: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', label: 'budgetAdvice.completedSoon' },
+};
 
 interface GoalCardProps {
   goal: Goal;
   onDelete: (id: string) => void;
   onEdit: (goal: Goal) => void;
   emergencyAdvice?: EmergencyFundAdvice | null;
-}
-
-/** Extract coverage months from emergency fund description like "3 months of..." */
-function parseEmergencyCoverageMonths(description?: string): number | null {
-  if (!description) return null;
-  const match = description.match(/^(\d+)\s/);
-  return match ? Number(match[1]) : null;
-}
-
-/** Compute emergency fund badge data from the goal itself (no external data needed) */
-function getEmergencyBadge(goal: Goal): { covered: number; target: number } | null {
-  if (goal.category !== 'emergency' || goal.targetAmount <= 0) return null;
-  const targetMonths = parseEmergencyCoverageMonths(goal.description);
-  if (!targetMonths) return null;
-  const coveredMonths = (goal.currentAmount / goal.targetAmount) * targetMonths;
-  return { covered: coveredMonths, target: targetMonths };
+  budgetType?: BudgetType;
 }
 
 const PRIORITY_COLORS: Record<number, { badge: string; bar: string }> = {
@@ -42,7 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
   archived: 'bg-gray-400 text-white',
 };
 
-export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice }: GoalCardProps) {
+export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice, budgetType }: GoalCardProps) {
   const { t } = useTranslation();
   const [showFundModal, setShowFundModal] = useState(false);
 
@@ -55,7 +50,7 @@ export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice }: GoalCardPr
   const remaining = goal.targetAmount - goal.currentAmount;
   const months = goal.targetDate ? monthsUntil(goal.targetDate) : null;
   const isCompleted = goal.status === 'completed' || goal.currentAmount >= goal.targetAmount;
-  const emergencyBadge = getEmergencyBadge(goal);
+  const emergencyBadge = goal.emergencyBadge ?? null;
   const canEditFund = goal.category === 'emergency' && emergencyAdvice;
 
   return (
@@ -74,6 +69,11 @@ export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice }: GoalCardPr
               }`}>
                 {goal.status.replace('_', ' ')}
               </span>
+              {budgetType && BUDGET_TYPE_STYLES[budgetType] && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BUDGET_TYPE_STYLES[budgetType].bg} ${BUDGET_TYPE_STYLES[budgetType].text}`}>
+                  {t(BUDGET_TYPE_STYLES[budgetType].label as TranslationKey)}
+                </span>
+              )}
               {goal.recurringPeriod && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-medium">
                   {PERIOD_LABELS[goal.recurringPeriod]}

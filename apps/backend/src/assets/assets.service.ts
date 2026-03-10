@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
+import { round2 } from '../common/utils/money';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { isLiability } from '@finances/shared';
 
@@ -9,7 +10,7 @@ const TO_EUR: Record<string, number> = { BGN: 1 / 1.95583, USD: 0.92, GBP: 1.17 
 
 export function toEur(amount: number, currency?: string | null): number {
   if (!currency || currency === 'EUR') return amount;
-  return Math.round(amount * (TO_EUR[currency] ?? 1) * 100) / 100;
+  return round2(amount * (TO_EUR[currency] ?? 1));
 }
 
 /** Compute real asset value from snapshots (DCA: sum(qty) × latestPrice) */
@@ -22,7 +23,7 @@ export function computeAssetValue(
   if (totalQty <= 0) return { value: asset.value };
   const price = asset.latestPrice ?? snapshots[0]?.price ?? null;
   const value = price != null
-    ? Math.round(totalQty * price * 100) / 100
+    ? round2(totalQty * price)
     : asset.value;
   return { value, quantity: Math.round(totalQty * 10000) / 10000 };
 }

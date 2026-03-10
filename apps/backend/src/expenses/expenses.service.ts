@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
+import { round2 } from '../common/utils/money';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
@@ -91,11 +92,11 @@ export class ExpensesService {
     const monthlyData = sortedMonths.map((month) => {
       const catMap = monthMap.get(month)!;
       const byCategory = Array.from(catMap.entries()).map(([categoryId, data]) => ({
-        categoryId, ...data, total: Math.round(Math.abs(data.total) * 100) / 100,
+        categoryId, ...data, total: round2(Math.abs(data.total)),
       }));
       const totalExpenses = byCategory.filter((c) => c.categoryType !== 'income').reduce((s, c) => s + Math.abs(c.total), 0);
       const totalIncome = byCategory.filter((c) => c.categoryType === 'income').reduce((s, c) => s + c.total, 0);
-      return { month, totalExpenses: Math.round(totalExpenses * 100) / 100, totalIncome: Math.round(totalIncome * 100) / 100, byCategory };
+      return { month, totalExpenses: round2(totalExpenses), totalIncome: round2(totalIncome), byCategory };
     });
 
     // Category averages across all months (expenses only)
@@ -112,8 +113,8 @@ export class ExpensesService {
     const categoryAverages = Array.from(catTotals.entries())
       .map(([categoryId, data]) => ({
         categoryId, name: data.name, color: data.color, type: data.type,
-        average: Math.round((data.total / Math.max(data.months, 1)) * 100) / 100,
-        total: Math.round(data.total * 100) / 100,
+        average: round2(data.total / Math.max(data.months, 1)),
+        total: round2(data.total),
       }))
       .sort((a, b) => b.average - a.average);
 

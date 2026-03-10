@@ -15,6 +15,13 @@ export interface Goal {
   description?: string;
   category?: string;
   createdAt: string;
+  emergencyBadge?: { covered: number; target: number } | null;
+}
+
+export interface GoalSummary {
+  activeCount: number;
+  completedCount: number;
+  avgProgress: number;
 }
 
 export interface CreateGoalInput {
@@ -91,6 +98,51 @@ export interface EmergencyFundCategory {
 export interface EmergencyFundAdvice {
   categories: EmergencyFundCategory[];
   existingGoal: Goal | null;
+}
+
+export interface BudgetSuggestion {
+  goalId: string;
+  goalName: string;
+  priority: number;
+  category: string | null;
+  remaining: number;
+  monthsLeft: number | null;
+  idealMonthly: number;
+  suggestedAmount: number;
+  pctComplete: number;
+  type: 'on_track' | 'behind' | 'ahead' | 'overdue' | 'completed_soon';
+}
+
+export interface GoalBudgetAdvice {
+  snapshot: {
+    avgMonthlyIncome: number;
+    avgMonthlyExpenses: number;
+    essentialExpenses: number;
+    maxSavings: number;
+    freeMoney: number;
+    monthsAnalyzed: number;
+  };
+  suggestions: BudgetSuggestion[];
+}
+
+export function useGoalSummary() {
+  return useQuery({
+    queryKey: ['goals', 'summary'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<GoalSummary>('/goals/summary');
+      return data;
+    },
+  });
+}
+
+export function useGoalBudgetAdvice() {
+  return useQuery({
+    queryKey: ['goals', 'budget-advice'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<GoalBudgetAdvice>('/goals/budget-advice');
+      return data;
+    },
+  });
 }
 
 export function useEmergencyFundAdvice() {

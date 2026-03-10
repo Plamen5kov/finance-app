@@ -24,6 +24,11 @@ export class GoalsController {
     return this.goalsService.findAll(user.householdId, recurringPeriod);
   }
 
+  @Get('summary')
+  getSummary(@CurrentUser() user: JwtPayload) {
+    return this.goalsService.getSummary(user.householdId);
+  }
+
   @Get('history')
   getHistory(@CurrentUser() user: JwtPayload) {
     return this.goalsService.getHistory(user.householdId);
@@ -32,6 +37,11 @@ export class GoalsController {
   @Get('emergency-fund/advice')
   getEmergencyFundAdvice(@CurrentUser() user: JwtPayload) {
     return this.goalsService.getEmergencyFundAdvice(user.householdId);
+  }
+
+  @Get('budget-advice')
+  getBudgetAdvice(@CurrentUser() user: JwtPayload) {
+    return this.goalsService.getBudgetAdvice(user.householdId);
   }
 
   @Get(':id')

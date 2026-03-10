@@ -359,5 +359,23 @@
   "emergencyFund.dismiss": "Dismiss",
   "emergencyFund.createGoal": "Create Goal",
   "emergencyFund.updateTarget": "Update Target",
-  "emergencyFund.coversBadge": "Covers {{covered}} of {{target}} months"
+  "emergencyFund.coversBadge": "Covers {{covered}} of {{target}} months",
+
+  "budgetAdvice.title": "Budget Advisor",
+  "budgetAdvice.summary": "~{{amount}}/mo free — split across {{count}} goals",
+  "budgetAdvice.noIncome": "Add income entries to get budget suggestions.",
+  "budgetAdvice.negativeIncome": "Expenses exceed income. Review your budget before allocating to goals.",
+  "budgetAdvice.putAside": "Put aside {{amount}}/mo",
+  "budgetAdvice.idealMonthly": "Need {{amount}}/mo to stay on track",
+  "budgetAdvice.onTrack": "On track",
+  "budgetAdvice.behind": "Behind",
+  "budgetAdvice.ahead": "Ahead",
+  "budgetAdvice.overdue": "Overdue",
+  "budgetAdvice.completedSoon": "Almost there",
+  "budgetAdvice.showMore": "See suggestions",
+  "budgetAdvice.showLess": "Hide suggestions",
+  "budgetAdvice.dashboardTip": "Put aside {{amount}} toward {{goalName}}",
+  "budgetAdvice.monthsLeft": "{{count}}mo left",
+  "budgetAdvice.noDeadline": "No deadline",
+  "budgetAdvice.perMonth": "/mo"
 }
