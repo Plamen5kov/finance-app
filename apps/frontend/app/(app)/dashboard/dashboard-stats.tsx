@@ -36,8 +36,8 @@ export function DashboardStats({ name }: { name: string }) {
   const { data: goals } = useGoals();
   const { data: summary } = useMonthlySummary(getMonthStr());
 
-  const activeGoals = goals?.filter((g) => g.status === 'active' || g.status === 'at_risk') ?? [];
-  const completedGoals = goals?.filter((g) => g.status === 'completed') ?? [];
+  const completedGoals = goals?.filter((g) => g.status === 'completed' || g.currentAmount >= g.targetAmount) ?? [];
+  const activeGoals = goals?.filter((g) => !completedGoals.includes(g) && (g.status === 'active' || g.status === 'at_risk')) ?? [];
 
   const avgProgress =
     activeGoals.length > 0
