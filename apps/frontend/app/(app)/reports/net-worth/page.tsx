@@ -2,13 +2,23 @@
 
 import { formatCurrency } from '@/lib/utils';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useState, useCallback, useRef } from 'react';
-import { useNetWorthHistory, useNetWorthProjection, useNetWorthSummary } from '@/hooks/use-net-worth';
+import {
+  useNetWorthHistory,
+  useNetWorthProjection,
+  useNetWorthSummary,
+} from '@/hooks/use-net-worth';
 import { useTranslation } from '@/i18n';
 import { ChartLegendChips, useChartLegend } from '@/components/charts/chart-legend-chips';
 import { ChartTooltipHeader, type TooltipEntry } from '@/components/charts/chart-tooltip-header';
@@ -48,7 +58,9 @@ export default function NetWorthReportPage() {
   const { hiddenKeys, toggle, isVisible } = useChartLegend();
 
   // Scrub state for Robinhood-style header
-  const [scrubData, setScrubData] = useState<{ month: string; entries: TooltipEntry[] } | null>(null);
+  const [scrubData, setScrubData] = useState<{ month: string; entries: TooltipEntry[] } | null>(
+    null,
+  );
   const scrubTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const isLoading = summaryLoading || historyLoading || projectionLoading;
@@ -97,14 +109,16 @@ export default function NetWorthReportPage() {
   const mergedData = (() => {
     const map = new Map<string, Record<string, unknown>>();
     for (const d of chartData) map.set(d.month as string, { ...d });
-    const projPoints = projectionEndYear == null ? [] : (projection?.points ?? []).filter(
-      (p) => p.month <= `${projectionEndYear}-12`,
-    );
+    const projPoints =
+      projectionEndYear == null
+        ? []
+        : (projection?.points ?? []).filter((p) => p.month <= `${projectionEndYear}-12`);
 
     const firstProjPoint = projPoints[0];
-    const lastHistoricalNW = chartData.length > 0
-      ? (chartData[chartData.length - 1]['Net Worth'] as number | undefined)
-      : undefined;
+    const lastHistoricalNW =
+      chartData.length > 0
+        ? (chartData[chartData.length - 1]['Net Worth'] as number | undefined)
+        : undefined;
     const projectionOffset =
       lastHistoricalNW != null && firstProjPoint != null
         ? lastHistoricalNW - firstProjPoint.projectedNetWorth
@@ -140,11 +154,15 @@ export default function NetWorthReportPage() {
   const legendItems = [
     ...allItems.map((item) => ({ dataKey: item.name, color: TYPE_COLORS[item.type] ?? '#6B7280' })),
     ...(showNetWorth ? [{ dataKey: 'Net Worth', color: '#2D6A4F' }] : []),
-    ...(hasProjection && showNetWorthProjection ? [{ dataKey: 'Projected Net Worth', color: '#86EFAC' }] : []),
-    ...(showLiabilityProjection ? projectedLiabilityNames.map((l) => ({
-      dataKey: `${l.name} (projected)`,
-      color: TYPE_COLORS[l.type] ?? '#F87171',
-    })) : []),
+    ...(hasProjection && showNetWorthProjection
+      ? [{ dataKey: 'Projected Net Worth', color: '#86EFAC' }]
+      : []),
+    ...(showLiabilityProjection
+      ? projectedLiabilityNames.map((l) => ({
+          dataKey: `${l.name} (projected)`,
+          color: TYPE_COLORS[l.type] ?? '#F87171',
+        }))
+      : []),
   ];
 
   // Compute Y-axis domain from only the visible series
@@ -171,20 +189,30 @@ export default function NetWorthReportPage() {
   const netWorthChange = latestNetWorth - firstNetWorth;
 
   const payoffLabel = projection?.payoffMonth
-    ? new Date(projection.payoffMonth + '-02').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    ? new Date(projection.payoffMonth + '-02').toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+      })
     : null;
 
   // Scrub handler for Robinhood-style header
-  const handleChartMouseMove = useCallback((state: any) => {
-    if (scrubTimeout.current) clearTimeout(scrubTimeout.current);
-    if (!state?.activePayload?.length) return;
-    const payload = state.activePayload;
-    const month = state.activeLabel as string;
-    const entries: TooltipEntry[] = payload
-      .filter((p: any) => p.value != null && !hiddenKeys.has(p.dataKey))
-      .map((p: any) => ({ label: p.dataKey, value: p.value as number, color: p.color as string }));
-    setScrubData({ month, entries });
-  }, [hiddenKeys]);
+  const handleChartMouseMove = useCallback(
+    (state: any) => {
+      if (scrubTimeout.current) clearTimeout(scrubTimeout.current);
+      if (!state?.activePayload?.length) return;
+      const payload = state.activePayload;
+      const month = state.activeLabel as string;
+      const entries: TooltipEntry[] = payload
+        .filter((p: any) => p.value != null && !hiddenKeys.has(p.dataKey))
+        .map((p: any) => ({
+          label: p.dataKey,
+          value: p.value as number,
+          color: p.color as string,
+        }));
+      setScrubData({ month, entries });
+    },
+    [hiddenKeys],
+  );
 
   const handleChartMouseLeave = useCallback(() => {
     scrubTimeout.current = setTimeout(() => setScrubData(null), 300);
@@ -193,41 +221,63 @@ export default function NetWorthReportPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/reports" className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
+        <Link
+          href="/reports"
+          className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+        >
           <ArrowLeft size={20} />
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{t('netWorth.title')}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">
+          {t('netWorth.title')}
+        </h1>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.netWorth')}</p>
-          <p className={`text-2xl font-bold ${latestNetWorth >= 0 ? 'text-brand' : 'text-red-500'}`}>
+          <p
+            className={`text-2xl font-bold ${latestNetWorth >= 0 ? 'text-brand' : 'text-red-500'}`}
+          >
             {isLoading ? '—' : formatCurrency(latestNetWorth)}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.changePeriod')}</p>
-          <p className={`text-2xl font-bold ${netWorthChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {t('netWorth.changePeriod')}
+          </p>
+          <p
+            className={`text-2xl font-bold ${netWorthChange >= 0 ? 'text-green-600' : 'text-red-500'}`}
+          >
             {isLoading ? '—' : `${netWorthChange >= 0 ? '+' : ''}${formatCurrency(netWorthChange)}`}
           </p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.totalAssets')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {t('netWorth.totalAssets')}
+          </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {isLoading ? '—' : formatCurrency(summary?.totalAssets ?? 0)}
           </p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.totalLiabilities')}</p>
+        <Link
+          href="/liabilities"
+          className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 hover:border-red-300 dark:hover:border-red-700 transition-colors"
+        >
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {t('netWorth.totalLiabilities')}
+          </p>
           <p className="text-2xl font-bold text-red-500">
             {isLoading ? '—' : formatCurrency(summary?.totalLiabilities ?? 0)}
           </p>
-        </div>
+        </Link>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('netWorth.mortgagePayoff')}</p>
-          <p className={`text-2xl font-bold ${payoffLabel ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'}`}>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            {t('netWorth.mortgagePayoff')}
+          </p>
+          <p
+            className={`text-2xl font-bold ${payoffLabel ? 'text-green-600' : 'text-gray-400 dark:text-gray-500'}`}
+          >
             {isLoading ? '—' : (payoffLabel ?? 'N/A')}
           </p>
         </div>
@@ -238,9 +288,13 @@ export default function NetWorthReportPage() {
         <div className="flex flex-col gap-3 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('netWorth.portfolioValue')}</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100">
+                {t('netWorth.portfolioValue')}
+              </h2>
               {hasProjection && (
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 hidden sm:block">{t('netWorth.projectionNote')}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 hidden sm:block">
+                  {t('netWorth.projectionNote')}
+                </p>
               )}
             </div>
             <div className="flex gap-1 flex-shrink-0">
@@ -293,13 +347,17 @@ export default function NetWorthReportPage() {
                   {t('netWorth.projectUntil')}
                   <select
                     value={projectionEndYear ?? ''}
-                    onChange={(e) => setProjectionEndYear(e.target.value === '' ? null : Number(e.target.value))}
+                    onChange={(e) =>
+                      setProjectionEndYear(e.target.value === '' ? null : Number(e.target.value))
+                    }
                     className="border border-gray-200 dark:border-gray-700 rounded px-1.5 py-0.5 text-xs bg-white dark:bg-gray-800"
                   >
                     <option value="">{t('netWorth.none')}</option>
                     <option value={currentYear}>{t('netWorth.thisYear')}</option>
                     {Array.from({ length: 30 }, (_, i) => currentYear + 1 + i).map((yr) => (
-                      <option key={yr} value={yr}>{yr}</option>
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -318,10 +376,17 @@ export default function NetWorthReportPage() {
         {isLoading ? (
           <div className="h-72 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
         ) : mergedData.length === 0 ? (
-          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">{t('netWorth.noHistory')}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-12">
+            {t('netWorth.noHistory')}
+          </p>
         ) : (
           <>
-            <ResponsiveContainer key={projectionEndYear ?? 'none'} width="100%" height={280} className="sm:!h-[340px]">
+            <ResponsiveContainer
+              key={projectionEndYear ?? 'none'}
+              width="100%"
+              height={280}
+              className="sm:!h-[340px]"
+            >
               <LineChart
                 data={mergedData}
                 margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
@@ -335,7 +400,17 @@ export default function NetWorthReportPage() {
                   tickLine={false}
                   interval="preserveStartEnd"
                   tickFormatter={range === 0 ? (v: string) => v.slice(0, 4) : undefined}
-                  ticks={range === 0 ? [...new Set(mergedData.map((d) => String(d.month).slice(0, 4)).map((y) => `${y}-01`))] : undefined}
+                  ticks={
+                    range === 0
+                      ? [
+                          ...new Set(
+                            mergedData
+                              .map((d) => String(d.month).slice(0, 4))
+                              .map((y) => `${y}-01`),
+                          ),
+                        ]
+                      : undefined
+                  }
                 />
                 <YAxis
                   domain={yDomain}
@@ -353,29 +428,40 @@ export default function NetWorthReportPage() {
                   x={todayMonth}
                   stroke="#D1D5DB"
                   strokeDasharray="4 2"
-                  label={{ value: t('netWorth.today'), position: 'top', fontSize: 9, fill: '#9CA3AF' }}
+                  label={{
+                    value: t('netWorth.today'),
+                    position: 'top',
+                    fontSize: 9,
+                    fill: '#9CA3AF',
+                  }}
                 />
                 {projection?.payoffMonth && (
                   <ReferenceLine
                     x={projection.payoffMonth}
                     stroke="#16A34A"
                     strokeDasharray="4 2"
-                    label={{ value: t('netWorth.payoff'), position: 'top', fontSize: 9, fill: '#16A34A' }}
+                    label={{
+                      value: t('netWorth.payoff'),
+                      position: 'top',
+                      fontSize: 9,
+                      fill: '#16A34A',
+                    }}
                   />
                 )}
-                {allItems.map((item) => (
-                  isVisible(item.name) && (
-                    <Line
-                      key={item.name}
-                      type="monotone"
-                      dataKey={item.name}
-                      stroke={TYPE_COLORS[item.type] ?? '#6B7280'}
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls
-                    />
-                  )
-                ))}
+                {allItems.map(
+                  (item) =>
+                    isVisible(item.name) && (
+                      <Line
+                        key={item.name}
+                        type="monotone"
+                        dataKey={item.name}
+                        stroke={TYPE_COLORS[item.type] ?? '#6B7280'}
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                      />
+                    ),
+                )}
                 {showNetWorth && isVisible('Net Worth') && (
                   <Line
                     type="monotone"
@@ -398,20 +484,22 @@ export default function NetWorthReportPage() {
                     connectNulls
                   />
                 )}
-                {showLiabilityProjection && projectedLiabilityNames.map((l) => (
-                  isVisible(`${l.name} (projected)`) && (
-                    <Line
-                      key={`${l.name} (projected)`}
-                      type="monotone"
-                      dataKey={`${l.name} (projected)`}
-                      stroke={TYPE_COLORS[l.type] ?? '#F87171'}
-                      strokeWidth={1.5}
-                      strokeDasharray="4 2"
-                      dot={false}
-                      connectNulls
-                    />
-                  )
-                ))}
+                {showLiabilityProjection &&
+                  projectedLiabilityNames.map(
+                    (l) =>
+                      isVisible(`${l.name} (projected)`) && (
+                        <Line
+                          key={`${l.name} (projected)`}
+                          type="monotone"
+                          dataKey={`${l.name} (projected)`}
+                          stroke={TYPE_COLORS[l.type] ?? '#F87171'}
+                          strokeWidth={1.5}
+                          strokeDasharray="4 2"
+                          dot={false}
+                          connectNulls
+                        />
+                      ),
+                  )}
               </LineChart>
             </ResponsiveContainer>
 
