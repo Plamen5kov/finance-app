@@ -9,7 +9,10 @@ export class LiabilitiesService {
   constructor(private prisma: PrismaService) {}
 
   /** Calculate current outstanding balance from loan metadata and today's date. */
-  private calculateCurrentBalance(type: string, metadata?: MortgageMetadata | LeasingMetadata): number {
+  private calculateCurrentBalance(
+    type: string,
+    metadata?: MortgageMetadata | LeasingMetadata,
+  ): number {
     if (!metadata) return 0;
     const now = new Date();
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -32,8 +35,10 @@ export class LiabilitiesService {
           const evtMonth = evt.date.slice(0, 7);
           if (evtMonth !== monthKey) continue;
           if (evt.type === 'rate_change' && evt.newRate != null) rate = evt.newRate;
-          if (evt.type === 'payment_change' && evt.newMonthlyPayment != null) payment = evt.newMonthlyPayment;
-          if (evt.type === 'extra_payment' && evt.amount != null) balance = Math.max(0, balance - evt.amount);
+          if (evt.type === 'payment_change' && evt.newMonthlyPayment != null)
+            payment = evt.newMonthlyPayment;
+          if (evt.type === 'extra_payment' && evt.amount != null)
+            balance = Math.max(0, balance - evt.amount);
           if (evt.type === 'refinance') {
             if (evt.newBalance != null) balance = evt.newBalance;
             if (evt.newRate != null) rate = evt.newRate;
@@ -49,7 +54,10 @@ export class LiabilitiesService {
         if (principal > 0) balance = Math.max(0, balance - principal);
 
         month++;
-        if (month > 12) { month = 1; year++; }
+        if (month > 12) {
+          month = 1;
+          year++;
+        }
       }
       return Math.round(balance * 100) / 100;
     }
@@ -74,7 +82,10 @@ export class LiabilitiesService {
         if (principal > 0) balance = Math.max(residual, balance - principal);
 
         month++;
-        if (month > 12) { month = 1; year++; }
+        if (month > 12) {
+          month = 1;
+          year++;
+        }
       }
       return Math.round(balance * 100) / 100;
     }
@@ -110,7 +121,10 @@ export class LiabilitiesService {
     if (existing.householdId !== householdId) throw new ForbiddenException();
     const type = dto.type ?? existing.type;
     const metadata = dto.metadata ?? existing.metadata;
-    const value = this.calculateCurrentBalance(type, metadata as MortgageMetadata | LeasingMetadata);
+    const value = this.calculateCurrentBalance(
+      type,
+      metadata as MortgageMetadata | LeasingMetadata,
+    );
     return this.prisma.liability.update({ where: { id }, data: { ...dto, value } });
   }
 
@@ -127,6 +141,34 @@ export class LiabilitiesService {
     });
   }
 
+  /** Walk lifecycle events to determine the current monthly payment for a liability. */
+  getCurrentMonthlyPayment(type: string, metadata?: MortgageMetadata | LeasingMetadata): number {
+    if (!metadata) return 0;
+
+    if (type === 'mortgage' || type === 'loan') {
+      const meta = metadata as MortgageMetadata;
+      if (!meta.monthlyPayment) return 0;
+      let payment = meta.monthlyPayment;
+      const now = new Date();
+      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      for (const evt of (meta.events ?? []).slice().sort((a, b) => a.date.localeCompare(b.date))) {
+        if (evt.date.slice(0, 7) > currentMonthKey) break;
+        if (evt.type === 'payment_change' && evt.newMonthlyPayment != null)
+          payment = evt.newMonthlyPayment;
+        if (evt.type === 'refinance' && evt.newMonthlyPayment != null)
+          payment = evt.newMonthlyPayment;
+      }
+      return payment;
+    }
+
+    if (type === 'leasing') {
+      return (metadata as LeasingMetadata).monthlyPayment ?? 0;
+    }
+
+    return 0;
+  }
+
   async getTotal(householdId: string) {
     const liabilities = await this.prisma.liability.findMany({ where: { householdId } });
     const total = liabilities.reduce((sum, l) => sum + l.value, 0);
@@ -134,6 +176,11 @@ export class LiabilitiesService {
   }
 
   private assertHouseholdAccess(householdId: string, liabilityId: string) {
-    return assertHouseholdAccess(this.prisma.liability.findUnique.bind(this.prisma.liability), householdId, liabilityId, 'Liability');
+    return assertHouseholdAccess(
+      this.prisma.liability.findUnique.bind(this.prisma.liability),
+      householdId,
+      liabilityId,
+      'Liability',
+    );
   }
 }

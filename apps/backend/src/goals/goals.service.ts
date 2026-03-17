@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ExpensesService } from '../expenses/expenses.service';
+import { LiabilitiesService } from '../liabilities/liabilities.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { round2 } from '../common/utils/money';
+import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto, UpdateGoalStatusDto } from './dto/update-goal.dto';
 
@@ -11,6 +13,7 @@ export class GoalsService {
   constructor(
     private prisma: PrismaService,
     private expensesService: ExpensesService,
+    private liabilitiesService: LiabilitiesService,
   ) {}
 
   async findAll(householdId: string, recurringPeriod?: string | null) {
@@ -33,9 +36,12 @@ export class GoalsService {
   }
 
   /** Compute emergency fund coverage badge from goal description */
-  private computeEmergencyBadge(
-    goal: { category: string | null; targetAmount: number; currentAmount: number; description: string | null },
-  ): { covered: number; target: number } | null {
+  private computeEmergencyBadge(goal: {
+    category: string | null;
+    targetAmount: number;
+    currentAmount: number;
+    description: string | null;
+  }): { covered: number; target: number } | null {
     if (goal.category !== 'emergency' || goal.targetAmount <= 0) return null;
     const match = goal.description?.match(/^(\d+)\s/);
     if (!match) return null;
@@ -118,14 +124,15 @@ export class GoalsService {
       (g) => !completedIds.has(g.id) && (g.status === 'active' || g.status === 'at_risk'),
     );
 
-    const avgProgress = active.length > 0
-      ? round2(
-          active.reduce(
-            (s, g) => s + (g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0),
-            0,
-          ) / active.length,
-        )
-      : 0;
+    const avgProgress =
+      active.length > 0
+        ? round2(
+            active.reduce(
+              (s, g) => s + (g.targetAmount > 0 ? (g.currentAmount / g.targetAmount) * 100 : 0),
+              0,
+            ) / active.length,
+          )
+        : 0;
 
     return {
       activeCount: active.length,
@@ -135,11 +142,12 @@ export class GoalsService {
   }
 
   async getEmergencyFundAdvice(householdId: string) {
-    const [report, existingGoal] = await Promise.all([
+    const [report, existingGoal, liabilities] = await Promise.all([
       this.expensesService.getMonthlyReport(householdId, 12),
       this.prisma.goal.findFirst({
         where: { householdId, category: 'emergency' },
       }),
+      this.liabilitiesService.findAll(householdId),
     ]);
 
     // Return non-income categories with their monthly averages
@@ -152,7 +160,18 @@ export class GoalsService {
         type: c.type,
       }));
 
-    return { categories, existingGoal };
+    // Return active liabilities with their current monthly payment (after lifecycle events)
+    const fixedPayments = liabilities.map((l) => ({
+      id: l.id,
+      name: l.name,
+      type: l.type,
+      monthlyPayment: this.liabilitiesService.getCurrentMonthlyPayment(
+        l.type,
+        l.metadata as MortgageMetadata | LeasingMetadata,
+      ),
+    }));
+
+    return { categories, fixedPayments, existingGoal };
   }
 
   async getBudgetAdvice(householdId: string) {
@@ -164,8 +183,12 @@ export class GoalsService {
     // Compute financial snapshot
     const monthsWithData = report.months.filter((m) => m.totalIncome > 0 || m.totalExpenses > 0);
     const monthCount = Math.max(monthsWithData.length, 1);
-    const avgMonthlyIncome = round2(monthsWithData.reduce((s, m) => s + m.totalIncome, 0) / monthCount);
-    const avgMonthlyExpenses = round2(monthsWithData.reduce((s, m) => s + m.totalExpenses, 0) / monthCount);
+    const avgMonthlyIncome = round2(
+      monthsWithData.reduce((s, m) => s + m.totalIncome, 0) / monthCount,
+    );
+    const avgMonthlyExpenses = round2(
+      monthsWithData.reduce((s, m) => s + m.totalExpenses, 0) / monthCount,
+    );
     const freeMoney = round2(avgMonthlyIncome - avgMonthlyExpenses);
 
     // Essential expenses = categories with type 'required' (rent, utilities, groceries, etc.)
@@ -192,16 +215,20 @@ export class GoalsService {
         monthsLeft = 1;
       } else if (g.recurringPeriod === 'annual') {
         const nextYearEnd = new Date(now.getFullYear(), 11, 31);
-        monthsLeft = (nextYearEnd.getFullYear() - now.getFullYear()) * 12 + (nextYearEnd.getMonth() - now.getMonth());
+        monthsLeft =
+          (nextYearEnd.getFullYear() - now.getFullYear()) * 12 +
+          (nextYearEnd.getMonth() - now.getMonth());
         if (monthsLeft <= 0) monthsLeft = 12;
       } else if (g.targetDate) {
         const target = new Date(g.targetDate);
-        monthsLeft = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+        monthsLeft =
+          (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
       }
 
       const effectiveMonths = monthsLeft !== null ? Math.max(monthsLeft, 1) : 12;
       const idealMonthly = round2(remaining / effectiveMonths);
-      const pctComplete = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 1000) / 10 : 0;
+      const pctComplete =
+        g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 1000) / 10 : 0;
 
       return {
         goalId: g.id,
@@ -241,9 +268,7 @@ export class GoalsService {
         budget -= tierDemand;
       } else {
         for (const g of tierGoals) {
-          g.suggestedAmount = tierDemand > 0
-            ? round2((g.idealMonthly / tierDemand) * budget)
-            : 0;
+          g.suggestedAmount = tierDemand > 0 ? round2((g.idealMonthly / tierDemand) * budget) : 0;
         }
         budget = 0;
       }
@@ -301,6 +326,11 @@ export class GoalsService {
   }
 
   private assertHouseholdAccess(householdId: string, goalId: string) {
-    return assertHouseholdAccess(this.prisma.goal.findUnique.bind(this.prisma.goal), householdId, goalId, 'Goal');
+    return assertHouseholdAccess(
+      this.prisma.goal.findUnique.bind(this.prisma.goal),
+      householdId,
+      goalId,
+      'Goal',
+    );
   }
 }

@@ -14,7 +14,6 @@
   "common.notes": "Notes",
   "common.optional": "Optional",
   "common.required": "required",
-
   "nav.finances": "Finances",
   "nav.dashboard": "Dashboard",
   "nav.assets": "Assets",
@@ -29,17 +28,14 @@
   "nav.more": "More",
   "nav.tabBar": "Tab bar",
   "nav.tapToReplace": "Tap an item below to swap it in",
-
   "settings.title": "Settings",
   "settings.appearance": "Appearance",
   "settings.language": "Language",
   "settings.signOut": "Sign out",
   "settings.signingOut": "Signing out…",
-
   "theme.light": "Light",
   "theme.dark": "Dark",
   "theme.system": "System",
-
   "auth.signIn": "Sign in",
   "auth.signingIn": "Signing in...",
   "auth.createAccount": "Create account",
@@ -57,7 +53,6 @@
   "auth.passwordMin": "Password must be at least 12 characters",
   "auth.passwordsMismatch": "Passwords do not match",
   "auth.nameMin": "Name must be at least 2 characters",
-
   "dashboard.welcomeBack": "Welcome back, {{name}}",
   "dashboard.overview": "Here's your financial overview",
   "dashboard.netWorth": "Net Worth",
@@ -69,7 +64,6 @@
   "dashboard.categories": "{{count}} categories",
   "dashboard.allTime": "all time",
   "dashboard.viewAll": "View all",
-
   "assets.title": "Assets",
   "assets.totalAssets": "Total Assets",
   "assets.addAsset": "Add Asset",
@@ -78,12 +72,10 @@
   "assets.history": "History",
   "assets.noHistory": "No history yet",
   "assets.valuePlaceholder": "Value (€)",
-
   "assetType.etf": "ETF",
   "assetType.crypto": "Crypto",
   "assetType.gold": "Gold",
   "assetType.apartment": "Apartment",
-
   "assetForm.type": "Type",
   "assetForm.name": "Name",
   "assetForm.currentValue": "Current Value",
@@ -97,7 +89,6 @@
   "assetForm.goldUnit": "Unit",
   "assetForm.grams": "Grams (g)",
   "assetForm.troyOunces": "Troy Ounces (toz)",
-
   "assets.refreshPrices": "Refresh Prices",
   "assets.refreshing": "Refreshing…",
   "assets.refreshDone": "Updated {{updated}} assets",
@@ -110,7 +101,6 @@
   "assets.newEntry": "New Entry",
   "assets.viewHistory": "View History",
   "assetForm.date": "Date",
-
   "liabilities.title": "Liabilities",
   "liabilities.totalLiabilities": "Total Liabilities",
   "liabilities.addLiability": "Add Liability",
@@ -119,11 +109,9 @@
   "liabilities.deleteConfirm": "Delete this liability?",
   "liabilities.saveChanges": "Save Changes",
   "liabilities.outstandingBalance": "Outstanding balance",
-
   "liabilityType.mortgage": "Mortgage",
   "liabilityType.loan": "Loan",
   "liabilityType.leasing": "Leasing",
-
   "liabilityForm.leaseDetails": "Lease Details",
   "liabilityForm.loanDetails": "Loan Details",
   "liabilityForm.assetValue": "Asset Value",
@@ -136,7 +124,6 @@
   "liabilityForm.originalAmount": "Original Amount",
   "liabilityForm.initialRate": "Initial Interest Rate (%)",
   "liabilityForm.initialPayment": "Initial Monthly Payment",
-
   "liabilityCard.monthlyPayment": "Monthly payment",
   "liabilityCard.balloonPayment": "Balloon payment",
   "liabilityCard.interestRate": "Interest rate",
@@ -149,7 +136,6 @@
   "liabilityCard.interestRemaining": "Interest remaining",
   "liabilityCard.originalAmount": "Original amount",
   "liabilityCard.events": "Events",
-
   "events.title": "Lifecycle Events",
   "events.addEvent": "Add Event",
   "events.noEvents": "No events — click \"Add Event\" to record rate changes, refinances, or extra payments.",
@@ -162,7 +148,6 @@
   "events.extraAmount": "Extra Amount",
   "events.newBalance": "New Balance",
   "events.notesPlaceholder": "Notes (optional)",
-
   "goals.title": "Goals",
   "goals.newGoal": "New Goal",
   "goals.editGoal": "Edit Goal",
@@ -180,7 +165,6 @@
   "goals.target": "Target: {{amount}}",
   "goals.toGo": "{{amount}} to go",
   "goals.overdue": "Overdue",
-
   "goalForm.name": "Name",
   "goalForm.targetAmount": "Target Amount",
   "goalForm.currentAmount": "Current Amount",
@@ -195,7 +179,6 @@
   "goalForm.high": "High",
   "goalForm.med": "Med",
   "goalForm.low": "Low",
-
   "expenses.title": "Expenses",
   "expenses.addExpense": "Add Expense",
   "expenses.addCategory": "+ Category",
@@ -205,7 +188,6 @@
   "expenses.recurring": "recurring",
   "expenses.createCategoryFirst": "Create a category first before adding expenses.",
   "expenses.createCategory": "Create category",
-
   "expenseForm.amount": "Amount",
   "expenseForm.date": "Date",
   "expenseForm.description": "Description",
@@ -213,7 +195,6 @@
   "expenseForm.selectCategory": "Select category",
   "expenseForm.notes": "Notes",
   "expenseForm.recurringExpense": "Recurring expense",
-
   "income.title": "Income",
   "income.addIncome": "Add Income",
   "income.totalIncome": "Total Income",
@@ -221,18 +202,15 @@
   "income.addFirst": "Add your first income entry to start tracking",
   "income.deleteConfirm": "Delete this income entry?",
   "income.newCategory": "New Income Category",
-
   "table.description": "Description",
   "table.category": "Category",
   "table.date": "Date",
   "table.amount": "Amount",
-
   "reassign.title": "Reassign Category",
   "reassign.prompt": "Move all expenses from \"{{merchant}}\" to \"{{category}}\"?",
   "reassign.justThis": "No, just this one",
   "reassign.allOfThem": "Yes, all of them",
   "reassign.newCategory": "New Category",
-
   "import.title": "Import",
   "import.subtitle": "Import transactions from external sources",
   "import.revolutName": "Revolut Statement",
@@ -248,17 +226,14 @@
   "import.income": "Income",
   "import.skipped": "Skipped",
   "import.newMappings": "New mappings",
-
   "documents.title": "Documents",
   "documents.dropHere": "Drag & drop CSV or PDF bank statements here",
   "documents.browse": "Browse files",
-
   "reports.title": "Reports",
   "reports.netWorthOverTime": "Net Worth Over Time",
   "reports.monthlyBudget": "Monthly Budget Report",
   "reports.allocationComparison": "Planned vs Actual Allocations",
   "reports.goalComparison": "Goal Progress Tracking",
-
   "netWorth.title": "Net Worth Over Time",
   "netWorth.netWorth": "Net Worth",
   "netWorth.changePeriod": "Change (period)",
@@ -277,7 +252,6 @@
   "netWorth.today": "Today",
   "netWorth.payoff": "Payoff",
   "netWorth.projected": "projected",
-
   "budget.title": "Monthly Budget Report",
   "budget.avgIncome": "Avg Monthly Income",
   "budget.avgExpenses": "Avg Monthly Expenses",
@@ -291,7 +265,6 @@
   "budget.avgPerMonth": "Avg/mo",
   "budget.incomeVsExpenses": "Income vs Expenses",
   "budget.totalExpenses": "Total Expenses",
-
   "allocation.title": "Allocation Comparison",
   "allocation.actual": "Actual Allocation",
   "allocation.actualDesc": "Based on current portfolio values",
@@ -304,7 +277,6 @@
   "allocation.targetPct": "Target %",
   "allocation.drift": "Drift",
   "allocation.etfStocks": "ETF / Stocks",
-
   "goalTracking.title": "Goal Progress Tracking",
   "goalTracking.savingsProgress": "Savings Progress Over Time",
   "goalTracking.dashedNote": "Dashed lines indicate target amounts",
@@ -314,7 +286,6 @@
   "goalTracking.target": "Target",
   "goalTracking.progress": "Progress",
   "goalTracking.monthsLeft": "Months Left",
-
   "account.title": "Account",
   "account.householdMembers": "Household Members",
   "account.inviteLinks": "Invite Links",
@@ -328,7 +299,6 @@
   "account.expires": "Expires {{date}}",
   "account.copyLink": "Copy link",
   "account.revokeInvite": "Revoke invite",
-
   "invite.invalid": "Invalid Invite",
   "invite.goToLogin": "Go to login",
   "invite.loading": "Loading invite...",
@@ -337,14 +307,11 @@
   "invite.accepting": "Joining...",
   "invite.accept": "Accept Invite",
   "invite.expires": "Expires {{date}}",
-
   "pwa.installTitle": "Install Finances",
   "pwa.installDesc": "Add to your home screen for quick access.",
   "pwa.installButton": "Install App",
   "pwa.iosInstructions": "Tap Share, then Add to Home Screen.",
-
   "permission.denied": "You do not have permission to perform this action",
-
   "emergencyFund.goalName": "Emergency Fund",
   "emergencyFund.goalDescription": "{{months}} months of essential household expenses",
   "emergencyFund.bannerCreate": "Based on your expenses, we recommend an emergency fund of {{amount}} ({{months}} months). Expand to customize.",
@@ -355,12 +322,12 @@
   "emergencyFund.months": "mo",
   "emergencyFund.mo": "mo",
   "emergencyFund.includeCategories": "Include in monthly expenses",
+  "emergencyFund.includeFixedPayments": "Fixed payments (loans, mortgage, leasing)",
   "emergencyFund.recommended": "Recommended target",
   "emergencyFund.dismiss": "Dismiss",
   "emergencyFund.createGoal": "Create Goal",
   "emergencyFund.updateTarget": "Update Target",
   "emergencyFund.coversBadge": "Covers {{covered}} of {{target}} months",
-
   "budgetAdvice.title": "Budget Advisor",
   "budgetAdvice.summary": "~{{amount}}/mo free — split across {{count}} goals",
   "budgetAdvice.noIncome": "Add income entries to get budget suggestions.",

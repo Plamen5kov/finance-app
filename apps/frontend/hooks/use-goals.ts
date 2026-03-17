@@ -95,8 +95,16 @@ export interface EmergencyFundCategory {
   type: string;
 }
 
+export interface FixedPayment {
+  id: string;
+  name: string;
+  type: string;
+  monthlyPayment: number;
+}
+
 export interface EmergencyFundAdvice {
   categories: EmergencyFundCategory[];
+  fixedPayments: FixedPayment[];
   existingGoal: Goal | null;
 }
 

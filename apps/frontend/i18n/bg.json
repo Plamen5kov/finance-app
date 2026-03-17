@@ -14,7 +14,6 @@
   "common.notes": "Бележки",
   "common.optional": "По избор",
   "common.required": "задължително",
-
   "nav.finances": "Финанси",
   "nav.dashboard": "Табло",
   "nav.assets": "Активи",
@@ -29,17 +28,14 @@
   "nav.more": "Още",
   "nav.tabBar": "Лента",
   "nav.tapToReplace": "Докоснете елемент отдолу, за да го замените",
-
   "settings.title": "Настройки",
   "settings.appearance": "Изглед",
   "settings.language": "Език",
   "settings.signOut": "Изход",
   "settings.signingOut": "Излизане…",
-
   "theme.light": "Светла",
   "theme.dark": "Тъмна",
   "theme.system": "Системна",
-
   "auth.signIn": "Вход",
   "auth.signingIn": "Влизане...",
   "auth.createAccount": "Създай акаунт",
@@ -57,7 +53,6 @@
   "auth.passwordMin": "Паролата трябва да е поне 12 символа",
   "auth.passwordsMismatch": "Паролите не съвпадат",
   "auth.nameMin": "Името трябва да е поне 2 символа",
-
   "dashboard.welcomeBack": "Добре дошъл, {{name}}",
   "dashboard.overview": "Ето твоя финансов преглед",
   "dashboard.netWorth": "Нетна стойност",
@@ -69,7 +64,6 @@
   "dashboard.categories": "{{count}} категории",
   "dashboard.allTime": "общо",
   "dashboard.viewAll": "Виж всички",
-
   "assets.title": "Активи",
   "assets.totalAssets": "Общо активи",
   "assets.addAsset": "Добави актив",
@@ -78,12 +72,10 @@
   "assets.history": "История",
   "assets.noHistory": "Все още няма история",
   "assets.valuePlaceholder": "Стойност (€)",
-
   "assetType.etf": "ETF",
   "assetType.crypto": "Крипто",
   "assetType.gold": "Злато",
   "assetType.apartment": "Апартамент",
-
   "assetForm.type": "Тип",
   "assetForm.name": "Име",
   "assetForm.currentValue": "Текуща стойност",
@@ -97,7 +89,6 @@
   "assetForm.goldUnit": "Мерна единица",
   "assetForm.grams": "Грамове (g)",
   "assetForm.troyOunces": "Тройунции (toz)",
-
   "assets.refreshPrices": "Обнови цените",
   "assets.refreshing": "Обновяване…",
   "assets.refreshDone": "Обновени {{updated}} актива",
@@ -110,7 +101,6 @@
   "assets.newEntry": "Нов запис",
   "assets.viewHistory": "Виж история",
   "assetForm.date": "Дата",
-
   "liabilities.title": "Задължения",
   "liabilities.totalLiabilities": "Общо задължения",
   "liabilities.addLiability": "Добави задължение",
@@ -119,11 +109,9 @@
   "liabilities.deleteConfirm": "Изтриване на това задължение?",
   "liabilities.saveChanges": "Запази промените",
   "liabilities.outstandingBalance": "Остатъчен баланс",
-
   "liabilityType.mortgage": "Ипотека",
   "liabilityType.loan": "Заем",
   "liabilityType.leasing": "Лизинг",
-
   "liabilityForm.leaseDetails": "Детайли на лизинга",
   "liabilityForm.loanDetails": "Детайли на заема",
   "liabilityForm.assetValue": "Стойност на актива",
@@ -136,7 +124,6 @@
   "liabilityForm.originalAmount": "Първоначална сума",
   "liabilityForm.initialRate": "Начален лихвен процент (%)",
   "liabilityForm.initialPayment": "Начална месечна вноска",
-
   "liabilityCard.monthlyPayment": "Месечна вноска",
   "liabilityCard.balloonPayment": "Остатъчна стойност",
   "liabilityCard.interestRate": "Лихвен процент",
@@ -149,7 +136,6 @@
   "liabilityCard.interestRemaining": "Оставаща лихва",
   "liabilityCard.originalAmount": "Първоначална сума",
   "liabilityCard.events": "Събития",
-
   "events.title": "Събития в живота на заема",
   "events.addEvent": "Добави събитие",
   "events.noEvents": "Няма събития — натиснете \"Добави събитие\", за да запишете промени в лихвата, рефинансиране или допълнителни плащания.",
@@ -162,7 +148,6 @@
   "events.extraAmount": "Допълнителна сума",
   "events.newBalance": "Нов баланс",
   "events.notesPlaceholder": "Бележки (по избор)",
-
   "goals.title": "Цели",
   "goals.newGoal": "Нова цел",
   "goals.editGoal": "Редактирай цел",
@@ -180,7 +165,6 @@
   "goals.target": "Цел: {{amount}}",
   "goals.toGo": "остават {{amount}}",
   "goals.overdue": "Просрочена",
-
   "goalForm.name": "Име",
   "goalForm.targetAmount": "Целева сума",
   "goalForm.currentAmount": "Текуща сума",
@@ -195,7 +179,6 @@
   "goalForm.high": "Висок",
   "goalForm.med": "Ср.",
   "goalForm.low": "Нисък",
-
   "expenses.title": "Разходи",
   "expenses.addExpense": "Добави разход",
   "expenses.addCategory": "+ Категория",
@@ -205,7 +188,6 @@
   "expenses.recurring": "повтарящ се",
   "expenses.createCategoryFirst": "Първо създайте категория, преди да добавите разходи.",
   "expenses.createCategory": "Създай категория",
-
   "expenseForm.amount": "Сума",
   "expenseForm.date": "Дата",
   "expenseForm.description": "Описание",
@@ -213,7 +195,6 @@
   "expenseForm.selectCategory": "Изберете категория",
   "expenseForm.notes": "Бележки",
   "expenseForm.recurringExpense": "Повтарящ се разход",
-
   "income.title": "Приходи",
   "income.addIncome": "Добави приход",
   "income.totalIncome": "Общо приходи",
@@ -221,18 +202,15 @@
   "income.addFirst": "Добавете първия си приход, за да започнете проследяването",
   "income.deleteConfirm": "Изтриване на този приход?",
   "income.newCategory": "Нова категория приходи",
-
   "table.description": "Описание",
   "table.category": "Категория",
   "table.date": "Дата",
   "table.amount": "Сума",
-
   "reassign.title": "Преназначи категория",
   "reassign.prompt": "Преместване на всички разходи от \"{{merchant}}\" в \"{{category}}\"?",
   "reassign.justThis": "Не, само този",
   "reassign.allOfThem": "Да, всички",
   "reassign.newCategory": "Нова категория",
-
   "import.title": "Импорт",
   "import.subtitle": "Импортирайте транзакции от външни източници",
   "import.revolutName": "Извлечение от Revolut",
@@ -248,17 +226,14 @@
   "import.income": "Приходи",
   "import.skipped": "Пропуснати",
   "import.newMappings": "Нови свързвания",
-
   "documents.title": "Документи",
   "documents.dropHere": "Плъзнете CSV или PDF банкови извлечения тук",
   "documents.browse": "Разгледай файлове",
-
   "reports.title": "Отчети",
   "reports.netWorthOverTime": "Нетна стойност във времето",
   "reports.monthlyBudget": "Месечен бюджетен отчет",
   "reports.allocationComparison": "Планирано срещу реално разпределение",
   "reports.goalComparison": "Проследяване на напредъка по цели",
-
   "netWorth.title": "Нетна стойност във времето",
   "netWorth.netWorth": "Нетна стойност",
   "netWorth.changePeriod": "Промяна (период)",
@@ -277,7 +252,6 @@
   "netWorth.today": "Днес",
   "netWorth.payoff": "Изплатена",
   "netWorth.projected": "прогноза",
-
   "budget.title": "Месечен бюджетен отчет",
   "budget.avgIncome": "Ср. месечен приход",
   "budget.avgExpenses": "Ср. месечни разходи",
@@ -291,7 +265,6 @@
   "budget.avgPerMonth": "Ср./мес.",
   "budget.incomeVsExpenses": "Приходи срещу разходи",
   "budget.totalExpenses": "Общо разходи",
-
   "allocation.title": "Сравнение на разпределението",
   "allocation.actual": "Реално разпределение",
   "allocation.actualDesc": "На база текущи стойности на портфолиото",
@@ -304,7 +277,6 @@
   "allocation.targetPct": "Целево %",
   "allocation.drift": "Отклонение",
   "allocation.etfStocks": "ETF / Акции",
-
   "goalTracking.title": "Проследяване на напредъка по цели",
   "goalTracking.savingsProgress": "Напредък на спестяванията във времето",
   "goalTracking.dashedNote": "Пунктираните линии показват целевите суми",
@@ -314,7 +286,6 @@
   "goalTracking.target": "Цел",
   "goalTracking.progress": "Напредък",
   "goalTracking.monthsLeft": "Оставащи месеци",
-
   "account.title": "Акаунт",
   "account.householdMembers": "Членове на домакинството",
   "account.inviteLinks": "Покани",
@@ -328,7 +299,6 @@
   "account.expires": "Изтича {{date}}",
   "account.copyLink": "Копирай линк",
   "account.revokeInvite": "Оттегли покана",
-
   "invite.invalid": "Невалидна покана",
   "invite.goToLogin": "Към входа",
   "invite.loading": "Зареждане на поканата...",
@@ -337,14 +307,11 @@
   "invite.accepting": "Присъединяване...",
   "invite.accept": "Приеми поканата",
   "invite.expires": "Изтича {{date}}",
-
   "pwa.installTitle": "Инсталирай Финанси",
   "pwa.installDesc": "Добавете на началния екран за бърз достъп.",
   "pwa.installButton": "Инсталирай",
   "pwa.iosInstructions": "Натиснете Сподели, след това Добави на начален екран.",
-
   "permission.denied": "Нямате разрешение да извършите това действие",
-
   "emergencyFund.goalName": "Авариен фонд",
   "emergencyFund.goalDescription": "{{months}} месеца основни разходи на домакинството",
   "emergencyFund.bannerCreate": "На база разходите ви препоръчваме авариен фонд от {{amount}} ({{months}} месеца). Разгънете за настройки.",
@@ -355,12 +322,12 @@
   "emergencyFund.months": "мес.",
   "emergencyFund.mo": "мес.",
   "emergencyFund.includeCategories": "Включи в месечните разходи",
+  "emergencyFund.includeFixedPayments": "Фиксирани плащания (заеми, ипотека, лизинг)",
   "emergencyFund.recommended": "Препоръчана цел",
   "emergencyFund.dismiss": "Скрий",
   "emergencyFund.createGoal": "Създай цел",
   "emergencyFund.updateTarget": "Обнови целта",
   "emergencyFund.coversBadge": "Покрива {{covered}} от {{target}} месеца",
-
   "budgetAdvice.title": "Бюджетен съветник",
   "budgetAdvice.summary": "~{{amount}}/мес. свободни — разпределени между {{count}} цели",
   "budgetAdvice.noIncome": "Добавете приходи, за да получите бюджетни предложения.",
