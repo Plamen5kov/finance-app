@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import { round2 } from '../common/utils/money';
+import {
+  aggregateExpensesByMonth,
+  computeCategoryAverages,
+} from '../common/utils/expense-aggregation';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 
@@ -67,56 +71,8 @@ export class ExpensesService {
       this.prisma.expenseCategory.findMany({ where: { householdId } }),
     ]);
 
-    // Group by month → category
-    const monthMap = new Map<string, Map<string, { total: number; count: number; categoryName: string; categoryColor: string | null; categoryType: string }>>();
-
-    for (const exp of expenses) {
-      const monthKey = `${exp.date.getFullYear()}-${String(exp.date.getMonth() + 1).padStart(2, '0')}`;
-      if (!monthMap.has(monthKey)) monthMap.set(monthKey, new Map());
-      const catMap = monthMap.get(monthKey)!;
-      if (!catMap.has(exp.categoryId)) {
-        catMap.set(exp.categoryId, {
-          total: 0, count: 0,
-          categoryName: exp.category?.name ?? 'Unknown',
-          categoryColor: exp.category?.color ?? null,
-          categoryType: exp.category?.type ?? 'expense',
-        });
-      }
-      const entry = catMap.get(exp.categoryId)!;
-      entry.total += exp.amount;
-      entry.count += 1;
-    }
-
-    // Build sorted month array
-    const sortedMonths = Array.from(monthMap.keys()).sort();
-    const monthlyData = sortedMonths.map((month) => {
-      const catMap = monthMap.get(month)!;
-      const byCategory = Array.from(catMap.entries()).map(([categoryId, data]) => ({
-        categoryId, ...data, total: round2(Math.abs(data.total)),
-      }));
-      const totalExpenses = byCategory.filter((c) => c.categoryType !== 'income').reduce((s, c) => s + Math.abs(c.total), 0);
-      const totalIncome = byCategory.filter((c) => c.categoryType === 'income').reduce((s, c) => s + c.total, 0);
-      return { month, totalExpenses: round2(totalExpenses), totalIncome: round2(totalIncome), byCategory };
-    });
-
-    // Category averages across all months (expenses only)
-    const catTotals = new Map<string, { total: number; months: number; name: string; color: string | null; type: string }>();
-    for (const md of monthlyData) {
-      for (const c of md.byCategory) {
-        if (c.categoryType === 'income') continue;
-        if (!catTotals.has(c.categoryId)) catTotals.set(c.categoryId, { total: 0, months: 0, name: c.categoryName, color: c.categoryColor, type: c.categoryType });
-        const entry = catTotals.get(c.categoryId)!;
-        entry.total += Math.abs(c.total);
-        entry.months += 1;
-      }
-    }
-    const categoryAverages = Array.from(catTotals.entries())
-      .map(([categoryId, data]) => ({
-        categoryId, name: data.name, color: data.color, type: data.type,
-        average: round2(data.total / Math.max(data.months, 1)),
-        total: round2(data.total),
-      }))
-      .sort((a, b) => b.average - a.average);
+    const monthlyData = aggregateExpensesByMonth(expenses);
+    const categoryAverages = computeCategoryAverages(monthlyData);
 
     return {
       months: monthlyData,
@@ -171,13 +127,25 @@ export class ExpensesService {
   }
 
   private static readonly CATEGORY_COLORS = [
-    '#EF4444', '#F97316', '#F59E0B', '#84CC16', '#10B981',
-    '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
-    '#8B5CF6', '#A855F7', '#EC4899', '#DC2626', '#D97706',
+    '#EF4444',
+    '#F97316',
+    '#F59E0B',
+    '#84CC16',
+    '#10B981',
+    '#14B8A6',
+    '#06B6D4',
+    '#0EA5E9',
+    '#3B82F6',
+    '#6366F1',
+    '#8B5CF6',
+    '#A855F7',
+    '#EC4899',
+    '#DC2626',
+    '#D97706',
   ];
 
   async createCategory(householdId: string, userId: string, dto: CreateCategoryDto) {
-    const color = dto.color ?? await this.pickColor(householdId);
+    const color = dto.color ?? (await this.pickColor(householdId));
     return this.prisma.expenseCategory.create({ data: { householdId, userId, ...dto, color } });
   }
 
@@ -188,10 +156,18 @@ export class ExpensesService {
     });
     const used = new Set(existing.map((c) => c.color));
     const available = ExpensesService.CATEGORY_COLORS.find((c) => !used.has(c));
-    return available ?? ExpensesService.CATEGORY_COLORS[existing.length % ExpensesService.CATEGORY_COLORS.length];
+    return (
+      available ??
+      ExpensesService.CATEGORY_COLORS[existing.length % ExpensesService.CATEGORY_COLORS.length]
+    );
   }
 
-  async reassignMerchant(householdId: string, userId: string, merchant: string, categoryId: string) {
+  async reassignMerchant(
+    householdId: string,
+    userId: string,
+    merchant: string,
+    categoryId: string,
+  ) {
     const [result] = await Promise.all([
       this.prisma.expense.updateMany({
         where: { householdId, merchant },
@@ -207,6 +183,11 @@ export class ExpensesService {
   }
 
   private assertHouseholdAccess(householdId: string, expenseId: string) {
-    return assertHouseholdAccess(this.prisma.expense.findUnique.bind(this.prisma.expense), householdId, expenseId, 'Expense');
+    return assertHouseholdAccess(
+      this.prisma.expense.findUnique.bind(this.prisma.expense),
+      householdId,
+      expenseId,
+      'Expense',
+    );
   }
 }

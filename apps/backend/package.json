@@ -48,6 +48,35 @@
   "prisma": {
     "seed": "ts-node prisma/seed-demo.ts"
   },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "diagnostics": false
+        }
+      ]
+    },
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!**/*.module.ts",
+      "!main.ts"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1",
+      "^@finances/shared$": "<rootDir>/../../../packages/shared/src/index"
+    }
+  },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
     "@nestjs/testing": "^10.4.0",

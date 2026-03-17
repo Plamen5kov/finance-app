@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { buildClassifierChain } from '../expenses/transaction-classifier';
+import { parseCSV, parseAmount } from '../common/utils/csv-parser';
 
 export interface RevolutImportStats {
   imported: number;
@@ -27,7 +28,7 @@ export class ImportService {
     fileBuffer: Buffer,
   ): Promise<RevolutImportStats> {
     const content = fileBuffer.toString('utf-8');
-    const rows = this.parseCSV(content);
+    const rows = parseCSV(content);
 
     if (rows.length < 2) {
       throw new BadRequestException('CSV file is empty or has no data rows');
@@ -65,20 +66,15 @@ export class ImportService {
     const existingMappings = await this.prisma.merchantCategoryMap.findMany({
       where: { householdId },
     });
-    const savedMerchantMap = new Map(
-      existingMappings.map((m) => [m.merchant, m.categoryId]),
-    );
+    const savedMerchantMap = new Map(existingMappings.map((m) => [m.merchant, m.categoryId]));
 
-    const { classify } = buildClassifierChain(
-      categoryMap,
-      savedMerchantMap,
-    );
+    const { classify } = buildClassifierChain(categoryMap, savedMerchantMap);
 
     // Filter and parse data rows
     const dataRows = rows.slice(1).filter((r) => {
       if (!r[stateIdx]?.includes('COMPLETED')) return false;
       if (typeIdx !== -1 && r[typeIdx]?.trim() === 'Exchange') return false;
-      return this.parseAmount(r[amountIdx]) !== 0;
+      return parseAmount(r[amountIdx]) !== 0;
     });
 
     const transactions: Array<{
@@ -95,7 +91,7 @@ export class ImportService {
 
     for (const row of dataRows) {
       const dateStr = row[dateIdx]?.trim();
-      const amount = this.parseAmount(row[amountIdx]);
+      const amount = parseAmount(row[amountIdx]);
       const merchant = row[descIdx]?.trim() ?? 'Unknown';
 
       if (!dateStr || amount === 0) continue;
@@ -106,11 +102,7 @@ export class ImportService {
       const categoryId = classify(merchant, amount);
 
       // Track new mappings for expenses only
-      if (
-        amount < 0 &&
-        !savedMerchantMap.has(merchant) &&
-        !newMappings.has(merchant)
-      ) {
+      if (amount < 0 && !savedMerchantMap.has(merchant) && !newMappings.has(merchant)) {
         newMappings.set(merchant, categoryId);
       }
 
@@ -129,14 +121,12 @@ export class ImportService {
     // Persist new merchant mappings
     if (newMappings.size > 0) {
       await this.prisma.merchantCategoryMap.createMany({
-        data: Array.from(newMappings.entries()).map(
-          ([merchant, categoryId]) => ({
-            userId,
-            householdId,
-            merchant,
-            categoryId,
-          }),
-        ),
+        data: Array.from(newMappings.entries()).map(([merchant, categoryId]) => ({
+          userId,
+          householdId,
+          merchant,
+          categoryId,
+        })),
         skipDuplicates: true,
       });
     }
@@ -147,10 +137,7 @@ export class ImportService {
       select: { merchant: true, amount: true, date: true },
     });
     const existingKeys = new Set(
-      existingExpenses.map(
-        (e) =>
-          `${e.merchant}|${e.amount}|${e.date.toISOString().slice(0, 10)}`,
-      ),
+      existingExpenses.map((e) => `${e.merchant}|${e.amount}|${e.date.toISOString().slice(0, 10)}`),
     );
 
     const newTransactions = transactions.filter((t) => {
@@ -180,41 +167,5 @@ export class ImportService {
       skipped,
       newMappings: newMappings.size,
     };
-  }
-
-  // ── CSV Parsing Helpers ───────────────────────────────────────────────────
-
-  /**
-   * Parse a CSV string into rows of string arrays.
-   * Handles quoted fields containing commas.
-   */
-  private parseCSV(content: string): string[][] {
-    const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    return lines.map((line) => this.parseCSVLine(line));
-  }
-
-  private parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') {
-        inQuotes = !inQuotes;
-      } else if (c === ',' && !inQuotes) {
-        result.push(current);
-        current = '';
-      } else {
-        current += c;
-      }
-    }
-    result.push(current);
-    return result;
-  }
-
-  private parseAmount(v: string): number {
-    if (!v || !v.trim()) return 0;
-    const n = parseFloat(v.replace(/[^\d.-]/g, ''));
-    return isNaN(n) ? 0 : n;
   }
 }

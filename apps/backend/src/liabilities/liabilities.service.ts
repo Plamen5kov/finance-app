@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
+import {
+  calculateMortgageBalance,
+  calculateLeasingBalance,
+  currentMonthKey,
+  getCurrentMonthlyPayment as getPayment,
+} from '../common/utils/amortization';
 import { CreateLiabilityDto } from './dto/create-liability.dto';
 import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 
@@ -8,88 +14,18 @@ import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 export class LiabilitiesService {
   constructor(private prisma: PrismaService) {}
 
-  /** Calculate current outstanding balance from loan metadata and today's date. */
   private calculateCurrentBalance(
     type: string,
     metadata?: MortgageMetadata | LeasingMetadata,
   ): number {
     if (!metadata) return 0;
-    const now = new Date();
-    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
+    const monthKey = currentMonthKey();
     if (type === 'mortgage' || type === 'loan') {
-      const meta = metadata as MortgageMetadata;
-      if (!meta.originalAmount || !meta.startDate) return 0;
-
-      const events = (meta.events ?? []).slice().sort((a, b) => a.date.localeCompare(b.date));
-      let balance = meta.originalAmount;
-      let rate = meta.interestRate;
-      let payment = meta.monthlyPayment;
-      let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
-
-      while (balance > 0.01) {
-        const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-        if (monthKey > currentMonthKey) break;
-
-        for (const evt of events) {
-          const evtMonth = evt.date.slice(0, 7);
-          if (evtMonth !== monthKey) continue;
-          if (evt.type === 'rate_change' && evt.newRate != null) rate = evt.newRate;
-          if (evt.type === 'payment_change' && evt.newMonthlyPayment != null)
-            payment = evt.newMonthlyPayment;
-          if (evt.type === 'extra_payment' && evt.amount != null)
-            balance = Math.max(0, balance - evt.amount);
-          if (evt.type === 'refinance') {
-            if (evt.newBalance != null) balance = evt.newBalance;
-            if (evt.newRate != null) rate = evt.newRate;
-            if (evt.newMonthlyPayment != null) payment = evt.newMonthlyPayment;
-          }
-        }
-
-        if (monthKey === currentMonthKey) break;
-
-        const monthlyRate = rate / 100 / 12;
-        const interest = balance * monthlyRate;
-        const principal = payment - interest;
-        if (principal > 0) balance = Math.max(0, balance - principal);
-
-        month++;
-        if (month > 12) {
-          month = 1;
-          year++;
-        }
-      }
-      return Math.round(balance * 100) / 100;
+      return calculateMortgageBalance(metadata as MortgageMetadata, monthKey);
     }
-
     if (type === 'leasing') {
-      const meta = metadata as LeasingMetadata;
-      if (!meta.originalValue || !meta.startDate) return 0;
-
-      const financed = meta.originalValue - (meta.downPayment ?? 0);
-      let balance = financed;
-      let [year, month] = meta.startDate.slice(0, 7).split('-').map(Number);
-      const residual = meta.residualValue ?? 0;
-
-      while (balance > residual + 0.01) {
-        const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-        if (monthKey > currentMonthKey) break;
-        if (monthKey === currentMonthKey) break;
-
-        const monthlyRate = meta.interestRate / 100 / 12;
-        const interest = balance * monthlyRate;
-        const principal = meta.monthlyPayment - interest;
-        if (principal > 0) balance = Math.max(residual, balance - principal);
-
-        month++;
-        if (month > 12) {
-          month = 1;
-          year++;
-        }
-      }
-      return Math.round(balance * 100) / 100;
+      return calculateLeasingBalance(metadata as LeasingMetadata, monthKey);
     }
-
     return 0;
   }
 
@@ -141,32 +77,8 @@ export class LiabilitiesService {
     });
   }
 
-  /** Walk lifecycle events to determine the current monthly payment for a liability. */
   getCurrentMonthlyPayment(type: string, metadata?: MortgageMetadata | LeasingMetadata): number {
-    if (!metadata) return 0;
-
-    if (type === 'mortgage' || type === 'loan') {
-      const meta = metadata as MortgageMetadata;
-      if (!meta.monthlyPayment) return 0;
-      let payment = meta.monthlyPayment;
-      const now = new Date();
-      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-      for (const evt of (meta.events ?? []).slice().sort((a, b) => a.date.localeCompare(b.date))) {
-        if (evt.date.slice(0, 7) > currentMonthKey) break;
-        if (evt.type === 'payment_change' && evt.newMonthlyPayment != null)
-          payment = evt.newMonthlyPayment;
-        if (evt.type === 'refinance' && evt.newMonthlyPayment != null)
-          payment = evt.newMonthlyPayment;
-      }
-      return payment;
-    }
-
-    if (type === 'leasing') {
-      return (metadata as LeasingMetadata).monthlyPayment ?? 0;
-    }
-
-    return 0;
+    return getPayment(type, metadata);
   }
 
   async getTotal(householdId: string) {
