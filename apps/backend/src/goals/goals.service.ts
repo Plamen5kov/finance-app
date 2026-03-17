@@ -167,7 +167,7 @@ export class GoalsService {
       type: l.type,
       monthlyPayment: this.liabilitiesService.getCurrentMonthlyPayment(
         l.type,
-        l.metadata as MortgageMetadata | LeasingMetadata,
+        l.metadata as unknown as MortgageMetadata | LeasingMetadata,
       ),
     }));
 
