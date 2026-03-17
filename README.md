@@ -76,7 +76,7 @@ finances-app/
 1. **Clone and install:**
 
    ```bash
-   git clone git@github.com:Plamen5kov/finance-app.git
+   git clone git@github.com:your-username/finances-app.git
    cd finance-app
    pnpm install
    ```
@@ -110,7 +110,7 @@ finances-app/
    pnpm --filter backend db:seed
    ```
 
-   Creates a test user (`plamen@finances.local` / `MyPassword123456`) with historical assets, liabilities, expenses, and goals.
+   Creates a test user (`demo@finances.local` / `DemoPassword123456`) with historical assets, liabilities, expenses, and goals.
 
 6. **Start dev servers:**
 
@@ -151,7 +151,7 @@ Everything runs via Docker Compose. You need a Linux server with Docker and Dock
 1. **Clone the repo on your server:**
 
    ```bash
-   git clone https://github.com/Plamen5kov/finance-app.git
+   git clone https://github.com/your-username/finances-app.git
    cd finance-app
    ```
 
@@ -177,11 +177,13 @@ Everything runs via Docker Compose. You need a Linux server with Docker and Dock
    SESSION_SECRET=<random-string-at-least-32-chars>
    ```
 
-3. **Set your domain** in `docker-compose.prod.yml`:
+3. **Set your domain** by adding `FRONTEND_URL` to your `.env`:
 
-   Find and replace `https://finance.5kov.xyz` with your domain in these places:
-   - `FRONTEND_URL` in the backend service
-   - `NEXT_PUBLIC_API_URL` in the frontend service (both `args` and `environment`)
+   ```bash
+   echo "FRONTEND_URL=https://yourdomain.com" >> .env
+   ```
+
+   This is used by both the backend (`FRONTEND_URL`) and frontend (`NEXT_PUBLIC_API_URL`) services in `docker-compose.prod.yml`.
 
 4. **Build and start everything:**
 

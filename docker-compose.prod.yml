@@ -40,7 +40,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       NODE_ENV: production
       PORT: 3001
-      FRONTEND_URL: https://finance.5kov.xyz
+      FRONTEND_URL: ${FRONTEND_URL:-https://finance.example.com}
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,10 +52,10 @@ services:
       context: .
       dockerfile: apps/frontend/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://finance.5kov.xyz
+        NEXT_PUBLIC_API_URL: ${FRONTEND_URL:-https://finance.example.com}
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: https://finance.5kov.xyz
+      NEXT_PUBLIC_API_URL: ${FRONTEND_URL:-https://finance.example.com}
       SESSION_SECRET: ${SESSION_SECRET}
     depends_on:
       - backend
