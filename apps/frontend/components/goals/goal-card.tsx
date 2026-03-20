@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Goal, EmergencyFundAdvice } from '@/hooks/use-goals';
 import { formatCurrency, formatDate, monthsUntil } from '@/lib/utils';
-import { Trash2, Calendar, TrendingUp, Pencil, ShieldCheck, PlusCircle } from 'lucide-react';
+import { Trash2, Calendar, TrendingUp, Pencil, ShieldCheck } from 'lucide-react';
 import { useTranslation, TranslationKey } from '@/i18n';
 import { Modal } from '@/components/ui/modal';
 import { EmergencyFundControls } from './emergency-fund-advisor';
@@ -78,7 +78,8 @@ export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice, budgetType }
   return (
     <>
       <div
-        className={`rounded-xl shadow-sm border p-5 flex flex-col gap-3 ${
+        onClick={() => setShowProgressModal(true)}
+        className={`rounded-xl shadow-sm border p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow ${
           isCompleted
             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
             : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800'
@@ -119,24 +120,21 @@ export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice, budgetType }
             )}
           </div>
           <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-            {!isCompleted && (
-              <button
-                onClick={() => setShowProgressModal(true)}
-                className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
-                aria-label="Record progress"
-              >
-                <PlusCircle size={16} />
-              </button>
-            )}
             <button
-              onClick={() => onEdit(goal)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(goal);
+              }}
               className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
               aria-label="Edit goal"
             >
               <Pencil size={16} />
             </button>
             <button
-              onClick={() => onDelete(goal.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(goal.id);
+              }}
               className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
               aria-label="Delete goal"
             >
@@ -170,7 +168,14 @@ export function GoalCard({ goal, onDelete, onEdit, emergencyAdvice, budgetType }
         {/* Emergency fund coverage badge */}
         {emergencyBadge && (
           <button
-            onClick={canEditFund ? () => setShowFundModal(true) : undefined}
+            onClick={
+              canEditFund
+                ? (e) => {
+                    e.stopPropagation();
+                    setShowFundModal(true);
+                  }
+                : undefined
+            }
             className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md w-fit ${
               emergencyBadge.covered >= emergencyBadge.target
                 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'

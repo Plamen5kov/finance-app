@@ -110,7 +110,10 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
     : null;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5">
+    <div
+      onClick={() => onEdit(liability)}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -128,14 +131,20 @@ export function LiabilityCard({ liability, onDelete, onEdit }: LiabilityCardProp
         </div>
         <div className="flex gap-1">
           <button
-            onClick={() => onEdit(liability)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(liability);
+            }}
             className="p-2 text-gray-300 dark:text-gray-600 hover:text-brand active:text-brand transition-colors"
             aria-label="Edit liability"
           >
             <Pencil size={16} />
           </button>
           <button
-            onClick={() => onDelete(liability.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(liability.id);
+            }}
             className="p-2 text-gray-300 dark:text-gray-600 hover:text-red-500 active:text-red-500 transition-colors"
             aria-label="Delete liability"
           >
