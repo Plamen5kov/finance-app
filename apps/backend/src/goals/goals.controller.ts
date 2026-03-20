@@ -14,6 +14,7 @@ import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decor
 import { GoalsService } from './goals.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto, UpdateGoalStatusDto } from './dto/update-goal.dto';
+import { RecordProgressDto } from './dto/record-progress.dto';
 
 @Controller({ path: 'goals', version: '1' })
 export class GoalsController {
@@ -66,6 +67,30 @@ export class GoalsController {
     @Body() dto: UpdateGoalStatusDto,
   ) {
     return this.goalsService.updateStatus(user.householdId, id, dto);
+  }
+
+  @Post(':id/progress')
+  recordProgress(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: RecordProgressDto,
+  ) {
+    return this.goalsService.recordProgress(user.householdId, id, dto);
+  }
+
+  @Get(':id/progress')
+  getProgress(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    return this.goalsService.getProgress(user.householdId, id);
+  }
+
+  @Delete(':id/progress/:snapshotId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteProgress(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Param('snapshotId') snapshotId: string,
+  ) {
+    return this.goalsService.deleteProgress(user.householdId, id, snapshotId);
   }
 
   @Delete(':id')

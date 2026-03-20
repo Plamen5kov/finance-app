@@ -153,6 +153,50 @@ export function useGoalBudgetAdvice() {
   });
 }
 
+export interface GoalProgress {
+  id: string;
+  goalId: string;
+  month: string;
+  balanceAsOf: number;
+  actualSavedThisMonth: number;
+}
+
+export function useGoalProgress(goalId: string) {
+  return useQuery({
+    queryKey: ['goals', goalId, 'progress'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<GoalProgress[]>(`/goals/${goalId}/progress`);
+      return data;
+    },
+    enabled: !!goalId,
+  });
+}
+
+export function useAddGoalProgress(goalId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { month: string; amount: number }) => {
+      const { data } = await apiClient.post(`/goals/${goalId}/progress`, input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+  });
+}
+
+export function useDeleteGoalProgress(goalId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (snapshotId: string) => {
+      await apiClient.delete(`/goals/${goalId}/progress/${snapshotId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+  });
+}
+
 export function useEmergencyFundAdvice() {
   return useQuery({
     queryKey: ['goals', 'emergency-fund-advice'],

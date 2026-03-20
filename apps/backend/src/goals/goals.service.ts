@@ -15,6 +15,7 @@ import {
 } from '../common/utils/goal-calculations';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto, UpdateGoalStatusDto } from './dto/update-goal.dto';
+import { RecordProgressDto } from './dto/record-progress.dto';
 
 @Injectable()
 export class GoalsService {
@@ -198,6 +199,119 @@ export class GoalsService {
         type: s.type,
       })),
     };
+  }
+
+  async recordProgress(householdId: string, goalId: string, dto: RecordProgressDto) {
+    await this.assertHouseholdAccess(householdId, goalId);
+    const goal = await this.prisma.goal.findUnique({ where: { id: goalId } });
+    if (!goal) throw new NotFoundException('Goal not found');
+
+    const monthDate = new Date(`${dto.month}-01T00:00:00.000Z`);
+    const savedAmount = round2(dto.amount);
+
+    // Upsert snapshot for this month
+    const snapshot = await this.prisma.goalSnapshot.upsert({
+      where: { goalId_month: { goalId, month: monthDate } },
+      update: {
+        actualSavedThisMonth: savedAmount,
+        balanceAsOf: round2(
+          goal.currentAmount -
+            (await this.getExistingSnapshotAmount(goalId, monthDate)) +
+            savedAmount,
+        ),
+        targetAmount: goal.targetAmount,
+        targetDate: goal.targetDate,
+      },
+      create: {
+        goalId,
+        month: monthDate,
+        actualSavedThisMonth: savedAmount,
+        balanceAsOf: round2(goal.currentAmount + savedAmount),
+        targetAmount: goal.targetAmount,
+        targetDate: goal.targetDate,
+      },
+    });
+
+    // Recompute currentAmount as sum of all actualSavedThisMonth across snapshots
+    const agg = await this.prisma.goalSnapshot.aggregate({
+      where: { goalId },
+      _sum: { actualSavedThisMonth: true },
+    });
+    const newCurrent = round2(agg._sum.actualSavedThisMonth ?? 0);
+
+    // Update goal currentAmount and recompute all balanceAsOf values
+    await this.prisma.goal.update({
+      where: { id: goalId },
+      data: { currentAmount: newCurrent },
+    });
+
+    // Recompute running balanceAsOf for all snapshots (chronological order)
+    const allSnapshots = await this.prisma.goalSnapshot.findMany({
+      where: { goalId },
+      orderBy: { month: 'asc' },
+    });
+    let runningBalance = 0;
+    for (const snap of allSnapshots) {
+      runningBalance = round2(runningBalance + snap.actualSavedThisMonth);
+      if (snap.balanceAsOf !== runningBalance) {
+        await this.prisma.goalSnapshot.update({
+          where: { id: snap.id },
+          data: { balanceAsOf: runningBalance },
+        });
+      }
+    }
+
+    return { snapshot, currentAmount: newCurrent };
+  }
+
+  async getProgress(householdId: string, goalId: string) {
+    await this.assertHouseholdAccess(householdId, goalId);
+    return this.prisma.goalSnapshot.findMany({
+      where: { goalId },
+      orderBy: { month: 'asc' },
+    });
+  }
+
+  async deleteProgress(householdId: string, goalId: string, snapshotId: string) {
+    await this.assertHouseholdAccess(householdId, goalId);
+    const snapshot = await this.prisma.goalSnapshot.findUnique({ where: { id: snapshotId } });
+    if (!snapshot) throw new NotFoundException('Snapshot not found');
+    if (snapshot.goalId !== goalId) throw new ForbiddenException();
+
+    await this.prisma.goalSnapshot.delete({ where: { id: snapshotId } });
+
+    // Recompute currentAmount and balanceAsOf
+    const agg = await this.prisma.goalSnapshot.aggregate({
+      where: { goalId },
+      _sum: { actualSavedThisMonth: true },
+    });
+    const newCurrent = round2(agg._sum.actualSavedThisMonth ?? 0);
+    await this.prisma.goal.update({
+      where: { id: goalId },
+      data: { currentAmount: newCurrent },
+    });
+
+    const allSnapshots = await this.prisma.goalSnapshot.findMany({
+      where: { goalId },
+      orderBy: { month: 'asc' },
+    });
+    let runningBalance = 0;
+    for (const snap of allSnapshots) {
+      runningBalance = round2(runningBalance + snap.actualSavedThisMonth);
+      if (snap.balanceAsOf !== runningBalance) {
+        await this.prisma.goalSnapshot.update({
+          where: { id: snap.id },
+          data: { balanceAsOf: runningBalance },
+        });
+      }
+    }
+  }
+
+  private async getExistingSnapshotAmount(goalId: string, month: Date): Promise<number> {
+    const existing = await this.prisma.goalSnapshot.findUnique({
+      where: { goalId_month: { goalId, month } },
+    });
+    return existing?.actualSavedThisMonth ?? 0;
   }
 
   private assertHouseholdAccess(householdId: string, goalId: string) {

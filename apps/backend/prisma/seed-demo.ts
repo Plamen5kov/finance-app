@@ -27,13 +27,22 @@ function monthKey(year: number, month: number): string {
 }
 
 /** Generate months from start to end (inclusive) as [year, month] tuples */
-function monthRange(startYear: number, startMonth: number, endYear: number, endMonth: number): [number, number][] {
+function monthRange(
+  startYear: number,
+  startMonth: number,
+  endYear: number,
+  endMonth: number,
+): [number, number][] {
   const months: [number, number][] = [];
-  let y = startYear, m = startMonth;
+  let y = startYear,
+    m = startMonth;
   while (y < endYear || (y === endYear && m <= endMonth)) {
     months.push([y, m]);
     m++;
-    if (m > 12) { m = 1; y++; }
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
   }
   return months;
 }
@@ -56,7 +65,9 @@ async function main() {
   // 1. Clean slate for demo user
   const existingUser = await prisma.user.findUnique({ where: { email: DEMO_USER.email } });
   if (existingUser) {
-    const membership = await prisma.householdMember.findFirst({ where: { userId: existingUser.id } });
+    const membership = await prisma.householdMember.findFirst({
+      where: { userId: existingUser.id },
+    });
     if (membership) {
       await prisma.household.delete({ where: { id: membership.householdId } });
     }
@@ -85,8 +96,11 @@ async function main() {
   // --- Mortgage: 250K, started Jan 2021, with lifecycle events ---
   const mortgage = await prisma.liability.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'mortgage', name: 'Home Mortgage', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'mortgage',
+      name: 'Home Mortgage',
+      currency: 'EUR',
       value: 0, // will be set by snapshots logic
       metadata: {
         originalAmount: 250000,
@@ -95,10 +109,36 @@ async function main() {
         termMonths: 300,
         startDate: '2021-01-01',
         events: [
-          { id: 'evt-1', type: 'extra_payment', date: '2022-06-01', amount: 10000, notes: 'Bonus payment' },
-          { id: 'evt-2', type: 'refinance', date: '2023-09-01', newBalance: 210000, newRate: 2.4, newMonthlyPayment: 1200, notes: 'Bank refinance after rate hike' },
-          { id: 'evt-3', type: 'rate_change', date: '2025-03-01', newRate: 2.1, notes: 'Rate reduced after ECB cut' },
-          { id: 'evt-4', type: 'payment_change', date: '2025-06-01', newMonthlyPayment: 1350, notes: 'Increased payment to shorten term' },
+          {
+            id: 'evt-1',
+            type: 'extra_payment',
+            date: '2022-06-01',
+            amount: 10000,
+            notes: 'Bonus payment',
+          },
+          {
+            id: 'evt-2',
+            type: 'refinance',
+            date: '2023-09-01',
+            newBalance: 210000,
+            newRate: 2.4,
+            newMonthlyPayment: 1200,
+            notes: 'Bank refinance after rate hike',
+          },
+          {
+            id: 'evt-3',
+            type: 'rate_change',
+            date: '2025-03-01',
+            newRate: 2.1,
+            notes: 'Rate reduced after ECB cut',
+          },
+          {
+            id: 'evt-4',
+            type: 'payment_change',
+            date: '2025-06-01',
+            newMonthlyPayment: 1350,
+            notes: 'Increased payment to shorten term',
+          },
         ],
       },
     },
@@ -124,9 +164,14 @@ async function main() {
         if (evt.newMonthlyPayment != null) mPay = evt.newMonthlyPayment;
       }
       if (evt.type === 'rate_change' && evt.newRate != null) mRate = evt.newRate;
-      if (evt.type === 'payment_change' && evt.newMonthlyPayment != null) mPay = evt.newMonthlyPayment;
+      if (evt.type === 'payment_change' && evt.newMonthlyPayment != null)
+        mPay = evt.newMonthlyPayment;
     }
-    mortSnapshots.push({ liabilityId: mortgage.id, value: Math.round(mBal * 100) / 100, capturedAt: monthDate(y, m) });
+    mortSnapshots.push({
+      liabilityId: mortgage.id,
+      value: Math.round(mBal * 100) / 100,
+      capturedAt: monthDate(y, m),
+    });
     // Amortize after snapshot
     const monthlyRate = mRate / 100 / 12;
     const interest = mBal * monthlyRate;
@@ -135,14 +180,22 @@ async function main() {
   }
 
   await prisma.liabilitySnapshot.createMany({ data: mortSnapshots });
-  await prisma.liability.update({ where: { id: mortgage.id }, data: { value: mortSnapshots.at(-1)!.value } });
-  console.log(`✅ Mortgage: ${mortSnapshots.length} snapshots, current balance: €${mortSnapshots.at(-1)!.value.toFixed(0)}`);
+  await prisma.liability.update({
+    where: { id: mortgage.id },
+    data: { value: mortSnapshots.at(-1)!.value },
+  });
+  console.log(
+    `✅ Mortgage: ${mortSnapshots.length} snapshots, current balance: €${mortSnapshots.at(-1)!.value.toFixed(0)}`,
+  );
 
   // --- Car Leasing: 35K car, started Jun 2023, 48 months ---
   const leasing = await prisma.liability.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'leasing', name: 'Car Lease (BMW 3 Series)', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'leasing',
+      name: 'Car Lease (BMW 3 Series)',
+      currency: 'EUR',
       value: 0,
       metadata: {
         originalValue: 35000,
@@ -163,7 +216,11 @@ async function main() {
   const leaseMonths = monthRange(2023, 6, 2026, 3);
 
   for (const [y, m] of leaseMonths) {
-    leaseSnapshots.push({ liabilityId: leasing.id, value: Math.round(lBal * 100) / 100, capturedAt: monthDate(y, m) });
+    leaseSnapshots.push({
+      liabilityId: leasing.id,
+      value: Math.round(lBal * 100) / 100,
+      capturedAt: monthDate(y, m),
+    });
     const monthlyRate = leaseMeta.interestRate / 100 / 12;
     const interest = lBal * monthlyRate;
     const principal = leaseMeta.monthlyPayment - interest;
@@ -171,14 +228,22 @@ async function main() {
   }
 
   await prisma.liabilitySnapshot.createMany({ data: leaseSnapshots });
-  await prisma.liability.update({ where: { id: leasing.id }, data: { value: leaseSnapshots.at(-1)!.value } });
-  console.log(`✅ Car Lease: ${leaseSnapshots.length} snapshots, current balance: €${leaseSnapshots.at(-1)!.value.toFixed(0)}`);
+  await prisma.liability.update({
+    where: { id: leasing.id },
+    data: { value: leaseSnapshots.at(-1)!.value },
+  });
+  console.log(
+    `✅ Car Lease: ${leaseSnapshots.length} snapshots, current balance: €${leaseSnapshots.at(-1)!.value.toFixed(0)}`,
+  );
 
   // --- Personal Loan: 15K, started Mar 2024, 36 months ---
   const loan = await prisma.liability.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'loan', name: 'Home Renovation Loan', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'loan',
+      name: 'Home Renovation Loan',
+      currency: 'EUR',
       value: 0,
       metadata: {
         originalAmount: 15000,
@@ -197,7 +262,11 @@ async function main() {
   const loanMonths = monthRange(2024, 3, 2026, 3);
 
   for (const [y, m] of loanMonths) {
-    loanSnapshots.push({ liabilityId: loan.id, value: Math.round(lnBal * 100) / 100, capturedAt: monthDate(y, m) });
+    loanSnapshots.push({
+      liabilityId: loan.id,
+      value: Math.round(lnBal * 100) / 100,
+      capturedAt: monthDate(y, m),
+    });
     const monthlyRate = loanMeta.interestRate / 100 / 12;
     const interest = lnBal * monthlyRate;
     const principal = loanMeta.monthlyPayment - interest;
@@ -205,8 +274,13 @@ async function main() {
   }
 
   await prisma.liabilitySnapshot.createMany({ data: loanSnapshots });
-  await prisma.liability.update({ where: { id: loan.id }, data: { value: loanSnapshots.at(-1)!.value } });
-  console.log(`✅ Renovation Loan: ${loanSnapshots.length} snapshots, current balance: €${loanSnapshots.at(-1)!.value.toFixed(0)}\n`);
+  await prisma.liability.update({
+    where: { id: loan.id },
+    data: { value: loanSnapshots.at(-1)!.value },
+  });
+  console.log(
+    `✅ Renovation Loan: ${loanSnapshots.length} snapshots, current balance: €${loanSnapshots.at(-1)!.value.toFixed(0)}\n`,
+  );
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ASSETS
@@ -215,18 +289,32 @@ async function main() {
   // --- Apartment: bought Jan 2021 for €250K (matches mortgage), appreciates ---
   const apartment = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'apartment', name: 'City Apartment', value: 340000, currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'apartment',
+      name: 'City Apartment',
+      value: 340000,
+      currency: 'EUR',
     },
   });
   const aptValues: [string, number][] = [
-    ['2021-01', 250000], ['2021-06', 255000], ['2022-01', 268000], ['2022-06', 275000],
-    ['2023-01', 285000], ['2023-06', 292000], ['2024-01', 305000], ['2024-06', 315000],
-    ['2025-01', 325000], ['2025-06', 335000], ['2026-01', 340000],
+    ['2021-01', 250000],
+    ['2021-06', 255000],
+    ['2022-01', 268000],
+    ['2022-06', 275000],
+    ['2023-01', 285000],
+    ['2023-06', 292000],
+    ['2024-01', 305000],
+    ['2024-06', 315000],
+    ['2025-01', 325000],
+    ['2025-06', 335000],
+    ['2026-01', 340000],
   ];
   await prisma.assetSnapshot.createMany({
     data: aptValues.map(([month, value]) => ({
-      assetId: apartment.id, value, capturedAt: new Date(`${month}-01T00:00:00Z`),
+      assetId: apartment.id,
+      value,
+      capturedAt: new Date(`${month}-01T00:00:00Z`),
     })),
   });
   console.log(`✅ Apartment: ${aptValues.length} snapshots, current: €340,000`);
@@ -234,18 +322,29 @@ async function main() {
   // --- Car: depreciates from €35K (matches lease) ---
   const car = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'apartment', name: 'BMW 3 Series', value: 27000, currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'apartment',
+      name: 'BMW 3 Series',
+      value: 27000,
+      currency: 'EUR',
       metadata: { vehicleType: 'sedan', year: 2023 },
     },
   });
   const carValues: [string, number][] = [
-    ['2023-06', 35000], ['2023-12', 33000], ['2024-06', 31000], ['2024-12', 29000],
-    ['2025-06', 28000], ['2025-12', 27500], ['2026-03', 27000],
+    ['2023-06', 35000],
+    ['2023-12', 33000],
+    ['2024-06', 31000],
+    ['2024-12', 29000],
+    ['2025-06', 28000],
+    ['2025-12', 27500],
+    ['2026-03', 27000],
   ];
   await prisma.assetSnapshot.createMany({
     data: carValues.map(([month, value]) => ({
-      assetId: car.id, value, capturedAt: new Date(`${month}-01T00:00:00Z`),
+      assetId: car.id,
+      value,
+      capturedAt: new Date(`${month}-01T00:00:00Z`),
     })),
   });
   console.log(`✅ Car: ${carValues.length} snapshots, current: €27,000`);
@@ -255,7 +354,17 @@ async function main() {
     assetId: string,
     prices: [string, number][],
     monthlyBudget: number,
-  ): { snapshots: { assetId: string; value: number; price: number; quantity: number; capturedAt: Date }[]; finalQty: number; totalCost: number } {
+  ): {
+    snapshots: {
+      assetId: string;
+      value: number;
+      price: number;
+      quantity: number;
+      capturedAt: Date;
+    }[];
+    finalQty: number;
+    totalCost: number;
+  } {
     let runningQty = 0;
     let totalCost = 0;
     const snapshots = prices.map(([month, price]) => {
@@ -275,115 +384,195 @@ async function main() {
 
   // --- ETF: Vanguard FTSE All-World (VWCE.DE) — DCA €500/month ---
   const vwcePrices: [string, number][] = [
-    ['2022-01', 102], ['2022-04', 98], ['2022-07', 91], ['2022-10', 88],
-    ['2023-01', 95], ['2023-04', 98], ['2023-07', 101], ['2023-10', 97],
-    ['2024-01', 106], ['2024-04', 110], ['2024-07', 113], ['2024-10', 108],
-    ['2025-01', 115], ['2025-04', 118], ['2025-07', 121], ['2025-10', 119],
-    ['2026-01', 124], ['2026-03', 126],
+    ['2022-01', 102],
+    ['2022-04', 98],
+    ['2022-07', 91],
+    ['2022-10', 88],
+    ['2023-01', 95],
+    ['2023-04', 98],
+    ['2023-07', 101],
+    ['2023-10', 97],
+    ['2024-01', 106],
+    ['2024-04', 110],
+    ['2024-07', 113],
+    ['2024-10', 108],
+    ['2025-01', 115],
+    ['2025-04', 118],
+    ['2025-07', 121],
+    ['2025-10', 119],
+    ['2026-01', 124],
+    ['2026-03', 126],
   ];
   const vwceDca = dcaSnapshots('', vwcePrices, 500);
   const etf1 = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'etf', name: 'Vanguard FTSE All-World (VWCE)', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'etf',
+      name: 'Vanguard FTSE All-World (VWCE)',
+      currency: 'EUR',
       value: vwceDca.snapshots.at(-1)!.value,
-      quantity: vwceDca.finalQty, costBasis: vwceDca.totalCost,
+      quantity: vwceDca.finalQty,
+      costBasis: vwceDca.totalCost,
       metadata: { ticker: 'VWCE.DE' },
     },
   });
   await prisma.assetSnapshot.createMany({
     data: vwceDca.snapshots.map((s) => ({ ...s, assetId: etf1.id })),
   });
-  console.log(`✅ ETF (VWCE): ${vwcePrices.length} snapshots, DCA €500/mo → ${vwceDca.finalQty} shares, value €${vwceDca.snapshots.at(-1)!.value}`);
+  console.log(
+    `✅ ETF (VWCE): ${vwcePrices.length} snapshots, DCA €500/mo → ${vwceDca.finalQty} shares, value €${vwceDca.snapshots.at(-1)!.value}`,
+  );
 
   // --- ETF 2: iShares MSCI World (IWDA.AS) — DCA €300/month ---
   const iwdaPrices: [string, number][] = [
-    ['2023-03', 74], ['2023-06', 76], ['2023-09', 73], ['2023-12', 78],
-    ['2024-03', 82], ['2024-06', 84], ['2024-09', 81], ['2024-12', 86],
-    ['2025-03', 88], ['2025-06', 91], ['2025-09', 89], ['2025-12', 93],
+    ['2023-03', 74],
+    ['2023-06', 76],
+    ['2023-09', 73],
+    ['2023-12', 78],
+    ['2024-03', 82],
+    ['2024-06', 84],
+    ['2024-09', 81],
+    ['2024-12', 86],
+    ['2025-03', 88],
+    ['2025-06', 91],
+    ['2025-09', 89],
+    ['2025-12', 93],
     ['2026-03', 95],
   ];
   const iwdaDca = dcaSnapshots('', iwdaPrices, 300);
   const etf2 = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'etf', name: 'iShares MSCI World (IWDA)', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'etf',
+      name: 'iShares MSCI World (IWDA)',
+      currency: 'EUR',
       value: iwdaDca.snapshots.at(-1)!.value,
-      quantity: iwdaDca.finalQty, costBasis: iwdaDca.totalCost,
+      quantity: iwdaDca.finalQty,
+      costBasis: iwdaDca.totalCost,
       metadata: { ticker: 'IWDA.AS' },
     },
   });
   await prisma.assetSnapshot.createMany({
     data: iwdaDca.snapshots.map((s) => ({ ...s, assetId: etf2.id })),
   });
-  console.log(`✅ ETF (IWDA): ${iwdaPrices.length} snapshots, DCA €300/mo → ${iwdaDca.finalQty} shares, value €${iwdaDca.snapshots.at(-1)!.value}`);
+  console.log(
+    `✅ ETF (IWDA): ${iwdaPrices.length} snapshots, DCA €300/mo → ${iwdaDca.finalQty} shares, value €${iwdaDca.snapshots.at(-1)!.value}`,
+  );
 
   // --- Crypto: Bitcoin — DCA €200/month ---
   const btcPrices: [string, number][] = [
-    ['2022-01', 33000], ['2022-06', 18500], ['2022-12', 15500],
-    ['2023-03', 24000], ['2023-06', 27000], ['2023-09', 24500], ['2023-12', 39000],
-    ['2024-03', 60000], ['2024-06', 58000], ['2024-09', 55000], ['2024-12', 87000],
-    ['2025-03', 78000], ['2025-06', 82000], ['2025-09', 90000], ['2025-12', 85000],
+    ['2022-01', 33000],
+    ['2022-06', 18500],
+    ['2022-12', 15500],
+    ['2023-03', 24000],
+    ['2023-06', 27000],
+    ['2023-09', 24500],
+    ['2023-12', 39000],
+    ['2024-03', 60000],
+    ['2024-06', 58000],
+    ['2024-09', 55000],
+    ['2024-12', 87000],
+    ['2025-03', 78000],
+    ['2025-06', 82000],
+    ['2025-09', 90000],
+    ['2025-12', 85000],
     ['2026-03', 92000],
   ];
   const btcDca = dcaSnapshots('', btcPrices, 200);
   const btc = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'crypto', name: 'Bitcoin (BTC)', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'crypto',
+      name: 'Bitcoin (BTC)',
+      currency: 'EUR',
       value: btcDca.snapshots.at(-1)!.value,
-      quantity: btcDca.finalQty, costBasis: btcDca.totalCost,
+      quantity: btcDca.finalQty,
+      costBasis: btcDca.totalCost,
       metadata: { coinId: 'bitcoin' },
     },
   });
   await prisma.assetSnapshot.createMany({
     data: btcDca.snapshots.map((s) => ({ ...s, assetId: btc.id })),
   });
-  console.log(`✅ BTC: ${btcPrices.length} snapshots, DCA €200/mo → ${btcDca.finalQty} BTC, value €${btcDca.snapshots.at(-1)!.value}`);
+  console.log(
+    `✅ BTC: ${btcPrices.length} snapshots, DCA €200/mo → ${btcDca.finalQty} BTC, value €${btcDca.snapshots.at(-1)!.value}`,
+  );
 
   // --- Crypto: Ethereum — DCA €150/month ---
   const ethPrices: [string, number][] = [
-    ['2022-01', 2800], ['2022-06', 1000], ['2022-12', 1100],
-    ['2023-03', 1600], ['2023-06', 1700], ['2023-09', 1500], ['2023-12', 2100],
-    ['2024-03', 3200], ['2024-06', 3400], ['2024-09', 2300], ['2024-12', 3600],
-    ['2025-03', 2000], ['2025-06', 2200], ['2025-09', 2500], ['2025-12', 2800],
+    ['2022-01', 2800],
+    ['2022-06', 1000],
+    ['2022-12', 1100],
+    ['2023-03', 1600],
+    ['2023-06', 1700],
+    ['2023-09', 1500],
+    ['2023-12', 2100],
+    ['2024-03', 3200],
+    ['2024-06', 3400],
+    ['2024-09', 2300],
+    ['2024-12', 3600],
+    ['2025-03', 2000],
+    ['2025-06', 2200],
+    ['2025-09', 2500],
+    ['2025-12', 2800],
     ['2026-03', 2400],
   ];
   const ethDca = dcaSnapshots('', ethPrices, 150);
   const eth = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'crypto', name: 'Ethereum (ETH)', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'crypto',
+      name: 'Ethereum (ETH)',
+      currency: 'EUR',
       value: ethDca.snapshots.at(-1)!.value,
-      quantity: ethDca.finalQty, costBasis: ethDca.totalCost,
+      quantity: ethDca.finalQty,
+      costBasis: ethDca.totalCost,
       metadata: { coinId: 'ethereum' },
     },
   });
   await prisma.assetSnapshot.createMany({
     data: ethDca.snapshots.map((s) => ({ ...s, assetId: eth.id })),
   });
-  console.log(`✅ ETH: ${ethPrices.length} snapshots, DCA €150/mo → ${ethDca.finalQty} ETH, value €${ethDca.snapshots.at(-1)!.value}`);
+  console.log(
+    `✅ ETH: ${ethPrices.length} snapshots, DCA €150/mo → ${ethDca.finalQty} ETH, value €${ethDca.snapshots.at(-1)!.value}`,
+  );
 
   // --- Gold: DCA €100/month (buying grams) ---
   const goldPrices: [string, number][] = [
-    ['2022-06', 55], ['2022-12', 56], ['2023-06', 58], ['2023-12', 60],
-    ['2024-06', 68], ['2024-12', 76], ['2025-06', 82], ['2025-12', 86],
+    ['2022-06', 55],
+    ['2022-12', 56],
+    ['2023-06', 58],
+    ['2023-12', 60],
+    ['2024-06', 68],
+    ['2024-12', 76],
+    ['2025-06', 82],
+    ['2025-12', 86],
     ['2026-03', 88],
   ];
   const goldDca = dcaSnapshots('', goldPrices, 100);
   const gold = await prisma.asset.create({
     data: {
-      userId: uid, householdId: hid,
-      type: 'gold', name: 'Physical Gold', currency: 'EUR',
+      userId: uid,
+      householdId: hid,
+      type: 'gold',
+      name: 'Physical Gold',
+      currency: 'EUR',
       value: goldDca.snapshots.at(-1)!.value,
-      quantity: goldDca.finalQty, costBasis: goldDca.totalCost,
+      quantity: goldDca.finalQty,
+      costBasis: goldDca.totalCost,
       metadata: { metal: 'gold', unit: 'g' },
     },
   });
   await prisma.assetSnapshot.createMany({
     data: goldDca.snapshots.map((s) => ({ ...s, assetId: gold.id })),
   });
-  console.log(`✅ Gold: ${goldPrices.length} snapshots, DCA €100/mo → ${goldDca.finalQty}g, value €${goldDca.snapshots.at(-1)!.value}\n`);
+  console.log(
+    `✅ Gold: ${goldPrices.length} snapshots, DCA €100/mo → ${goldDca.finalQty}g, value €${goldDca.snapshots.at(-1)!.value}\n`,
+  );
 
   // ═══════════════════════════════════════════════════════════════════════════
   // EXPENSE CATEGORIES
@@ -424,35 +613,112 @@ async function main() {
 
   const expenseMonths = monthRange(2025, 1, 2026, 3);
   const allExpenses: {
-    userId: string; householdId: string; amount: number; merchant: string | null;
-    description: string | null; date: Date; categoryId: string; source: string;
+    userId: string;
+    householdId: string;
+    amount: number;
+    merchant: string | null;
+    description: string | null;
+    date: Date;
+    categoryId: string;
+    source: string;
   }[] = [];
 
   // Merchant pools per category
   const merchants: Record<string, string[]> = {
-    'Groceries': ['Lidl', 'Aldi', 'Rewe', 'Edeka', 'Penny'],
-    'Transport': ['Shell Gas Station', 'BP Fuel', 'City Metro', 'Uber', 'Parking Garage'],
-    'Dining Out': ['Pizza Express', 'Sushi Palace', 'Cafe Nero', 'McDonalds', 'Local Bistro', 'Thai Kitchen'],
-    'Entertainment': ['Cinema City', 'Steam Games', 'Book Store', 'Concert Hall', 'Bowling Alley'],
-    'Healthcare': ['City Pharmacy', 'Dr. Mueller', 'Dentist Dr. Braun', 'Optician Plus'],
-    'Shopping': ['Amazon', 'Zara', 'H&M', 'IKEA', 'Media Markt', 'Decathlon'],
-    'Subscriptions': ['Netflix', 'Spotify', 'Gym Membership', 'iCloud', 'YouTube Premium', 'ChatGPT Plus'],
-    'Education': ['Udemy', 'OReilly Books', 'Coursera'],
-    'Travel': ['Booking.com', 'Ryanair', 'Airbnb', 'Hertz Car Rental'],
-    'Childcare': ['Happy Kids Daycare', 'After School Program'],
+    Groceries: ['Lidl', 'Aldi', 'Rewe', 'Edeka', 'Penny'],
+    Transport: ['Shell Gas Station', 'BP Fuel', 'City Metro', 'Uber', 'Parking Garage'],
+    'Dining Out': [
+      'Pizza Express',
+      'Sushi Palace',
+      'Cafe Nero',
+      'McDonalds',
+      'Local Bistro',
+      'Thai Kitchen',
+    ],
+    Entertainment: ['Cinema City', 'Steam Games', 'Book Store', 'Concert Hall', 'Bowling Alley'],
+    Healthcare: ['City Pharmacy', 'Dr. Mueller', 'Dentist Dr. Braun', 'Optician Plus'],
+    Shopping: ['Amazon', 'Zara', 'H&M', 'IKEA', 'Media Markt', 'Decathlon'],
+    Subscriptions: [
+      'Netflix',
+      'Spotify',
+      'Gym Membership',
+      'iCloud',
+      'YouTube Premium',
+      'ChatGPT Plus',
+    ],
+    Education: ['Udemy', 'OReilly Books', 'Coursera'],
+    Travel: ['Booking.com', 'Ryanair', 'Airbnb', 'Hertz Car Rental'],
+    Childcare: ['Happy Kids Daycare', 'After School Program'],
     'Gifts & Donations': ['Gift Shop', 'Red Cross', 'Birthday Gift'],
   };
 
   // Description pools per category
   const descriptions: Record<string, string[]> = {
-    'Groceries': ['Weekly groceries', 'Fruits and vegetables', 'Bread and dairy', 'Household supplies', 'Snacks and drinks', 'Meat and fish', 'Cleaning products'],
-    'Transport': ['Tank full', 'Highway toll', 'Monthly metro pass', 'Ride to airport', 'Parking downtown', 'Fuel top-up'],
-    'Dining Out': ['Lunch with colleagues', 'Friday dinner', 'Weekend brunch', 'Quick takeaway', 'Date night', 'Birthday celebration dinner'],
-    'Entertainment': ['Movie tickets', 'New board game', 'Concert tickets', 'Bowling night', 'Video game purchase', 'Book order'],
-    'Healthcare': ['Prescription medication', 'Annual checkup copay', 'Dental cleaning', 'New glasses', 'Vitamins and supplements', 'Physiotherapy session'],
-    'Shopping': ['Winter jacket', 'Kitchen utensils', 'Running shoes', 'New desk lamp', 'Phone case', 'Bathroom towels', 'Kids clothing'],
-    'Travel': ['Flight tickets', 'Hotel 3 nights', 'Vacation apartment', 'Rental car weekend', 'Travel insurance', 'Airport transfer'],
-    'Gifts & Donations': ['Birthday present', 'Charity donation', 'Wedding gift', 'Christmas gifts', 'Housewarming gift'],
+    Groceries: [
+      'Weekly groceries',
+      'Fruits and vegetables',
+      'Bread and dairy',
+      'Household supplies',
+      'Snacks and drinks',
+      'Meat and fish',
+      'Cleaning products',
+    ],
+    Transport: [
+      'Tank full',
+      'Highway toll',
+      'Monthly metro pass',
+      'Ride to airport',
+      'Parking downtown',
+      'Fuel top-up',
+    ],
+    'Dining Out': [
+      'Lunch with colleagues',
+      'Friday dinner',
+      'Weekend brunch',
+      'Quick takeaway',
+      'Date night',
+      'Birthday celebration dinner',
+    ],
+    Entertainment: [
+      'Movie tickets',
+      'New board game',
+      'Concert tickets',
+      'Bowling night',
+      'Video game purchase',
+      'Book order',
+    ],
+    Healthcare: [
+      'Prescription medication',
+      'Annual checkup copay',
+      'Dental cleaning',
+      'New glasses',
+      'Vitamins and supplements',
+      'Physiotherapy session',
+    ],
+    Shopping: [
+      'Winter jacket',
+      'Kitchen utensils',
+      'Running shoes',
+      'New desk lamp',
+      'Phone case',
+      'Bathroom towels',
+      'Kids clothing',
+    ],
+    Travel: [
+      'Flight tickets',
+      'Hotel 3 nights',
+      'Vacation apartment',
+      'Rental car weekend',
+      'Travel insurance',
+      'Airport transfer',
+    ],
+    'Gifts & Donations': [
+      'Birthday present',
+      'Charity donation',
+      'Wedding gift',
+      'Christmas gifts',
+      'Housewarming gift',
+    ],
   };
 
   for (const [y, m] of expenseMonths) {
@@ -461,48 +727,77 @@ async function main() {
     // --- INCOME ---
     // Salary: €4,200 net, arrives on the 1st
     allExpenses.push({
-      userId: uid, householdId: hid, amount: 4200,
-      merchant: 'TechCorp GmbH', description: `Salary ${monthKey(y, m)}`,
-      date: monthDate(y, m, 1), categoryId: catMap['Salary'], source: 'manual',
+      userId: uid,
+      householdId: hid,
+      amount: 4200,
+      merchant: 'TechCorp GmbH',
+      description: `Salary ${monthKey(y, m)}`,
+      date: monthDate(y, m, 1),
+      categoryId: catMap['Salary'],
+      source: 'manual',
     });
 
     // Freelance income: sporadic, ~€500-1500 every 2-3 months
     if (m % 3 === 1) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: rand(500, 1500),
-        merchant: 'Freelance Client', description: 'Consulting invoice',
-        date: monthDate(y, m, rand(10, 25)), categoryId: catMap['Freelance Income'], source: 'manual',
+        userId: uid,
+        householdId: hid,
+        amount: rand(500, 1500),
+        merchant: 'Freelance Client',
+        description: 'Consulting invoice',
+        date: monthDate(y, m, rand(10, 25)),
+        categoryId: catMap['Freelance Income'],
+        source: 'manual',
       });
     }
 
     // --- REQUIRED EXPENSES ---
     // Rent/Mortgage payment
     allExpenses.push({
-      userId: uid, householdId: hid, amount: -1350,
-      merchant: 'Bank Mortgage Payment', description: 'Monthly mortgage',
-      date: monthDate(y, m, 5), categoryId: catMap['Rent / Mortgage'], source: 'manual',
+      userId: uid,
+      householdId: hid,
+      amount: -1350,
+      merchant: 'Bank Mortgage Payment',
+      description: 'Monthly mortgage',
+      date: monthDate(y, m, 5),
+      categoryId: catMap['Rent / Mortgage'],
+      source: 'manual',
     });
 
     // Utilities: €120-220
     allExpenses.push({
-      userId: uid, householdId: hid, amount: -rand(120, 220),
+      userId: uid,
+      householdId: hid,
+      amount: -rand(120, 220),
       merchant: pick(['City Electric', 'Water Works', 'Internet Provider']),
       description: 'Monthly utilities',
-      date: monthDate(y, m, pick([8, 10, 12])), categoryId: catMap['Utilities'], source: 'manual',
+      date: monthDate(y, m, pick([8, 10, 12])),
+      categoryId: catMap['Utilities'],
+      source: 'manual',
     });
 
     // Insurance: €85 fixed
     allExpenses.push({
-      userId: uid, householdId: hid, amount: -85,
-      merchant: 'Allianz Insurance', description: 'Health & car insurance',
-      date: monthDate(y, m, 1), categoryId: catMap['Insurance'], source: 'manual',
+      userId: uid,
+      householdId: hid,
+      amount: -85,
+      merchant: 'Allianz Insurance',
+      description: 'Health & car insurance',
+      date: monthDate(y, m, 1),
+      categoryId: catMap['Insurance'],
+      source: 'manual',
     });
 
     // Childcare: €350
     allExpenses.push({
-      userId: uid, householdId: hid, amount: -350,
-      merchant: 'Happy Kids Daycare', description: 'Monthly daycare',
-      date: monthDate(y, m, 3), categoryId: catMap['Childcare'], source: 'manual',
+      userId: uid,
+      householdId: hid,
+      amount: -350,
+      merchant: 'Happy Kids Daycare',
+      description: 'Monthly daycare',
+      date: monthDate(y, m, 3),
+      categoryId: catMap['Childcare'],
+      source: 'manual',
     });
 
     // --- VARIABLE EXPENSES ---
@@ -510,10 +805,14 @@ async function main() {
     const groceryCount = Math.floor(rand(8, 12));
     for (let i = 0; i < groceryCount; i++) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(15, 85),
-        merchant: pick(merchants['Groceries']), description: pick(descriptions['Groceries']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(15, 85),
+        merchant: pick(merchants['Groceries']),
+        description: pick(descriptions['Groceries']),
         date: monthDate(y, m, Math.min(28, Math.floor(rand(1, 28)))),
-        categoryId: catMap['Groceries'], source: 'imported',
+        categoryId: catMap['Groceries'],
+        source: 'imported',
       });
     }
 
@@ -521,10 +820,14 @@ async function main() {
     const transportCount = Math.floor(rand(3, 6));
     for (let i = 0; i < transportCount; i++) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(10, 80),
-        merchant: pick(merchants['Transport']), description: pick(descriptions['Transport']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(10, 80),
+        merchant: pick(merchants['Transport']),
+        description: pick(descriptions['Transport']),
         date: monthDate(y, m, Math.min(28, Math.floor(rand(1, 28)))),
-        categoryId: catMap['Transport'], source: 'imported',
+        categoryId: catMap['Transport'],
+        source: 'imported',
       });
     }
 
@@ -532,10 +835,14 @@ async function main() {
     const diningCount = Math.floor(rand(4, 8));
     for (let i = 0; i < diningCount; i++) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(12, 65),
-        merchant: pick(merchants['Dining Out']), description: pick(descriptions['Dining Out']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(12, 65),
+        merchant: pick(merchants['Dining Out']),
+        description: pick(descriptions['Dining Out']),
         date: monthDate(y, m, Math.min(28, Math.floor(rand(1, 28)))),
-        categoryId: catMap['Dining Out'], source: 'imported',
+        categoryId: catMap['Dining Out'],
+        source: 'imported',
       });
     }
 
@@ -543,20 +850,28 @@ async function main() {
     const entCount = Math.floor(rand(1, 3));
     for (let i = 0; i < entCount; i++) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(10, 50),
-        merchant: pick(merchants['Entertainment']), description: pick(descriptions['Entertainment']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(10, 50),
+        merchant: pick(merchants['Entertainment']),
+        description: pick(descriptions['Entertainment']),
         date: monthDate(y, m, Math.min(28, Math.floor(rand(1, 28)))),
-        categoryId: catMap['Entertainment'], source: 'imported',
+        categoryId: catMap['Entertainment'],
+        source: 'imported',
       });
     }
 
     // Healthcare: 0-2 times, €15-120
     if (Math.random() > 0.4) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(15, 120),
-        merchant: pick(merchants['Healthcare']), description: pick(descriptions['Healthcare']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(15, 120),
+        merchant: pick(merchants['Healthcare']),
+        description: pick(descriptions['Healthcare']),
         date: monthDate(y, m, Math.floor(rand(5, 25))),
-        categoryId: catMap['Healthcare'], source: 'imported',
+        categoryId: catMap['Healthcare'],
+        source: 'imported',
       });
     }
 
@@ -564,10 +879,14 @@ async function main() {
     const shopCount = Math.floor(rand(1, 4));
     for (let i = 0; i < shopCount; i++) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(20, 200),
-        merchant: pick(merchants['Shopping']), description: pick(descriptions['Shopping']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(20, 200),
+        merchant: pick(merchants['Shopping']),
+        description: pick(descriptions['Shopping']),
         date: monthDate(y, m, Math.min(28, Math.floor(rand(1, 28)))),
-        categoryId: catMap['Shopping'], source: 'imported',
+        categoryId: catMap['Shopping'],
+        source: 'imported',
       });
     }
 
@@ -575,26 +894,34 @@ async function main() {
     const subs = [
       { merchant: 'Netflix', amount: -15.99 },
       { merchant: 'Spotify', amount: -9.99 },
-      { merchant: 'Gym Membership', amount: -39.90 },
+      { merchant: 'Gym Membership', amount: -39.9 },
       { merchant: 'iCloud', amount: -2.99 },
       { merchant: 'ChatGPT Plus', amount: -20 },
     ];
     for (const sub of subs) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: sub.amount,
-        merchant: sub.merchant, description: 'Monthly subscription',
+        userId: uid,
+        householdId: hid,
+        amount: sub.amount,
+        merchant: sub.merchant,
+        description: 'Monthly subscription',
         date: monthDate(y, m, pick([1, 2, 3, 15])),
-        categoryId: catMap['Subscriptions'], source: 'imported',
+        categoryId: catMap['Subscriptions'],
+        source: 'imported',
       });
     }
 
     // Education: occasional, every 2-3 months
     if (m % 2 === 0) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(15, 80),
-        merchant: pick(merchants['Education']), description: 'Online course',
+        userId: uid,
+        householdId: hid,
+        amount: -rand(15, 80),
+        merchant: pick(merchants['Education']),
+        description: 'Online course',
         date: monthDate(y, m, Math.floor(rand(5, 20))),
-        categoryId: catMap['Education'], source: 'imported',
+        categoryId: catMap['Education'],
+        source: 'imported',
       });
     }
 
@@ -603,10 +930,14 @@ async function main() {
       const travelItems = Math.floor(rand(2, 4));
       for (let i = 0; i < travelItems; i++) {
         allExpenses.push({
-          userId: uid, householdId: hid, amount: -rand(50, 400),
-          merchant: pick(merchants['Travel']), description: pick(descriptions['Travel']),
+          userId: uid,
+          householdId: hid,
+          amount: -rand(50, 400),
+          merchant: pick(merchants['Travel']),
+          description: pick(descriptions['Travel']),
           date: monthDate(y, m, Math.floor(rand(10, 25))),
-          categoryId: catMap['Travel'], source: 'imported',
+          categoryId: catMap['Travel'],
+          source: 'imported',
         });
       }
     }
@@ -614,10 +945,14 @@ async function main() {
     // Gifts: occasional
     if (Math.random() > 0.7) {
       allExpenses.push({
-        userId: uid, householdId: hid, amount: -rand(20, 100),
-        merchant: pick(merchants['Gifts & Donations']), description: pick(descriptions['Gifts & Donations']),
+        userId: uid,
+        householdId: hid,
+        amount: -rand(20, 100),
+        merchant: pick(merchants['Gifts & Donations']),
+        description: pick(descriptions['Gifts & Donations']),
         date: monthDate(y, m, Math.floor(rand(5, 25))),
-        categoryId: catMap['Gifts & Donations'], source: 'imported',
+        categoryId: catMap['Gifts & Donations'],
+        source: 'imported',
       });
     }
   }
@@ -625,7 +960,9 @@ async function main() {
   await prisma.expense.createMany({ data: allExpenses });
   const incomeCount = allExpenses.filter((e) => e.amount > 0).length;
   const expenseCount = allExpenses.filter((e) => e.amount < 0).length;
-  console.log(`✅ Created ${incomeCount} income + ${expenseCount} expense entries (${expenseMonths.length} months)\n`);
+  console.log(
+    `✅ Created ${incomeCount} income + ${expenseCount} expense entries (${expenseMonths.length} months)\n`,
+  );
 
   // Save merchant→category mappings
   const merchantMappings = new Map<string, string>();
@@ -636,7 +973,10 @@ async function main() {
   }
   await prisma.merchantCategoryMap.createMany({
     data: Array.from(merchantMappings.entries()).map(([merchant, categoryId]) => ({
-      userId: uid, householdId: hid, merchant, categoryId,
+      userId: uid,
+      householdId: hid,
+      merchant,
+      categoryId,
     })),
   });
   console.log(`✅ Saved ${merchantMappings.size} merchant→category mappings`);
@@ -647,76 +987,120 @@ async function main() {
 
   const emergencyGoal = await prisma.goal.create({
     data: {
-      userId: uid, householdId: hid,
-      name: 'Emergency Fund', targetAmount: 25000, currentAmount: 18500,
-      targetDate: new Date('2026-12-31'), priority: 1, status: 'active',
-      category: 'emergency', description: '6 months living expenses',
+      userId: uid,
+      householdId: hid,
+      name: 'Emergency Fund',
+      targetAmount: 25000,
+      currentAmount: 18500,
+      targetDate: new Date('2026-12-31'),
+      priority: 1,
+      status: 'active',
+      category: 'emergency',
+      description: '6 months living expenses',
     },
   });
 
   const vacationGoal = await prisma.goal.create({
     data: {
-      userId: uid, householdId: hid,
-      name: 'Summer Vacation 2026', targetAmount: 5000, currentAmount: 3200,
-      targetDate: new Date('2026-07-01'), priority: 2, status: 'active',
-      category: 'travel', description: 'Family trip to Greece',
+      userId: uid,
+      householdId: hid,
+      name: 'Summer Vacation 2026',
+      targetAmount: 5000,
+      currentAmount: 3200,
+      targetDate: new Date('2026-07-01'),
+      priority: 2,
+      status: 'active',
+      category: 'travel',
+      description: 'Family trip to Greece',
     },
   });
 
   const newCarGoal = await prisma.goal.create({
     data: {
-      userId: uid, householdId: hid,
-      name: 'Next Car Down Payment', targetAmount: 15000, currentAmount: 4800,
-      targetDate: new Date('2027-06-01'), priority: 3, status: 'active',
-      category: 'transport', description: 'Saving for next car when lease ends',
+      userId: uid,
+      householdId: hid,
+      name: 'Next Car Down Payment',
+      targetAmount: 15000,
+      currentAmount: 4800,
+      targetDate: new Date('2027-06-01'),
+      priority: 3,
+      status: 'active',
+      category: 'transport',
+      description: 'Saving for next car when lease ends',
     },
   });
 
   const monthlyBudget = await prisma.goal.create({
     data: {
-      userId: uid, householdId: hid,
-      name: 'Monthly Savings Target', targetAmount: 800, currentAmount: 750,
-      recurringPeriod: 'monthly', priority: 1, status: 'active',
-      category: 'emergency', description: 'Save at least €800/month',
+      userId: uid,
+      householdId: hid,
+      name: 'Monthly Savings Target',
+      targetAmount: 800,
+      currentAmount: 750,
+      recurringPeriod: 'monthly',
+      priority: 1,
+      status: 'active',
+      category: 'emergency',
+      description: 'Save at least €800/month',
     },
   });
 
   console.log(`✅ Created 4 goals\n`);
 
-  // Goal snapshots for emergency fund (growing over 14 months)
+  // Goal snapshots with actualSavedThisMonth for progress tracking
   const goalSnapData: {
-    goalId: string; month: Date; targetAmount: number;
-    balanceAsOf: number; onTrack: boolean;
+    goalId: string;
+    month: Date;
+    targetAmount: number;
+    balanceAsOf: number;
+    actualSavedThisMonth: number;
+    onTrack: boolean;
   }[] = [];
 
   let emgBal = 10000;
   let vacBal = 0;
   let carBal = 0;
   for (const [y, m] of expenseMonths) {
-    emgBal += rand(400, 800);
+    const emgSaved = rand(400, 800);
+    emgBal += emgSaved;
     goalSnapData.push({
-      goalId: emergencyGoal.id, month: monthDate(y, m),
-      targetAmount: 25000, balanceAsOf: Math.round(emgBal * 100) / 100,
+      goalId: emergencyGoal.id,
+      month: monthDate(y, m),
+      targetAmount: 25000,
+      balanceAsOf: Math.round(emgBal * 100) / 100,
+      actualSavedThisMonth: emgSaved,
       onTrack: emgBal > 15000,
     });
 
-    vacBal += rand(150, 350);
+    const vacSaved = rand(150, 350);
+    vacBal += vacSaved;
     goalSnapData.push({
-      goalId: vacationGoal.id, month: monthDate(y, m),
-      targetAmount: 5000, balanceAsOf: Math.min(5000, Math.round(vacBal * 100) / 100),
+      goalId: vacationGoal.id,
+      month: monthDate(y, m),
+      targetAmount: 5000,
+      balanceAsOf: Math.min(5000, Math.round(vacBal * 100) / 100),
+      actualSavedThisMonth: vacSaved,
       onTrack: true,
     });
 
-    carBal += rand(200, 500);
+    const carSaved = rand(200, 500);
+    carBal += carSaved;
     goalSnapData.push({
-      goalId: newCarGoal.id, month: monthDate(y, m),
-      targetAmount: 15000, balanceAsOf: Math.round(carBal * 100) / 100,
+      goalId: newCarGoal.id,
+      month: monthDate(y, m),
+      targetAmount: 15000,
+      balanceAsOf: Math.round(carBal * 100) / 100,
+      actualSavedThisMonth: carSaved,
       onTrack: true,
     });
 
+    const monthlyBudgetSaved = rand(600, 1100);
     goalSnapData.push({
-      goalId: monthlyBudget.id, month: monthDate(y, m),
-      targetAmount: 800, balanceAsOf: rand(600, 1100),
+      goalId: monthlyBudget.id,
+      month: monthDate(y, m),
+      targetAmount: 800,
+      balanceAsOf: monthlyBudgetSaved,
+      actualSavedThisMonth: monthlyBudgetSaved,
       onTrack: Math.random() > 0.2,
     });
   }
@@ -724,7 +1108,10 @@ async function main() {
   await prisma.goalSnapshot.createMany({ data: goalSnapData });
   // Update current amounts
   await prisma.goal.update({ where: { id: emergencyGoal.id }, data: { currentAmount: emgBal } });
-  await prisma.goal.update({ where: { id: vacationGoal.id }, data: { currentAmount: Math.min(5000, vacBal) } });
+  await prisma.goal.update({
+    where: { id: vacationGoal.id },
+    data: { currentAmount: Math.min(5000, vacBal) },
+  });
   await prisma.goal.update({ where: { id: newCarGoal.id }, data: { currentAmount: carBal } });
   console.log(`✅ Created ${goalSnapData.length} goal snapshots`);
 
