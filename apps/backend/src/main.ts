@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { VersioningType, ValidationPipe } from '@nestjs/common';
+import { VersioningType, ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -7,6 +7,9 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Graceful shutdown — close DB connections, finish in-flight requests
+  app.enableShutdownHooks();
 
   // Security headers
   app.use(helmet());
@@ -43,6 +46,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
-  console.log(`Backend running on http://localhost:${port}`);
+  Logger.log(`Backend running on http://localhost:${port}`, 'Bootstrap');
 }
 bootstrap();

@@ -125,13 +125,27 @@ export class HouseholdService {
 
   async acceptInvite(token: string, userId: string, email: string) {
     return this.prisma.$transaction(async (tx) => {
-      const invite = await tx.householdInvite.findUnique({
-        where: { token },
+      // Atomic claim: updateMany with conditions prevents double-use race conditions.
+      // If two requests race, only one gets count=1; the other gets count=0.
+      const now = new Date();
+      const claimed = await tx.householdInvite.updateMany({
+        where: { token, usedAt: null, expiresAt: { gt: now } },
+        data: { usedAt: now, usedById: userId },
       });
 
+      if (claimed.count === 0) {
+        const existing = await tx.householdInvite.findUnique({ where: { token } });
+        if (!existing) throw new NotFoundException('Invite not found');
+        if (existing.usedAt) throw new BadRequestException('This invite has already been used');
+        throw new BadRequestException('This invite has expired');
+      }
+
+      // Re-fetch to get householdId and role (updateMany doesn't return the record)
+      const invite = await tx.householdInvite.findUnique({
+        where: { token },
+        select: { householdId: true, role: true },
+      });
       if (!invite) throw new NotFoundException('Invite not found');
-      if (invite.usedAt) throw new BadRequestException('This invite has already been used');
-      if (invite.expiresAt < new Date()) throw new BadRequestException('This invite has expired');
 
       // Check not already a member
       const existing = await tx.householdMember.findUnique({
@@ -149,12 +163,6 @@ export class HouseholdService {
       // Create new membership with the role specified in the invite
       await tx.householdMember.create({
         data: { userId, householdId: invite.householdId, role: invite.role },
-      });
-
-      // Mark invite as used
-      await tx.householdInvite.update({
-        where: { id: invite.id },
-        data: { usedAt: new Date(), usedById: userId },
       });
 
       // Remove old membership and clean up empty household

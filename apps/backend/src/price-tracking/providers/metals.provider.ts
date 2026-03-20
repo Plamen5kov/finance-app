@@ -8,7 +8,7 @@ export interface MetalPrice {
 }
 
 export interface HistoricalMetalPrice {
-  date: string;     // YYYY-MM
+  date: string; // YYYY-MM
   priceEur: number;
 }
 
@@ -48,15 +48,16 @@ export class MetalsProvider {
       const priceEur = unit === 'g' ? eurPerGram : eurPerGram * GRAMS_PER_TROY_OUNCE;
       const rounded = Math.round(priceEur * 100) / 100;
 
-      this.logger.log(`Gold price: €${rounded}/${unit} (NBP: ${plnPerGram} PLN/g × ${plnToEur} EUR/PLN)`);
+      this.logger.log(
+        `Gold price: €${rounded}/${unit} (NBP: ${plnPerGram} PLN/g × ${plnToEur} EUR/PLN)`,
+      );
       return { priceEur: rounded };
     } catch (err) {
-      this.logger.error(`Gold price fetch failed: ${err instanceof Error ? err.message : String(err)}`);
-      // Fallback: approximate current price (~€142/g as of Mar 2026)
-      const fallbackPerGram = 142;
-      const priceEur = unit === 'g' ? fallbackPerGram : fallbackPerGram * GRAMS_PER_TROY_OUNCE;
-      this.logger.warn(`Using fallback gold price: €${priceEur}/${unit}`);
-      return { priceEur: Math.round(priceEur * 100) / 100 };
+      this.logger.error(
+        `Gold price fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      this.logger.warn('Skipping gold price update to avoid overwriting DB with stale data');
+      throw err;
     }
   }
 
@@ -64,7 +65,11 @@ export class MetalsProvider {
    * Fetch historical monthly gold prices in EUR per specified unit.
    * NBP API supports date ranges up to 367 days, so we chunk by year.
    */
-  async fetchGoldPriceHistory(unit: GoldUnit, fromDate: Date, toDate: Date): Promise<HistoricalMetalPrice[]> {
+  async fetchGoldPriceHistory(
+    unit: GoldUnit,
+    fromDate: Date,
+    toDate: Date,
+  ): Promise<HistoricalMetalPrice[]> {
     const results: HistoricalMetalPrice[] = [];
 
     try {
@@ -125,7 +130,9 @@ export class MetalsProvider {
 
       this.logger.log(`Gold history: ${results.length} monthly prices fetched`);
     } catch (err) {
-      this.logger.error(`Gold price history fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Gold price history fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     return results.sort((a, b) => a.date.localeCompare(b.date));

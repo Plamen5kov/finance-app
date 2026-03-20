@@ -1,0 +1,24 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": "..",
+  "testRegex": "test/.*\\.e2e-spec\\.ts$",
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "diagnostics": false
+      }
+    ]
+  },
+  "testEnvironment": "node",
+  "globalSetup": "<rootDir>/test/setup.ts",
+  "globalTeardown": "<rootDir>/test/teardown.ts",
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "^@finances/shared$": "<rootDir>/../../packages/shared/src/index"
+  }
+}

@@ -22,9 +22,7 @@ export function computeAssetValue(
   const totalQty = snapshots.reduce((s, sn) => s + (sn.quantity ?? 0), 0);
   if (totalQty <= 0) return { value: asset.value };
   const price = asset.latestPrice ?? snapshots[0]?.price ?? null;
-  const value = price != null
-    ? round2(totalQty * price)
-    : asset.value;
+  const value = price != null ? round2(totalQty * price) : asset.value;
   return { value, quantity: Math.round(totalQty * 10000) / 10000 };
 }
 
@@ -120,7 +118,14 @@ export class AssetsService {
     });
   }
 
-  async addSnapshot(householdId: string, assetId: string, value: number, date: string, price?: number, quantity?: number) {
+  async addSnapshot(
+    householdId: string,
+    assetId: string,
+    value: number,
+    date: string,
+    price?: number,
+    quantity?: number,
+  ) {
     await this.assertHouseholdAccess(householdId, assetId);
     const capturedAt = new Date(`${date}T00:00:00.000Z`);
     const optionals = {
@@ -129,17 +134,28 @@ export class AssetsService {
     };
     const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
     if (existing) {
-      return this.prisma.assetSnapshot.update({ where: { id: existing.id }, data: { value, ...optionals } });
+      return this.prisma.assetSnapshot.update({
+        where: { id: existing.id },
+        data: { value, ...optionals },
+      });
     }
     return this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt, ...optionals } });
   }
 
   async deleteSnapshot(householdId: string, assetId: string, snapshotId: string) {
     await this.assertHouseholdAccess(householdId, assetId);
+    const snapshot = await this.prisma.assetSnapshot.findUnique({ where: { id: snapshotId } });
+    if (!snapshot) throw new NotFoundException('Snapshot not found');
+    if (snapshot.assetId !== assetId) throw new ForbiddenException();
     await this.prisma.assetSnapshot.delete({ where: { id: snapshotId } });
   }
 
   private assertHouseholdAccess(householdId: string, assetId: string) {
-    return assertHouseholdAccess(this.prisma.asset.findUnique.bind(this.prisma.asset), householdId, assetId, 'Asset');
+    return assertHouseholdAccess(
+      this.prisma.asset.findUnique.bind(this.prisma.asset),
+      householdId,
+      assetId,
+      'Asset',
+    );
   }
 }

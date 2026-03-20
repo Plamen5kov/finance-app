@@ -28,7 +28,7 @@ async function acceptInviteIfPresent(inviteToken: string | undefined, accessToke
   });
   if (!res.ok) return null; // silently skip if invite is invalid
   const { data } = await res.json();
-  return data as { accessToken: string; refreshToken: string };
+  return data as { accessToken: string };
 }
 
 export async function loginAction(email: string, password: string, inviteToken?: string) {
@@ -53,7 +53,12 @@ export async function loginAction(email: string, password: string, inviteToken?:
   redirect('/dashboard');
 }
 
-export async function registerAction(name: string, email: string, password: string, inviteToken?: string) {
+export async function registerAction(
+  name: string,
+  email: string,
+  password: string,
+  inviteToken?: string,
+) {
   const res = await fetch(`${API_URL}/api/v1/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

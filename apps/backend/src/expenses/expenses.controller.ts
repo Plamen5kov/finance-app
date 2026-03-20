@@ -36,7 +36,12 @@ export class ExpensesController {
 
   @Get('report/monthly')
   getMonthlyReport(@CurrentUser() user: JwtPayload, @Query('months') months?: string) {
-    return this.expensesService.getMonthlyReport(user.householdId, months ? parseInt(months, 10) : 12);
+    let count = 12;
+    if (months) {
+      const parsed = parseInt(months, 10);
+      if (!Number.isNaN(parsed)) count = Math.max(1, Math.min(60, parsed));
+    }
+    return this.expensesService.getMonthlyReport(user.householdId, count);
   }
 
   @Get('categories')
@@ -55,11 +60,13 @@ export class ExpensesController {
   }
 
   @Patch('merchant/reassign')
-  reassignMerchant(
-    @CurrentUser() user: JwtPayload,
-    @Body() dto: ReassignMerchantDto,
-  ) {
-    return this.expensesService.reassignMerchant(user.householdId, user.userId, dto.merchant, dto.categoryId);
+  reassignMerchant(@CurrentUser() user: JwtPayload, @Body() dto: ReassignMerchantDto) {
+    return this.expensesService.reassignMerchant(
+      user.householdId,
+      user.userId,
+      dto.merchant,
+      dto.categoryId,
+    );
   }
 
   @Patch(':id')

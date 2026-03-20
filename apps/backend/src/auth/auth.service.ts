@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -98,14 +94,6 @@ export class AuthService {
       expiresIn: this.config.get('jwt.expiration'),
     });
 
-    const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: this.config.get('jwt.refreshExpiration'),
-    });
-
-    return { accessToken, refreshToken };
-  }
-
-  async refreshToken(userId: string, email: string, householdId: string) {
-    return this.generateTokens(userId, email, householdId);
+    return { accessToken };
   }
 }

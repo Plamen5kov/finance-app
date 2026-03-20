@@ -1,4 +1,5 @@
-import { IsString, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, MinLength, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class RegisterDto {
   @IsString()
@@ -6,7 +7,8 @@ export class RegisterDto {
   @MaxLength(100)
   name!: string;
 
-  @IsString()
+  @IsEmail()
+  @Transform(({ value }) => value?.toLowerCase().trim())
   email!: string;
 
   @IsString()

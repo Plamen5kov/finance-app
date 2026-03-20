@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as Joi from 'joi';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
-import redisConfig from './config/redis.config';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -17,6 +17,7 @@ import { GoalsModule } from './goals/goals.module';
 import { ImportModule } from './import/import.module';
 import { HouseholdModule } from './household/household.module';
 import { PriceTrackingModule } from './price-tracking/price-tracking.module';
+import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { WriteAccessGuard } from './auth/guards/write-access.guard';
 
@@ -25,20 +26,16 @@ import { WriteAccessGuard } from './auth/guards/write-access.guard';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string()
-          .valid('development', 'production', 'test')
-          .default('development'),
+        NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
         PORT: Joi.number().port().default(3001),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().min(32).required(),
         JWT_EXPIRATION: Joi.string().default('7d'),
-        JWT_REFRESH_EXPIRATION: Joi.string().default('30d'),
-        REDIS_HOST: Joi.string().default('localhost'),
-        REDIS_PORT: Joi.number().default(6379),
         FRONTEND_URL: Joi.string().default('http://localhost:3000'),
       }),
-      load: [databaseConfig, jwtConfig, redisConfig],
+      load: [databaseConfig, jwtConfig],
     }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 30 }]),
     ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
@@ -51,10 +48,12 @@ import { WriteAccessGuard } from './auth/guards/write-access.guard';
     ImportModule,
     HouseholdModule,
     PriceTrackingModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: WriteAccessGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
