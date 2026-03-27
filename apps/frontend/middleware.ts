@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decrypt } from '@/lib/auth/session';
 
-const protectedRoutes = ['/dashboard', '/assets', '/goals', '/expenses', '/reports', '/documents', '/account'];
+const protectedRoutes = [
+  '/dashboard',
+  '/assets',
+  '/goals',
+  '/expenses',
+  '/reports',
+  '/documents',
+  '/account',
+];
 const publicRoutes = ['/login', '/register', '/'];
 
 export default async function middleware(req: NextRequest) {
@@ -24,5 +32,5 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icons|manifest.json).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|icons|manifest.json|sw.js).*)'],
 };
