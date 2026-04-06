@@ -32,7 +32,10 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
   // Min date for new snapshots: day after last snapshot
   const minDate = (() => {
     if (!snapshots?.length) return null;
-    const last = [...snapshots].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt)).at(-1)!.capturedAt.slice(0, 10);
+    const last = [...snapshots]
+      .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
+      .at(-1)!
+      .capturedAt.slice(0, 10);
     const d = new Date(last + 'T00:00:00');
     d.setDate(d.getDate() + 1);
     return d.toISOString().slice(0, 10);
@@ -66,7 +69,12 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
     setEditing(null);
   }
 
-  function startEdit(snapshot: { value: number; quantity?: number; price?: number; capturedAt: string }) {
+  function startEdit(snapshot: {
+    value: number;
+    quantity?: number;
+    price?: number;
+    capturedAt: string;
+  }) {
     setEditing({
       date: snapshot.capturedAt.slice(0, 10),
       value: String(snapshot.value),
@@ -75,13 +83,17 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
     });
   }
 
-  const inputClass = 'border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand';
+  const inputClass =
+    'border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand';
 
   return (
     <Modal title={`${t('assets.history')} — ${assetName}`} onClose={onClose}>
       {/* Edit form — shown when editing a snapshot */}
       {editing ? (
-        <form onSubmit={handleEditSave} className="space-y-3 mb-5 p-3 rounded-lg bg-brand/5 dark:bg-brand/10 border border-brand/20">
+        <form
+          onSubmit={handleEditSave}
+          className="space-y-3 mb-5 p-3 rounded-lg bg-brand/5 dark:bg-brand/10 border border-brand/20"
+        >
           <input
             type="date"
             value={editing.date}
@@ -90,7 +102,9 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
           />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('assetForm.quantity')} *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                {t('assetForm.quantity')} *
+              </label>
               <input
                 type="number"
                 value={editing.quantity}
@@ -103,13 +117,15 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('assets.pricePerUnit' as any)} *</label>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                {t('assets.pricePerUnit' as any)} *
+              </label>
               <input
                 type="number"
                 value={editing.price}
                 onChange={(e) => setEditing({ ...editing, price: e.target.value })}
                 min={0}
-                step="0.01"
+                step="any"
                 className={`w-full ${inputClass}`}
                 required
               />
@@ -117,7 +133,8 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
           </div>
           {editing.quantity && editing.price && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('assetForm.currentValue')}: {formatCurrency(Number(editing.quantity) * Number(editing.price), currency)}
+              {t('assetForm.currentValue')}:{' '}
+              {formatCurrency(Number(editing.quantity) * Number(editing.price), currency)}
             </p>
           )}
           <div className="flex gap-2">
@@ -165,14 +182,15 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
               value={addPrice}
               onChange={(e) => setAddPrice(e.target.value)}
               min={0}
-              step="0.01"
+              step="any"
               className={inputClass}
               required
             />
           </div>
           {addQty && addPrice && (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {t('assetForm.currentValue')}: {formatCurrency(Number(addQty) * Number(addPrice), currency)}
+              {t('assetForm.currentValue')}:{' '}
+              {formatCurrency(Number(addQty) * Number(addPrice), currency)}
             </p>
           )}
           <button
@@ -187,22 +205,35 @@ export function AssetSnapshotModal({ assetId, assetName, currency = 'EUR', onClo
 
       {isLoading ? (
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => <div key={i} className="h-8 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />)}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-8 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          ))}
         </div>
       ) : !snapshots?.length ? (
-        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">{t('assets.noHistory')}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+          {t('assets.noHistory')}
+        </p>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
           {[...snapshots].reverse().map((s) => {
             const isEditingThis = editing?.date === s.capturedAt.slice(0, 10);
             return (
-              <div key={s.id} className={`flex items-center py-2 text-sm gap-2 ${isEditingThis ? 'bg-brand/5 dark:bg-brand/10 -mx-2 px-2 rounded' : ''}`}>
-                <span className="text-gray-500 dark:text-gray-400 shrink-0">{s.capturedAt.slice(0, 10)}</span>
+              <div
+                key={s.id}
+                className={`flex items-center py-2 text-sm gap-2 ${isEditingThis ? 'bg-brand/5 dark:bg-brand/10 -mx-2 px-2 rounded' : ''}`}
+              >
+                <span className="text-gray-500 dark:text-gray-400 shrink-0">
+                  {s.capturedAt.slice(0, 10)}
+                </span>
                 <span className="ml-auto flex items-center gap-2">
                   {s.quantity != null && s.price != null && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{s.quantity} x {s.price}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {s.quantity} x {s.price}
+                    </span>
                   )}
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(s.value, currency)}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                    {formatCurrency(s.value, currency)}
+                  </span>
                 </span>
                 <div className="flex items-center gap-0.5 shrink-0">
                   <button

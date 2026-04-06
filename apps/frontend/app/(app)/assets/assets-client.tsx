@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useAssets, useCreateAsset, useDeleteAsset, useRefreshPrices, Asset, CreateAssetInput } from '@/hooks/use-assets';
+import {
+  useAssets,
+  useCreateAsset,
+  useUpdateAsset,
+  useDeleteAsset,
+  useRefreshPrices,
+  Asset,
+  CreateAssetInput,
+} from '@/hooks/use-assets';
 import { ASSET_TYPES } from '@finances/shared';
 import { AssetCard } from '@/components/assets/asset-card';
 import { AssetForm } from '@/components/assets/asset-form';
@@ -11,9 +19,40 @@ import { formatCurrency, toEur } from '@/lib/utils';
 import { Plus, TrendingUp, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
+function EditAssetModal({ asset, onClose }: { asset: Asset; onClose: () => void }) {
+  const { t } = useTranslation();
+  const updateAsset = useUpdateAsset(asset.id);
+
+  async function handleSubmit(input: CreateAssetInput) {
+    await updateAsset.mutateAsync(input);
+    onClose();
+  }
+
+  return (
+    <Modal title={t('assets.editAsset' as any)} onClose={onClose}>
+      <AssetForm
+        defaultValues={{
+          type: asset.type,
+          name: asset.name,
+          value: asset.value,
+          quantity: asset.quantity,
+          costBasis: asset.costBasis,
+          currency: asset.currency,
+          metadata: asset.metadata,
+        }}
+        onSubmit={handleSubmit}
+        onCancel={onClose}
+        isLoading={updateAsset.isPending}
+        submitLabel={t('common.save')}
+      />
+    </Modal>
+  );
+}
+
 export function AssetsClient() {
   const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
+  const [editAsset, setEditAsset] = useState<Asset | null>(null);
   const [historyAsset, setHistoryAsset] = useState<Asset | null>(null);
 
   const { data: assets, isLoading } = useAssets();
@@ -21,12 +60,19 @@ export function AssetsClient() {
   const deleteAsset = useDeleteAsset();
   const refreshPrices = useRefreshPrices();
 
-  const totalAssets = useMemo(() => (assets ?? []).reduce((s, a) => s + toEur(a.value, a.currency), 0), [assets]);
+  const totalAssets = useMemo(
+    () => (assets ?? []).reduce((s, a) => s + toEur(a.value, a.currency), 0),
+    [assets],
+  );
 
-  const assetsByType = useMemo(() => (assets ?? []).reduce<Record<string, typeof assets>>((acc, a) => {
-    const group = acc[a.type] ?? [];
-    return { ...acc, [a.type]: [...group, a] };
-  }, {}), [assets]);
+  const assetsByType = useMemo(
+    () =>
+      (assets ?? []).reduce<Record<string, typeof assets>>((acc, a) => {
+        const group = acc[a.type] ?? [];
+        return { ...acc, [a.type]: [...group, a] };
+      }, {}),
+    [assets],
+  );
 
   async function handleCreate(input: CreateAssetInput) {
     await createAsset.mutateAsync(input);
@@ -35,11 +81,12 @@ export function AssetsClient() {
 
   function handleCardClick(id: string) {
     const asset = assets?.find((a) => a.id === id);
-    if (asset) setHistoryAsset(asset);
+    if (asset) setEditAsset(asset);
   }
 
   function handleHistory(id: string) {
-    handleCardClick(id);
+    const asset = assets?.find((a) => a.id === id);
+    if (asset) setHistoryAsset(asset);
   }
 
   async function handleDelete(id: string) {
@@ -52,7 +99,9 @@ export function AssetsClient() {
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t('assets.title')}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {t('assets.title')}
+        </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => refreshPrices.mutate()}
@@ -60,7 +109,9 @@ export function AssetsClient() {
             className="flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium disabled:opacity-50"
           >
             <RefreshCw size={14} className={refreshPrices.isPending ? 'animate-spin' : ''} />
-            {refreshPrices.isPending ? t('assets.refreshing' as any) : t('assets.refreshPrices' as any)}
+            {refreshPrices.isPending
+              ? t('assets.refreshing' as any)
+              : t('assets.refreshPrices' as any)}
           </button>
           <button
             onClick={() => setShowForm(true)}
@@ -101,7 +152,9 @@ export function AssetsClient() {
       {!isLoading && hasAssets && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-700 dark:text-gray-300">{t('assets.title')}</h2>
+            <h2 className="text-base font-semibold text-gray-700 dark:text-gray-300">
+              {t('assets.title')}
+            </h2>
             <span className="text-sm font-semibold text-brand">{formatCurrency(totalAssets)}</span>
           </div>
           {ASSET_TYPES.map((type) => {
@@ -114,11 +167,19 @@ export function AssetsClient() {
                   <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     {t(`assetType.${type}` as any)}
                   </h3>
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formatCurrency(subtotal)}</span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    {formatCurrency(subtotal)}
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {group.map((asset) => (
-                    <AssetCard key={asset.id} asset={asset} onClick={handleCardClick} onHistory={handleHistory} onDelete={handleDelete} />
+                    <AssetCard
+                      key={asset.id}
+                      asset={asset}
+                      onClick={handleCardClick}
+                      onHistory={handleHistory}
+                      onDelete={handleDelete}
+                    />
                   ))}
                 </div>
               </section>
@@ -136,6 +197,8 @@ export function AssetsClient() {
           />
         </Modal>
       )}
+
+      {editAsset && <EditAssetModal asset={editAsset} onClose={() => setEditAsset(null)} />}
 
       {historyAsset && (
         <AssetSnapshotModal

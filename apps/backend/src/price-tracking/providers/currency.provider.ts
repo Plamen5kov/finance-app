@@ -39,6 +39,31 @@ export class CurrencyProvider {
     }
   }
 
+  /** Convert an amount from EUR to another currency */
+  async fromEur(amount: number, toCurrency: string): Promise<number> {
+    if (toCurrency === 'EUR') return amount;
+
+    const cacheKey = `EUR_${toCurrency}`;
+    const cached = this.rateCache.get(cacheKey);
+    if (cached !== undefined) return amount * cached;
+
+    try {
+      const { data } = await firstValueFrom(
+        this.http.get<{ rates: Record<string, number> }>(
+          `https://api.frankfurter.app/latest?from=EUR&to=${toCurrency}`,
+        ),
+      );
+      const rate = data.rates[toCurrency];
+      if (!rate) throw new Error(`No ${toCurrency} rate from EUR`);
+      this.rateCache.set(cacheKey, rate);
+      this.logger.log(`FX rate EUR→${toCurrency}: ${rate}`);
+      return amount * rate;
+    } catch (err) {
+      this.logger.error(`Failed to fetch FX rate EUR→${toCurrency}`, err);
+      throw err;
+    }
+  }
+
   /** Get historical EUR rate for a given date */
   async toEurHistorical(amount: number, fromCurrency: string, date: string): Promise<number> {
     if (fromCurrency === 'EUR') return amount;

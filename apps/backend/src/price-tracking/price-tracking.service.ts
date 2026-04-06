@@ -5,12 +5,7 @@ import { YahooFinanceProvider } from './providers/yahoo-finance.provider';
 import { CoinGeckoProvider } from './providers/coingecko.provider';
 import { MetalsProvider } from './providers/metals.provider';
 import { CurrencyProvider } from './providers/currency.provider';
-import {
-  hasTickerMetadata,
-  hasCoinIdMetadata,
-  hasGoldMetadata,
-  GoldUnit,
-} from '@finances/shared';
+import { hasTickerMetadata, hasCoinIdMetadata, hasGoldMetadata, GoldUnit } from '@finances/shared';
 
 export interface RefreshResult {
   updated: number;
@@ -57,23 +52,33 @@ export class PriceTrackingService {
         if (!priceResult) continue;
 
         const { priceEur } = priceResult;
+        const cur = asset.currency ?? 'EUR';
+        const nativePrice = await this.currency.fromEur(priceEur, cur);
         const quantity = asset.quantity!;
-        const totalValue = Math.round(quantity * priceEur * 100) / 100;
+        const totalValue = Math.round(quantity * nativePrice * 100) / 100;
 
-        // Upsert snapshot for current month
-        await this.upsertSnapshot(asset.id, totalValue, priceEur, monthKey);
+        // Upsert snapshot for current month (values in asset's native currency)
+        await this.upsertSnapshot(asset.id, totalValue, nativePrice, monthKey);
 
-        // Update asset's current value and store latest API price
+        // Update asset's current value and store latest API price in native currency
         await this.prisma.asset.update({
           where: { id: asset.id },
-          data: { value: totalValue, latestPrice: priceEur },
+          data: { value: totalValue, latestPrice: nativePrice },
         });
 
         result.updated++;
-        this.logger.log(`Updated ${asset.name}: ${quantity} × €${priceEur} = €${totalValue}`);
+        this.logger.log(
+          `Updated ${asset.name}: ${quantity} × ${nativePrice} ${cur} = ${totalValue} ${cur}`,
+        );
 
         // Backfill missing monthly price snapshots (never overwrites existing)
-        const backfilled = await this.backfillHistory(asset.id, asset.type, asset.metadata, quantity);
+        const backfilled = await this.backfillHistory(
+          asset.id,
+          asset.type,
+          asset.metadata,
+          quantity,
+          cur,
+        );
         result.backfilled += backfilled;
       } catch (err) {
         const msg = `Failed to update ${asset.name}: ${err instanceof Error ? err.message : String(err)}`;
@@ -114,6 +119,7 @@ export class PriceTrackingService {
     type: string,
     metadata: unknown,
     quantity: number,
+    assetCurrency: string,
   ): Promise<number> {
     // Check coverage: count snapshots vs months since first snapshot
     const firstSnap = await this.prisma.assetSnapshot.findFirst({
@@ -122,9 +128,10 @@ export class PriceTrackingService {
     });
     if (firstSnap) {
       const firstMonth = firstSnap.capturedAt;
-      const monthsSinceFirst = Math.max(1,
+      const monthsSinceFirst = Math.max(
+        1,
         (new Date().getFullYear() - firstMonth.getFullYear()) * 12 +
-        (new Date().getMonth() - firstMonth.getMonth()),
+          (new Date().getMonth() - firstMonth.getMonth()),
       );
       const snapshotCount = await this.prisma.assetSnapshot.count({ where: { assetId } });
       // If we have snapshots for most months, skip API calls
@@ -142,8 +149,9 @@ export class PriceTrackingService {
             point.currency,
             `${point.date}-01`,
           );
-          const value = Math.round(quantity * priceEur * 100) / 100;
-          const created = await this.upsertSnapshotIfNew(assetId, value, priceEur, point.date);
+          const nativePrice = await this.currency.fromEur(priceEur, assetCurrency);
+          const value = Math.round(quantity * nativePrice * 100) / 100;
+          const created = await this.upsertSnapshotIfNew(assetId, value, nativePrice, point.date);
           if (created) backfilled++;
         }
       }
@@ -154,13 +162,21 @@ export class PriceTrackingService {
           where: { assetId },
           select: { capturedAt: true },
         });
-        const existingMonths = new Set(existingSnaps.map(s => s.capturedAt.toISOString().slice(0, 7)));
+        const existingMonths = new Set(
+          existingSnaps.map((s) => s.capturedAt.toISOString().slice(0, 7)),
+        );
 
         const fromDate = firstSnap?.capturedAt ?? new Date();
-        const history = await this.coinGecko.fetchHistory(metadata.coinId, fromDate, new Date(), existingMonths);
+        const history = await this.coinGecko.fetchHistory(
+          metadata.coinId,
+          fromDate,
+          new Date(),
+          existingMonths,
+        );
         for (const point of history) {
-          const value = Math.round(quantity * point.priceEur * 100) / 100;
-          const created = await this.upsertSnapshotIfNew(assetId, value, point.priceEur, point.date);
+          const nativePrice = await this.currency.fromEur(point.priceEur, assetCurrency);
+          const value = Math.round(quantity * nativePrice * 100) / 100;
+          const created = await this.upsertSnapshotIfNew(assetId, value, nativePrice, point.date);
           if (created) backfilled++;
         }
       }
@@ -168,10 +184,15 @@ export class PriceTrackingService {
       if (type === 'gold' && hasGoldMetadata(metadata)) {
         const fromDate = new Date();
         fromDate.setFullYear(fromDate.getFullYear() - 5);
-        const history = await this.metals.fetchGoldPriceHistory(metadata.unit as GoldUnit, fromDate, new Date());
+        const history = await this.metals.fetchGoldPriceHistory(
+          metadata.unit as GoldUnit,
+          fromDate,
+          new Date(),
+        );
         for (const point of history) {
-          const value = Math.round(quantity * point.priceEur * 100) / 100;
-          const created = await this.upsertSnapshotIfNew(assetId, value, point.priceEur, point.date);
+          const nativePrice = await this.currency.fromEur(point.priceEur, assetCurrency);
+          const value = Math.round(quantity * nativePrice * 100) / 100;
+          const created = await this.upsertSnapshotIfNew(assetId, value, nativePrice, point.date);
           if (created) backfilled++;
         }
       }
@@ -180,7 +201,9 @@ export class PriceTrackingService {
         this.logger.log(`Backfilled ${backfilled} historical snapshots for asset ${assetId}`);
       }
     } catch (err) {
-      this.logger.error(`Backfill failed for asset ${assetId}: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Backfill failed for asset ${assetId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     return backfilled;
@@ -202,7 +225,12 @@ export class PriceTrackingService {
   }
 
   /** Create snapshot only if one doesn't exist for that month (for backfill — don't overwrite manual entries) */
-  private async upsertSnapshotIfNew(assetId: string, value: number, price: number, month: string): Promise<boolean> {
+  private async upsertSnapshotIfNew(
+    assetId: string,
+    value: number,
+    price: number,
+    month: string,
+  ): Promise<boolean> {
     const monthStart = new Date(`${month}-01T00:00:00.000Z`);
     const [y, m] = month.split('-').map(Number);
     const monthEnd = new Date(Date.UTC(y, m, 1));
