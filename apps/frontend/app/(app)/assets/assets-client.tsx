@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import {
   useAssets,
   useCreateAsset,
-  useUpdateAsset,
   useDeleteAsset,
   useRefreshPrices,
   Asset,
@@ -19,40 +18,9 @@ import { formatCurrency, toEur } from '@/lib/utils';
 import { Plus, TrendingUp, RefreshCw } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 
-function EditAssetModal({ asset, onClose }: { asset: Asset; onClose: () => void }) {
-  const { t } = useTranslation();
-  const updateAsset = useUpdateAsset(asset.id);
-
-  async function handleSubmit(input: CreateAssetInput) {
-    await updateAsset.mutateAsync(input);
-    onClose();
-  }
-
-  return (
-    <Modal title={t('assets.editAsset' as any)} onClose={onClose}>
-      <AssetForm
-        defaultValues={{
-          type: asset.type,
-          name: asset.name,
-          value: asset.value,
-          quantity: asset.quantity,
-          costBasis: asset.costBasis,
-          currency: asset.currency,
-          metadata: asset.metadata,
-        }}
-        onSubmit={handleSubmit}
-        onCancel={onClose}
-        isLoading={updateAsset.isPending}
-        submitLabel={t('common.save')}
-      />
-    </Modal>
-  );
-}
-
 export function AssetsClient() {
   const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
-  const [editAsset, setEditAsset] = useState<Asset | null>(null);
   const [historyAsset, setHistoryAsset] = useState<Asset | null>(null);
 
   const { data: assets, isLoading } = useAssets();
@@ -81,12 +49,11 @@ export function AssetsClient() {
 
   function handleCardClick(id: string) {
     const asset = assets?.find((a) => a.id === id);
-    if (asset) setEditAsset(asset);
+    if (asset) setHistoryAsset(asset);
   }
 
   function handleHistory(id: string) {
-    const asset = assets?.find((a) => a.id === id);
-    if (asset) setHistoryAsset(asset);
+    handleCardClick(id);
   }
 
   async function handleDelete(id: string) {
@@ -197,8 +164,6 @@ export function AssetsClient() {
           />
         </Modal>
       )}
-
-      {editAsset && <EditAssetModal asset={editAsset} onClose={() => setEditAsset(null)} />}
 
       {historyAsset && (
         <AssetSnapshotModal
