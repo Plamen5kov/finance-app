@@ -108,20 +108,32 @@ export function ImportClient() {
       {/* Upload area */}
       {activeType && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="font-medium text-gray-900 dark:text-gray-100 mb-4">{t('import.upload', { name: t(activeType.nameKey) })}</h2>
+          <h2 className="font-medium text-gray-900 dark:text-gray-100 mb-4">
+            {t('import.upload', { name: t(activeType.nameKey) })}
+          </h2>
 
-          <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-brand hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click();
+            }}
+            className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-brand hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
             <Upload size={32} className="text-gray-400 dark:text-gray-500 mb-2" />
-            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t('import.clickToSelect')}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+              {t('import.clickToSelect')}
+            </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('import.csvOnly')}</p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept={activeType.accept}
-              className="hidden"
-              onChange={() => handleFileSelect(activeType.endpoint)}
-            />
-          </label>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept={activeType.accept}
+            className="hidden"
+            onChange={() => handleFileSelect(activeType.endpoint)}
+          />
 
           {importMutation.isPending && (
             <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -139,7 +151,9 @@ export function ImportClient() {
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">{t('import.imported')}</p>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{result.imported}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    {result.imported}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">{t('import.expenses')}</p>
@@ -155,7 +169,9 @@ export function ImportClient() {
                 </div>
                 <div>
                   <p className="text-gray-500 dark:text-gray-400">{t('import.newMappings')}</p>
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{result.newMappings}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">
+                    {result.newMappings}
+                  </p>
                 </div>
               </div>
             </div>
