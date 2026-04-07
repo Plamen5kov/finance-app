@@ -112,13 +112,8 @@ export function ImportClient() {
             {t('import.upload', { name: t(activeType.nameKey) })}
           </h2>
 
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => fileRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click();
-            }}
+          <label
+            htmlFor="file-upload"
             className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-brand hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <Upload size={32} className="text-gray-400 dark:text-gray-500 mb-2" />
@@ -126,12 +121,13 @@ export function ImportClient() {
               {t('import.clickToSelect')}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('import.csvOnly')}</p>
-          </div>
+          </label>
           <input
+            id="file-upload"
             ref={fileRef}
             type="file"
             accept={activeType.accept}
-            className="hidden"
+            className="sr-only"
             onChange={() => handleFileSelect(activeType.endpoint)}
           />
 
