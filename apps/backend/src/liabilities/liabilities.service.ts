@@ -1,17 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { assertHouseholdAccess } from '../common/utils/assert-household-access';
 import {
   calculateMortgageBalance,
   calculateLeasingBalance,
-  currentMonthKey,
   getCurrentMonthlyPayment as getPayment,
 } from '../common/utils/amortization';
+import { currentMonthKey, monthRange } from '../common/utils/date-utils';
 import { CreateLiabilityDto } from './dto/create-liability.dto';
 import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 
 @Injectable()
 export class LiabilitiesService {
+  private readonly logger = new Logger(LiabilitiesService.name);
+
   constructor(private prisma: PrismaService) {}
 
   private calculateCurrentBalance(
@@ -85,6 +88,52 @@ export class LiabilitiesService {
     const liabilities = await this.prisma.liability.findMany({ where: { householdId } });
     const total = liabilities.reduce((sum, l) => sum + l.value, 0);
     return { total, liabilities };
+  }
+
+  /** Runs daily at 00:30 — recalculates balances and creates snapshots for liabilities whose paymentDay matches today. */
+  @Cron('30 0 * * *')
+  async scheduledBalanceRefresh() {
+    const today = new Date().getDate();
+    this.logger.log(`Daily liability check: day ${today}`);
+
+    const liabilities = await this.prisma.liability.findMany();
+    let updated = 0;
+
+    for (const liability of liabilities) {
+      const meta = liability.metadata as MortgageMetadata | LeasingMetadata | null;
+      if (!meta) continue;
+
+      const paymentDay = (meta as MortgageMetadata & LeasingMetadata).paymentDay;
+      if (paymentDay !== today) continue;
+
+      const newValue = this.calculateCurrentBalance(liability.type, meta);
+
+      await this.prisma.liability.update({
+        where: { id: liability.id },
+        data: { value: newValue },
+      });
+
+      await this.upsertSnapshot(liability.id, newValue);
+      updated++;
+      this.logger.log(`Updated ${liability.name}: ${liability.value} → ${newValue}`);
+    }
+
+    if (updated > 0) {
+      this.logger.log(`Refreshed ${updated} liabilities`);
+    }
+  }
+
+  private async upsertSnapshot(liabilityId: string, value: number) {
+    const { start, end } = monthRange(currentMonthKey());
+
+    const existing = await this.prisma.liabilitySnapshot.findFirst({
+      where: { liabilityId, capturedAt: { gte: start, lt: end } },
+    });
+    if (existing) return;
+
+    await this.prisma.liabilitySnapshot.create({
+      data: { liabilityId, value, capturedAt: start },
+    });
   }
 
   private assertHouseholdAccess(householdId: string, liabilityId: string) {

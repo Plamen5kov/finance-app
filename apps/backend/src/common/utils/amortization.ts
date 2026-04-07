@@ -1,11 +1,7 @@
 import { MortgageMetadata, LeasingMetadata } from '@finances/shared';
 import { round2 } from './money';
-
-/** Helper to get current month key in YYYY-MM format. */
-export function currentMonthKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
+import { currentMonthKey } from './date-utils';
+export { currentMonthKey };
 
 /**
  * Calculate current outstanding balance for a mortgage/loan by amortizing

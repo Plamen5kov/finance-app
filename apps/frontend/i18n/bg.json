@@ -125,6 +125,7 @@
   "liabilityForm.originalAmount": "Първоначална сума",
   "liabilityForm.initialRate": "Начален лихвен процент (%)",
   "liabilityForm.initialPayment": "Начална месечна вноска",
+  "liabilityForm.paymentDay": "Ден на плащане (1-28)",
   "liabilityCard.monthlyPayment": "Месечна вноска",
   "liabilityCard.balloonPayment": "Остатъчна стойност",
   "liabilityCard.interestRate": "Лихвен процент",

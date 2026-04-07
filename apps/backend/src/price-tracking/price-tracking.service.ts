@@ -6,6 +6,7 @@ import { CoinGeckoProvider } from './providers/coingecko.provider';
 import { MetalsProvider } from './providers/metals.provider';
 import { CurrencyProvider } from './providers/currency.provider';
 import { hasTickerMetadata, hasCoinIdMetadata, hasGoldMetadata, GoldUnit } from '@finances/shared';
+import { currentMonthKey, monthRange } from '../common/utils/date-utils';
 
 export interface RefreshResult {
   updated: number;
@@ -43,8 +44,7 @@ export class PriceTrackingService {
     });
 
     const result: RefreshResult = { updated: 0, errors: [], backfilled: 0 };
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthKey = currentMonthKey();
 
     for (const asset of assets) {
       try {
@@ -211,16 +211,13 @@ export class PriceTrackingService {
 
   /** Create snapshot for a given month only if none exists (never overwrites manual entries) */
   private async upsertSnapshot(assetId: string, value: number, price: number, month: string) {
-    const monthStart = new Date(`${month}-01T00:00:00.000Z`);
-    const [y, m] = month.split('-').map(Number);
-    const monthEnd = new Date(Date.UTC(y, m, 1)); // 1st of next month
+    const { start, end } = monthRange(month);
     const existing = await this.prisma.assetSnapshot.findFirst({
-      where: { assetId, capturedAt: { gte: monthStart, lt: monthEnd } },
+      where: { assetId, capturedAt: { gte: start, lt: end } },
     });
     if (existing) return existing; // never overwrite
-    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
     return this.prisma.assetSnapshot.create({
-      data: { assetId, value, price, capturedAt },
+      data: { assetId, value, price, capturedAt: start },
     });
   }
 
@@ -231,17 +228,14 @@ export class PriceTrackingService {
     price: number,
     month: string,
   ): Promise<boolean> {
-    const monthStart = new Date(`${month}-01T00:00:00.000Z`);
-    const [y, m] = month.split('-').map(Number);
-    const monthEnd = new Date(Date.UTC(y, m, 1));
+    const { start, end } = monthRange(month);
     const existing = await this.prisma.assetSnapshot.findFirst({
-      where: { assetId, capturedAt: { gte: monthStart, lt: monthEnd } },
+      where: { assetId, capturedAt: { gte: start, lt: end } },
     });
     if (existing) return false;
 
-    const capturedAt = new Date(`${month}-01T00:00:00.000Z`);
     await this.prisma.assetSnapshot.create({
-      data: { assetId, value, price, capturedAt },
+      data: { assetId, value, price, capturedAt: start },
     });
     return true;
   }

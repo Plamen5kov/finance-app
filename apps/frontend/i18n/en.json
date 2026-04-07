@@ -125,6 +125,7 @@
   "liabilityForm.originalAmount": "Original Amount",
   "liabilityForm.initialRate": "Initial Interest Rate (%)",
   "liabilityForm.initialPayment": "Initial Monthly Payment",
+  "liabilityForm.paymentDay": "Payment Day (1-28)",
   "liabilityCard.monthlyPayment": "Monthly payment",
   "liabilityCard.balloonPayment": "Balloon payment",
   "liabilityCard.interestRate": "Interest rate",

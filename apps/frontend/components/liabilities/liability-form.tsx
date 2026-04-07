@@ -30,6 +30,7 @@ const schema = z.object({
   monthlyPayment: z.coerce.number().min(0).optional().or(z.literal('')),
   termMonths: z.coerce.number().min(0).optional().or(z.literal('')),
   startDate: z.string().optional(),
+  paymentDay: z.coerce.number().min(1).max(28).optional().or(z.literal('')),
   events: z.array(eventSchema).optional(),
   // Leasing-specific fields
   originalValue: z.coerce.number().min(0).optional().or(z.literal('')),
@@ -59,14 +60,23 @@ function toFormDefaults(defaults?: Partial<CreateLiabilityInput>): Partial<FormV
     monthlyPayment: meta?.monthlyPayment ?? ('' as unknown as number),
     termMonths: meta?.termMonths ?? ('' as unknown as number),
     startDate: meta?.startDate ?? '',
+    paymentDay: meta?.paymentDay ?? ('' as unknown as number),
     events: (meta as MortgageMetadata | undefined)?.events ?? [],
-    originalValue: (meta as LeasingMetadata | undefined)?.originalValue ?? ('' as unknown as number),
+    originalValue:
+      (meta as LeasingMetadata | undefined)?.originalValue ?? ('' as unknown as number),
     downPayment: (meta as LeasingMetadata | undefined)?.downPayment ?? ('' as unknown as number),
-    residualValue: (meta as LeasingMetadata | undefined)?.residualValue ?? ('' as unknown as number),
+    residualValue:
+      (meta as LeasingMetadata | undefined)?.residualValue ?? ('' as unknown as number),
   };
 }
 
-export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, submitLabel }: LiabilityFormProps) {
+export function LiabilityForm({
+  defaultValues,
+  onSubmit,
+  onCancel,
+  isLoading,
+  submitLabel,
+}: LiabilityFormProps) {
   const { t } = useTranslation();
 
   const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -75,12 +85,22 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
     extra_payment: t('events.extraPayment'),
     refinance: t('events.refinance'),
   };
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    control,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: toFormDefaults(defaultValues),
   });
 
-  const { fields: eventFields, append: appendEvent, remove: removeEvent } = useFieldArray({
+  const {
+    fields: eventFields,
+    append: appendEvent,
+    remove: removeEvent,
+  } = useFieldArray({
     control,
     name: 'events',
   });
@@ -101,9 +121,13 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
           type: e.type,
           date: e.date,
           ...(e.newRate != null && e.newRate !== '' ? { newRate: Number(e.newRate) } : {}),
-          ...(e.newMonthlyPayment != null && e.newMonthlyPayment !== '' ? { newMonthlyPayment: Number(e.newMonthlyPayment) } : {}),
+          ...(e.newMonthlyPayment != null && e.newMonthlyPayment !== ''
+            ? { newMonthlyPayment: Number(e.newMonthlyPayment) }
+            : {}),
           ...(e.amount != null && e.amount !== '' ? { amount: Number(e.amount) } : {}),
-          ...(e.newBalance != null && e.newBalance !== '' ? { newBalance: Number(e.newBalance) } : {}),
+          ...(e.newBalance != null && e.newBalance !== ''
+            ? { newBalance: Number(e.newBalance) }
+            : {}),
           ...(e.notes ? { notes: e.notes } : {}),
         }));
       metadata = {
@@ -112,6 +136,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
         monthlyPayment: Number(values.monthlyPayment) || 0,
         termMonths: Number(values.termMonths) || 0,
         startDate: values.startDate ?? '',
+        ...(values.paymentDay != null && values.paymentDay !== ''
+          ? { paymentDay: Number(values.paymentDay) }
+          : {}),
         events,
       };
     } else if (showLeasingFields) {
@@ -123,6 +150,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
         monthlyPayment: Number(values.monthlyPayment) || 0,
         termMonths: Number(values.termMonths) || 0,
         startDate: values.startDate ?? '',
+        ...(values.paymentDay != null && values.paymentDay !== ''
+          ? { paymentDay: Number(values.paymentDay) }
+          : {}),
       };
     }
 
@@ -139,20 +169,26 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       {/* Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.type')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {t('assetForm.type')} *
+        </label>
         <select
           {...register('type')}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {LIABILITY_TYPES.map((tp) => (
-            <option key={tp} value={tp}>{t(`liabilityType.${tp}` as any)}</option>
+            <option key={tp} value={tp}>
+              {t(`liabilityType.${tp}` as any)}
+            </option>
           ))}
         </select>
       </div>
 
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.name')} *</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {t('assetForm.name')} *
+        </label>
         <input
           {...register('name')}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
@@ -163,13 +199,17 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
       {/* Currency */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('assetForm.currency')}</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          {t('assetForm.currency')}
+        </label>
         <select
           {...register('currency')}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {CURRENCIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
       </div>
@@ -177,11 +217,15 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
       {/* Leasing specific fields */}
       {showLeasingFields && (
         <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-4">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('liabilityForm.leaseDetails')}</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            {t('liabilityForm.leaseDetails')}
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.assetValue')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.assetValue')}
+              </label>
               <input
                 {...register('originalValue')}
                 type="number"
@@ -191,7 +235,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.downPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.downPayment')}
+              </label>
               <input
                 {...register('downPayment')}
                 type="number"
@@ -204,7 +250,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.balloonPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.balloonPayment')}
+              </label>
               <input
                 {...register('residualValue')}
                 type="number"
@@ -214,7 +262,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.interestRate')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.interestRate')}
+              </label>
               <input
                 {...register('interestRate')}
                 type="number"
@@ -227,7 +277,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.monthlyPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.monthlyPayment')}
+              </label>
               <input
                 {...register('monthlyPayment')}
                 type="number"
@@ -237,7 +289,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.termMonths')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.termMonths')}
+              </label>
               <input
                 {...register('termMonths')}
                 type="number"
@@ -248,13 +302,31 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.startDate')}</label>
-            <input
-              {...register('startDate')}
-              type="date"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.startDate')}
+              </label>
+              <input
+                {...register('startDate')}
+                type="date"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.paymentDay')}
+              </label>
+              <input
+                {...register('paymentDay')}
+                type="number"
+                min="1"
+                max="28"
+                step="1"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="e.g. 1"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -262,11 +334,15 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
       {/* Mortgage / Loan specific fields */}
       {showMortgageFields && (
         <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-4">
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('liabilityForm.loanDetails')}</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            {t('liabilityForm.loanDetails')}
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.originalAmount')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.originalAmount')}
+              </label>
               <input
                 {...register('originalAmount')}
                 type="number"
@@ -276,7 +352,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.termMonths')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.termMonths')}
+              </label>
               <input
                 {...register('termMonths')}
                 type="number"
@@ -289,7 +367,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.initialRate')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.initialRate')}
+              </label>
               <input
                 {...register('interestRate')}
                 type="number"
@@ -299,7 +379,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.initialPayment')}</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.initialPayment')}
+              </label>
               <input
                 {...register('monthlyPayment')}
                 type="number"
@@ -310,29 +392,62 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('liabilityForm.startDate')}</label>
-            <input
-              {...register('startDate')}
-              type="date"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.startDate')}
+              </label>
+              <input
+                {...register('startDate')}
+                type="date"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('liabilityForm.paymentDay')}
+              </label>
+              <input
+                {...register('paymentDay')}
+                type="number"
+                min="1"
+                max="28"
+                step="1"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
+                placeholder="e.g. 1"
+              />
+            </div>
           </div>
 
           {/* Lifecycle Events */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('events.title')}</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('events.title')}
+              </label>
               <button
                 type="button"
-                onClick={() => appendEvent({ id: crypto.randomUUID(), type: 'rate_change', date: '', newRate: '' as unknown as number, newMonthlyPayment: '' as unknown as number, amount: '' as unknown as number, newBalance: '' as unknown as number, notes: '' })}
+                onClick={() =>
+                  appendEvent({
+                    id: crypto.randomUUID(),
+                    type: 'rate_change',
+                    date: '',
+                    newRate: '' as unknown as number,
+                    newMonthlyPayment: '' as unknown as number,
+                    amount: '' as unknown as number,
+                    newBalance: '' as unknown as number,
+                    notes: '',
+                  })
+                }
                 className="flex items-center gap-1 text-xs text-brand hover:text-brand-dark font-medium"
               >
                 <Plus size={12} /> {t('events.addEvent')}
               </button>
             </div>
             {eventFields.length === 0 && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 italic">{t('events.noEvents')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic">
+                {t('events.noEvents')}
+              </p>
             )}
             <div className="space-y-3">
               {eventFields.map((field, index) => {
@@ -343,14 +458,19 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                 const showBalance = eventType === 'refinance';
 
                 return (
-                  <div key={field.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
+                  <div
+                    key={field.id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2"
+                  >
                     <div className="flex gap-2 items-center">
                       <select
                         {...register(`events.${index}.type`)}
                         className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 text-sm bg-white dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand"
                       >
                         {MORTGAGE_EVENT_TYPES.map((et) => (
-                          <option key={et} value={et}>{EVENT_TYPE_LABELS[et]}</option>
+                          <option key={et} value={et}>
+                            {EVENT_TYPE_LABELS[et]}
+                          </option>
                         ))}
                       </select>
                       <input
@@ -369,7 +489,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                     <div className="grid grid-cols-2 gap-2">
                       {showRate && (
                         <div>
-                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.newRate')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                            {t('events.newRate')}
+                          </label>
                           <input
                             {...register(`events.${index}.newRate`)}
                             type="number"
@@ -381,7 +503,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                       )}
                       {showPayment && (
                         <div>
-                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.newPayment')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                            {t('events.newPayment')}
+                          </label>
                           <input
                             {...register(`events.${index}.newMonthlyPayment`)}
                             type="number"
@@ -393,7 +517,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                       )}
                       {showAmount && (
                         <div>
-                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.extraAmount')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                            {t('events.extraAmount')}
+                          </label>
                           <input
                             {...register(`events.${index}.amount`)}
                             type="number"
@@ -405,7 +531,9 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
                       )}
                       {showBalance && (
                         <div>
-                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">{t('events.newBalance')}</label>
+                          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+                            {t('events.newBalance')}
+                          </label>
                           <input
                             {...register(`events.${index}.newBalance`)}
                             type="number"
@@ -432,10 +560,18 @@ export function LiabilityForm({ defaultValues, onSubmit, onCancel, isLoading, su
       )}
 
       <div className="flex gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-2 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+        >
           {t('common.cancel')}
         </button>
-        <button type="submit" disabled={isLoading} className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="flex-1 bg-brand text-white py-2 rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50"
+        >
           {isLoading ? t('common.saving') : (submitLabel ?? t('common.save'))}
         </button>
       </div>
