@@ -1,4 +1,4 @@
-import { toEur, computeAssetValue } from './assets.service';
+import { toEur, computeAssetValue, AssetsService } from './assets.service';
 
 describe('toEur', () => {
   it('EUR passthrough', () => expect(toEur(100, 'EUR')).toBe(100));
@@ -45,5 +45,55 @@ describe('computeAssetValue', () => {
     const result = computeAssetValue({ value: 5000 }, [{ price: 100 }]);
     // totalQty = 0, returns asset.value
     expect(result.value).toBe(5000);
+  });
+});
+
+describe('AssetsService position sync', () => {
+  function setup(rows: { id: string; quantity: number | null; value: number }[]) {
+    const prisma = {
+      asset: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'a1', householdId: 'h1' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      assetSnapshot: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn(async ({ where }: any) => ({ assetId: 'a1', ...rows.find((r) => r.id === where.id) })),
+        create: jest.fn(async ({ data }: any) => {
+          rows.push({ id: `s${rows.length}`, quantity: data.quantity ?? null, value: data.value });
+          return data;
+        }),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn(async ({ where }: any) => rows.splice(rows.findIndex((r) => r.id === where.id), 1)),
+        findMany: jest.fn(async () => rows.filter((r) => r.quantity != null)),
+      },
+    } as any;
+    return { prisma, service: new AssetsService(prisma) };
+  }
+
+  it('recomputes quantity and costBasis from all purchase rows after a purchase', async () => {
+    const { prisma, service } = setup([{ id: 's0', quantity: 332.39, value: 58000 }]);
+    await service.addSnapshot('h1', 'a1', 2037.43, '2026-06-02', 174.44, 11.68);
+    expect(prisma.asset.update).toHaveBeenCalledWith({
+      where: { id: 'a1' },
+      data: { quantity: 344.07, costBasis: 60037.43 },
+    });
+  });
+
+  it('leaves the asset alone for a price-only row', async () => {
+    const { prisma, service } = setup([{ id: 's0', quantity: 10, value: 1000 }]);
+    await service.addSnapshot('h1', 'a1', 1200, '2026-09-01', 120);
+    expect(prisma.asset.update).not.toHaveBeenCalled();
+  });
+
+  it('recomputes after deleting a purchase row', async () => {
+    const { prisma, service } = setup([
+      { id: 's0', quantity: 10, value: 1000 },
+      { id: 's1', quantity: 5, value: 600 },
+    ]);
+    await service.deleteSnapshot('h1', 'a1', 's1');
+    expect(prisma.asset.update).toHaveBeenCalledWith({
+      where: { id: 'a1' },
+      data: { quantity: 10, costBasis: 1000 },
+    });
   });
 });

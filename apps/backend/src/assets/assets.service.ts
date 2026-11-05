@@ -133,13 +133,14 @@ export class AssetsService {
       ...(quantity != null && { quantity }),
     };
     const existing = await this.prisma.assetSnapshot.findFirst({ where: { assetId, capturedAt } });
-    if (existing) {
-      return this.prisma.assetSnapshot.update({
-        where: { id: existing.id },
-        data: { value, ...optionals },
-      });
-    }
-    return this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt, ...optionals } });
+    const snapshot = existing
+      ? await this.prisma.assetSnapshot.update({
+          where: { id: existing.id },
+          data: { value, ...optionals },
+        })
+      : await this.prisma.assetSnapshot.create({ data: { assetId, value, capturedAt, ...optionals } });
+    if (quantity != null || existing?.quantity != null) await this.syncPosition(assetId);
+    return snapshot;
   }
 
   async deleteSnapshot(householdId: string, assetId: string, snapshotId: string) {
@@ -148,6 +149,20 @@ export class AssetsService {
     if (!snapshot) throw new NotFoundException('Snapshot not found');
     if (snapshot.assetId !== assetId) throw new ForbiddenException();
     await this.prisma.assetSnapshot.delete({ where: { id: snapshotId } });
+    if (snapshot.quantity != null) await this.syncPosition(assetId);
+  }
+
+  /** The monthly refresh values a DCA asset as `Asset.quantity × price`, so the stored
+   * position must follow the purchase rows, or every automatic snapshot understates it. */
+  private async syncPosition(assetId: string) {
+    const purchases = await this.prisma.assetSnapshot.findMany({
+      where: { assetId, quantity: { not: null } },
+      select: { quantity: true, value: true },
+    });
+    if (!purchases.length) return;
+    const quantity = Math.round(purchases.reduce((s, p) => s + (p.quantity ?? 0), 0) * 1e8) / 1e8;
+    const costBasis = round2(purchases.reduce((s, p) => s + p.value, 0));
+    await this.prisma.asset.update({ where: { id: assetId }, data: { quantity, costBasis } });
   }
 
   private assertHouseholdAccess(householdId: string, assetId: string) {
