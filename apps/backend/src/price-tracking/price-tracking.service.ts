@@ -45,6 +45,9 @@ export class PriceTrackingService {
 
     const result: RefreshResult = { updated: 0, errors: [], backfilled: 0 };
     const monthKey = currentMonthKey();
+    // The day it actually ran: a late manual refresh must not pass for an on-time capture
+    // on the 1st. Built from monthKey so the row stays in the month being refreshed.
+    const capturedAt = new Date(`${monthKey}-${String(new Date().getDate()).padStart(2, '0')}T00:00:00.000Z`);
 
     for (const asset of assets) {
       try {
@@ -58,7 +61,7 @@ export class PriceTrackingService {
         const totalValue = Math.round(quantity * nativePrice * 100) / 100;
 
         // Upsert snapshot for current month (values in asset's native currency)
-        await this.upsertSnapshot(asset.id, totalValue, nativePrice, monthKey);
+        await this.upsertSnapshot(asset.id, totalValue, nativePrice, monthKey, capturedAt);
 
         // Update asset's current value and store latest API price in native currency
         await this.prisma.asset.update({
@@ -210,14 +213,20 @@ export class PriceTrackingService {
   }
 
   /** Create snapshot for a given month only if none exists (never overwrites manual entries) */
-  private async upsertSnapshot(assetId: string, value: number, price: number, month: string) {
+  private async upsertSnapshot(
+    assetId: string,
+    value: number,
+    price: number,
+    month: string,
+    capturedAt: Date,
+  ) {
     const { start, end } = monthRange(month);
     const existing = await this.prisma.assetSnapshot.findFirst({
       where: { assetId, capturedAt: { gte: start, lt: end } },
     });
     if (existing) return existing; // never overwrite
     return this.prisma.assetSnapshot.create({
-      data: { assetId, value, price, capturedAt: start },
+      data: { assetId, value, price, capturedAt },
     });
   }
 
